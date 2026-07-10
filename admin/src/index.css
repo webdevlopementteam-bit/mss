@@ -1,0 +1,130 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+  font-family: 'inter';
+  src: url('./fonts/Inter_18pt-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+*{
+  margin:0;
+  padding:0;
+  font-family: 'inter',sans-serif;
+  color:#023350;
+}
+
+/* Toolbar icons */
+.ql-toolbar .ql-stroke {
+  stroke: #ffffff !important;
+}
+
+.ql-toolbar .ql-fill {
+  fill: #ffffff !important;
+}
+
+/* Dropdown text (Normal, Sans Serif) */
+.ql-toolbar .ql-picker {
+  color: #ffffff !important;
+}
+
+/* Dropdown arrow */
+.ql-toolbar .ql-picker-label {
+  color: #ffffff !important;
+}
+
+/* Hover effect (optional - better UX) */
+.ql-toolbar button:hover .ql-stroke {
+  stroke: #60a5fa !important;
+}
+
+.ql-toolbar button:hover .ql-fill {
+  fill: #60a5fa !important;
+}
+
+.ql-toolbar {
+  background: #1a202b;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+.ql-container {
+  background: #0f131c;
+  color: white;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+/* Editor container */
+.ql-container {
+  color: #ffffff !important;
+}
+
+/* Editor text (main fix) */
+.ql-editor {
+  color: #ffffff !important;
+  caret-color: #ffffff !important; /* cursor bhi white */
+}
+
+/* Sab text elements force white */
+.ql-editor p,
+.ql-editor span,
+.ql-editor div,
+.ql-editor li,
+.ql-editor strong,
+.ql-editor em,
+.ql-editor u {
+  color: #ffffff !important;
+}
+
+/* Placeholder */
+.ql-editor.ql-blank::before {
+  color: rgba(255,255,255,0.4) !important;
+}
+
+/* Fancy Dark Scrollbar */
+.custom-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scroll::-webkit-scrollbar-thumb {
+  background: linear-gradient(
+    to bottom,
+    var(--primary),
+    var(--primary-container)
+  );
+  border-radius: 10px;
+}
+
+.custom-scroll::-webkit-scrollbar-thumb:hover {
+  opacity: 0.8;
+}
+
+.input {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #1a202b;
+  border: 1px solid rgba(255,255,255,0.1);
+  color: white;
+  margin-top: 6px;
+}
+
+.input-sm {
+  width: 100%;
+  padding: 6px;
+  border-radius: 6px;
+  background: #1a202b;
+  border: 1px solid rgba(255,255,255,0.1);
+  color: white;
+}
+
+.label {
+  font-size: 13px;
+  color: rgba(255,255,255,0.7);
+}
