@@ -1,0 +1,14 @@
+export const generateOtp = () => {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+};
+
+export const getOtpExpiry = (minutes = 10) => {
+  return new Date(Date.now() + minutes * 60 * 1000);
+};
+
+export const isOtpValid = (storedOtp, storedExpiry, submittedOtp) => {
+  if (!storedOtp || !storedExpiry) return false;
+  if (storedOtp !== submittedOtp) return false;
+  if (new Date(storedExpiry).getTime() < Date.now()) return false;
+  return true;
+};

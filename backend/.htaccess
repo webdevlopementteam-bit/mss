@@ -1,0 +1,42 @@
+# # RewriteEngine On
+
+# # Header always set Access-Control-Allow-Headers "Origin, X-Requested-With, Content-Type, Accept, Authorization"
+# # Header always set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+
+# # RewriteCond %{REQUEST_URI} !^/uploads/
+# # RewriteRule ^(.*)$ http://127.0.0.1:8001/$1 [P,L]
+
+# # RequestHeader set X-Forwarded-Proto "https"
+
+# RewriteEngine On
+
+# # Only proxy API requests
+# RewriteCond %{REQUEST_URI} ^/api/
+# RewriteRule ^api/(.*)$ http://127.0.0.1:8001/api/$1 [P,L]
+
+# # uploads direct serve
+# RewriteCond %{REQUEST_URI} !^/uploads/
+
+RewriteEngine On
+
+# Block root
+RewriteRule ^$ - [F,L]
+
+# Proxy API
+RewriteCond %{REQUEST_URI} ^/api/
+RewriteRule ^api/(.*)$ http://127.0.0.1:8001/api/$1 [P,L]
+
+# Allow uploads
+RewriteCond %{REQUEST_URI} !^/uploads/
+
+# Block JS access
+RewriteRule \.js$ - [F,L]
+
+RequestHeader set X-Forwarded-Proto "https"
+
+# php -- BEGIN cPanel-generated handler, do not edit
+# Set the “ea-php82” package as the default “PHP” programming language.
+<IfModule mime_module>
+  AddHandler application/x-httpd-ea-php82 .php .php8 .phtml
+</IfModule>
+# php -- END cPanel-generated handler, do not edit
