@@ -10,6 +10,8 @@ import {
   setRefreshTokenCookie,
   clearRefreshTokenCookie,
   ACCESS_TOKEN_EXPIRY_SECONDS,
+  REFRESH_COOKIE_NAME,
+  ADMIN_REFRESH_COOKIE_NAME,
 } from "../utils/generateTokens.js";
 import {
   sendVerificationOtpEmail,
@@ -32,7 +34,10 @@ const sanitize = (user) => {
 const issueTokens = (res, user) => {
   const token = generateAccessToken(user);
   const refreshToken = generateRefreshToken(user);
-  setRefreshTokenCookie(res, refreshToken);
+  // Admins get their own refresh cookie so their session can never collide
+  // with a regular customer session in the same browser (see generateTokens.js).
+  const cookieName = user.role === "admin" ? ADMIN_REFRESH_COOKIE_NAME : REFRESH_COOKIE_NAME;
+  setRefreshTokenCookie(res, refreshToken, cookieName);
   return token;
 };
 
@@ -346,10 +351,48 @@ export const refreshToken = asyncHandler(async (req, res) => {
 });
 
 /* ==========================================
+   REFRESH ACCESS TOKEN (ADMIN PANEL)
+   Separate endpoint + separate cookie from the customer-facing refreshToken
+   above, so an admin session can never be silently swapped for whichever
+   regular-customer session happens to be logged in in the same browser.
+========================================== */
+export const adminRefreshToken = asyncHandler(async (req, res) => {
+  const token = req.cookies?.[ADMIN_REFRESH_COOKIE_NAME];
+
+  if (!token) {
+    return response.error(res, "Not authenticated", 401);
+  }
+
+  let payload;
+  try {
+    payload = jwt.verify(token, process.env.JWT_REFRESH_SECRET);
+  } catch (err) {
+    clearRefreshTokenCookie(res, ADMIN_REFRESH_COOKIE_NAME);
+    return response.error(res, "Session expired, please log in again", 401);
+  }
+
+  const user = await User.findById(payload.id);
+  if (!user || !user.isActive || user.role !== "admin") {
+    clearRefreshTokenCookie(res, ADMIN_REFRESH_COOKIE_NAME);
+    return response.error(res, "Session expired, please log in again", 401);
+  }
+
+  const newAccessToken = generateAccessToken(user);
+
+  return response.success(res, {
+    token: newAccessToken,
+    expiresIn: ACCESS_TOKEN_EXPIRY_SECONDS,
+  });
+});
+
+/* ==========================================
    LOGOUT
 ========================================== */
 export const logout = asyncHandler(async (req, res) => {
-  clearRefreshTokenCookie(res);
+  // Shared endpoint for both apps — clearing both cookie names is harmless
+  // when only one was ever set.
+  clearRefreshTokenCookie(res, REFRESH_COOKIE_NAME);
+  clearRefreshTokenCookie(res, ADMIN_REFRESH_COOKIE_NAME);
   return response.success(res, {}, "Logged out successfully");
 });
 

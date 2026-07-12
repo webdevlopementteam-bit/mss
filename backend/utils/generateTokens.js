@@ -19,8 +19,17 @@ export const generateRefreshToken = (user) => {
   });
 };
 
-export const setRefreshTokenCookie = (res, token) => {
-  res.cookie("refreshToken", token, {
+// Admin and regular-customer sessions get differently-named refresh cookies.
+// Both the admin panel and the storefront log in through the same /auth/login
+// endpoint against the same backend host, so a single shared cookie name would
+// let one session's silent-refresh pick up the OTHER session's refresh token
+// (e.g. an admin who also has the storefront open in another tab would have
+// their refresh silently re-authenticate as that regular customer instead).
+export const REFRESH_COOKIE_NAME = "refreshToken";
+export const ADMIN_REFRESH_COOKIE_NAME = "adminRefreshToken";
+
+export const setRefreshTokenCookie = (res, token, cookieName = REFRESH_COOKIE_NAME) => {
+  res.cookie(cookieName, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
@@ -29,6 +38,6 @@ export const setRefreshTokenCookie = (res, token) => {
   });
 };
 
-export const clearRefreshTokenCookie = (res) => {
-  res.clearCookie("refreshToken", { path: "/api/auth" });
+export const clearRefreshTokenCookie = (res, cookieName = REFRESH_COOKIE_NAME) => {
+  res.clearCookie(cookieName, { path: "/api/auth" });
 };

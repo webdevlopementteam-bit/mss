@@ -185,6 +185,11 @@ const orderSchema = new mongoose.Schema(
             {
                 status: String,
                 message: String,
+                updatedBy: {
+                    type: String,
+                    enum: ["User", "Admin", "System"],
+                    default: "System",
+                },
                 updatedAt: {
                     type: Date,
                     default: Date.now,
@@ -204,6 +209,12 @@ const orderSchema = new mongoose.Schema(
 
         cancelledAt: {
             type: Date,
+        },
+
+        cancelledBy: {
+            type: String,
+            enum: ["User", "Admin"],
+            default: null,
         },
     },
     {

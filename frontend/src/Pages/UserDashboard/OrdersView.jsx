@@ -2,11 +2,10 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "react-toastify";
 import * as orderService from "../../api/orderService";
+import { canUserCancel } from "../../utils/orderStatus";
 import {
   C, Ico, I, Toast, ConfirmModal, StatusBadge, OrderStepper,
 } from "./shared";
-
-const NOT_CANCELLABLE = ["shipped", "out_for_delivery", "delivered", "cancelled"];
 
 const formatDate = (d) =>
   new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
@@ -125,7 +124,7 @@ export default function OrdersView() {
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         {orders.map((o) => {
           const isOpen = expanded === o._id;
-          const canCancel = !NOT_CANCELLABLE.includes(o.orderStatus);
+          const canCancel = canUserCancel(o.orderStatus);
           const itemCount = (o.orderItems || []).reduce((sum, it) => sum + (it.quantity || 0), 0);
 
           return (

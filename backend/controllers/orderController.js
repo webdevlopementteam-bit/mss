@@ -3,6 +3,14 @@ import Order from "../models/orderModel.js";
 import Product from "../models/productModel.js";
 import Variant from "../models/variantModel.js";
 import generateOrderPdf from "../utils/generateOrderPdf.js";
+import {
+  ORDER_STATUS,
+  STATUS_LABELS,
+  canUserCancel,
+  canAdminUpdate,
+  getNextAllowedStatus,
+  isFinalStatus,
+} from "../utils/orderStatus.js";
 
 
 
@@ -180,6 +188,7 @@ export const createOrder = async (req, res) => {
             status: "pending",
             message:
               "Order placed successfully",
+            updatedBy: "User",
           },
         ],
       });
@@ -369,7 +378,49 @@ export const updateOrderStatus = async (
       });
     }
 
-    order.orderStatus = orderStatus;
+    // Only touch orderStatus / push a history entry when the caller is
+    // actually asking to change it — trackingId/courierPartner/etc. can be
+    // updated on their own without re-validating the status transition.
+    if (orderStatus && orderStatus !== order.orderStatus) {
+      if (!ORDER_STATUS.includes(orderStatus)) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid order status",
+        });
+      }
+
+      if (isFinalStatus(order.orderStatus)) {
+        return res.status(400).json({
+          success: false,
+          message:
+            order.orderStatus === "cancelled"
+              ? "Cancelled orders cannot be updated."
+              : "Delivered orders are final and cannot be updated.",
+        });
+      }
+
+      if (!canAdminUpdate(order.orderStatus, orderStatus)) {
+        const next = getNextAllowedStatus(order.orderStatus);
+        return res.status(400).json({
+          success: false,
+          message: next
+            ? `Invalid status transition. Order must move from "${STATUS_LABELS[order.orderStatus]}" to "${STATUS_LABELS[next]}" next.`
+            : "This order cannot be updated further.",
+        });
+      }
+
+      order.orderStatus = orderStatus;
+
+      if (orderStatus === "delivered") {
+        order.deliveredAt = new Date();
+      }
+
+      order.statusHistory.push({
+        status: orderStatus,
+        message: `Order updated to ${STATUS_LABELS[orderStatus]}`,
+        updatedBy: "Admin",
+      });
+    }
 
     if (trackingId)
       order.trackingId = trackingId;
@@ -384,15 +435,6 @@ export const updateOrderStatus = async (
     if (adminRemarks)
       order.adminRemarks =
         adminRemarks;
-
-    if (orderStatus === "delivered") {
-      order.deliveredAt = new Date();
-    }
-
-    order.statusHistory.push({
-      status: orderStatus,
-      message: `Order updated to ${orderStatus}`,
-    });
 
     await order.save();
 
@@ -474,17 +516,16 @@ export const cancelOrder = async (
       });
     }
 
-    if (
-      [
-        "shipped",
-        "out_for_delivery",
-        "delivered",
-      ].includes(order.orderStatus)
-    ) {
-      return res.status(400).json({
+    // Only the order's own customer, or an admin, may cancel it.
+    const isOwner =
+      order.user &&
+      order.user.toString() === req.user.id;
+    const isAdmin = req.user.role === "admin";
+
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({
         success: false,
-        message:
-          "Order cannot be cancelled",
+        message: "Access denied",
       });
     }
 
@@ -496,6 +537,14 @@ export const cancelOrder = async (
         success: false,
         message:
           "Order already cancelled",
+      });
+    }
+
+    if (!canUserCancel(order.orderStatus)) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "This order has already been shipped and cannot be cancelled.",
       });
     }
 
@@ -513,11 +562,13 @@ export const cancelOrder = async (
 
     order.orderStatus = "cancelled";
     order.cancelledAt = new Date();
+    order.cancelledBy = isOwner ? "User" : "Admin";
 
     order.statusHistory.push({
       status: "cancelled",
       message:
         "Order cancelled successfully",
+      updatedBy: order.cancelledBy,
     });
 
     await order.save();

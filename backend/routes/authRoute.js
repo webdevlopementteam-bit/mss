@@ -9,6 +9,7 @@ import {
   verifyResetOtp,
   resetPassword,
   refreshToken,
+  adminRefreshToken,
   logout,
   getMe,
   updateProfile,
@@ -43,6 +44,7 @@ router.post("/reset-password", validate.validateRequired(["resetToken", "newPass
 
 // TOKEN LIFECYCLE
 router.post("/refresh-token", refreshToken);
+router.post("/admin/refresh-token", adminRefreshToken);
 router.post("/logout", protect, logout);
 
 // CURRENT USER / PROFILE

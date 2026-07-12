@@ -5,6 +5,11 @@ import React, {
 import { useParams } from "react-router-dom";
 import API from "../api/axios";
 import toast from "react-hot-toast";
+import {
+  STATUS_LABELS,
+  getNextAllowedStatus,
+  isFinalStatus,
+} from "../utils/orderStatus";
 
 const AdminOrderDetails = () => {
   const { id } = useParams();
@@ -12,8 +17,8 @@ const AdminOrderDetails = () => {
   const [order, setOrder] =
     useState(null);
 
-  const [status, setStatus] =
-    useState("");
+  const [updating, setUpdating] =
+    useState(false);
 
   const fetchOrder = async () => {
     try {
@@ -21,9 +26,6 @@ const AdminOrderDetails = () => {
 
       if (res.data.success) {
         setOrder(res.data.order);
-        setStatus(
-          res.data.order.orderStatus
-        );
       }
     } catch (error) {
       console.error(error);
@@ -35,21 +37,30 @@ const AdminOrderDetails = () => {
     fetchOrder();
   }, []);
 
+  // Only the single next status in the sequential flow is ever selectable —
+  // there is nothing to "choose" beyond confirming that one move.
+  const nextStatus = order ? getNextAllowedStatus(order.orderStatus) : null;
+  const locked = order ? isFinalStatus(order.orderStatus) : false;
+
   const updateStatus =
     async () => {
+      if (!nextStatus) return;
       try {
+        setUpdating(true);
         const res = await API.put(
           `/orders/admin/status/${id}`,
-          { orderStatus: status }
+          { orderStatus: nextStatus }
         );
 
         if (res.data.success) {
-          toast.success("Status updated successfully");
+          toast.success(`Order marked as ${STATUS_LABELS[nextStatus]}`);
           fetchOrder();
         }
       } catch (error) {
         console.error(error);
         toast.error(error?.response?.data?.message || "Failed to update status");
+      } finally {
+        setUpdating(false);
       }
     };
 
@@ -317,67 +328,55 @@ const AdminOrderDetails = () => {
           Order Status
         </h2>
 
-        <div className="flex gap-4 flex-wrap">
-
-          <select
-            value={status}
-            onChange={(e) =>
-              setStatus(
-                e.target.value
-              )
-            }
-            className="border px-4 py-2 rounded-lg"
+        {locked ? (
+          // Cancelled / Delivered are final — no dropdown, nothing to update.
+          <div
+            className={`px-4 py-3 rounded-lg text-sm font-semibold ${
+              order.orderStatus === "cancelled"
+                ? "bg-red-50 text-red-700"
+                : "bg-green-50 text-green-700"
+            }`}
           >
-            <option value="pending">
-              Pending
-            </option>
+            {order.orderStatus === "cancelled"
+              ? "This order is Cancelled — it is a final status and cannot be updated."
+              : "This order has been Delivered — it is a final status and cannot be updated."}
+          </div>
+        ) : (
+          <div className="flex gap-4 flex-wrap items-center">
+            {/* Only the single next valid status is ever selectable — the
+                admin cannot skip stages or pick an arbitrary status. */}
+            <select
+              value={nextStatus || ""}
+              disabled
+              className="border px-4 py-2 rounded-lg bg-gray-50 text-gray-700"
+            >
+              {nextStatus && (
+                <option value={nextStatus}>
+                  {STATUS_LABELS[nextStatus]}
+                </option>
+              )}
+            </select>
 
-            <option value="confirmed">
-              Confirmed
-            </option>
-
-            <option value="processing">
-              Processing
-            </option>
-
-            <option value="packed">
-              Packed
-            </option>
-
-            <option value="shipped">
-              Shipped
-            </option>
-
-            <option value="out_for_delivery">
-              Out For Delivery
-            </option>
-
-            <option value="delivered">
-              Delivered
-            </option>
-
-            <option value="cancelled">
-              Cancelled
-            </option>
-          </select>
-
-          <button
-            onClick={
-              updateStatus
-            }
-            className="bg-green-600 text-white px-5 py-2 rounded-lg"
-          >
-            Update Status
-          </button>
-
-        </div>
+            <button
+              onClick={updateStatus}
+              disabled={!nextStatus || updating}
+              className="bg-green-600 text-white px-5 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {updating
+                ? "Updating..."
+                : nextStatus
+                  ? `Mark as ${STATUS_LABELS[nextStatus]}`
+                  : "No further updates"}
+            </button>
+          </div>
+        )}
 
         <p className="mt-4">
           Current Status:
           <strong>
             {" "}
             {
-              order.orderStatus
+              STATUS_LABELS[order.orderStatus] || order.orderStatus
             }
           </strong>
         </p>

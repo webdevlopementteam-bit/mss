@@ -60,7 +60,9 @@ API.interceptors.response.use(
           })
           .catch(() => {
             isRefreshing = false;
+            const subscribers = refreshSubscribers;
             refreshSubscribers = [];
+            subscribers.forEach((cb) => cb(null));
             redirectToLogin();
           });
       }
