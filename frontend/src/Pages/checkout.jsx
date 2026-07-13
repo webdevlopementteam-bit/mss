@@ -1,8 +1,9 @@
-import React, { useMemo, useState, useRef } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
 import { useShop, getProductId, getCartLineId, getLineUnitPrice } from "../context/ShopContext";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import * as orderService from "../api/orderService";
+import { loadRazorpayScript } from "../utils/loadRazorpay";
 
 const inputClass =
   "w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-primaryColor focus:ring-2 focus:ring-primaryColor/10 transition-all duration-150 bg-white placeholder:text-gray-400 text-gray-800";
@@ -68,6 +69,20 @@ const Checkout = () => {
   const total = subtotal + shipping + gst;
   const itemCount = cart.reduce((acc, item) => acc + item.quantity, 0);
 
+  // COD is a per-product setting (admin toggle at product-creation time) —
+  // if ANY item in the cart disallows it, the whole order must be prepaid
+  // (an order can't be half-COD, half-online).
+  const codAvailable = useMemo(
+    () => cart.every((item) => item.codAvailable !== false),
+    [cart]
+  );
+
+  useEffect(() => {
+    if (!codAvailable && paymentMethod === "cod") {
+      setPaymentMethod("razorpay");
+    }
+  }, [codAvailable, paymentMethod]);
+
   const handleChange = (e) =>
     setFormData({ ...formData, [e.target.name]: e.target.value });
 
@@ -109,92 +124,169 @@ const Checkout = () => {
     return true;
   };
 
+  // Builds and submits the actual order — shared by both COD (called
+  // directly) and Razorpay (called from the payment success handler, with
+  // the three razorpay_* fields the backend verifies before trusting the
+  // payment actually happened).
+  const submitOrder = async (extraPaymentFields = {}) => {
+    try {
+      const formDataToSend = new FormData();
+
+      // Customer Info
+      formDataToSend.append(
+        "customerInfo",
+        JSON.stringify({
+          fullName: formData.fullName,
+          phone: formData.phone,
+          email: formData.email,
+        })
+      );
+
+      // Address
+      formDataToSend.append(
+        "shippingAddress",
+        JSON.stringify({
+          address: formData.address,
+          city: formData.city,
+          state: formData.state,
+          pincode: formData.pincode,
+          landmark: formData.landmark,
+        })
+      );
+
+      // Products — variantId (when present) lets the backend resolve the
+      // authoritative variant price/name/sku instead of trusting the client.
+      formDataToSend.append(
+        "orderItems",
+        JSON.stringify(
+          cart.map((item) => ({
+            product: getProductId(item),
+            variantId: item.variant?._id,
+            name: item.title,
+            image: item.image,
+            price: getLineUnitPrice(item),
+            quantity: item.quantity,
+          }))
+        )
+      );
+
+      formDataToSend.append("paymentMethod", paymentMethod);
+
+      Object.entries(extraPaymentFields).forEach(([key, value]) => {
+        formDataToSend.append(key, value);
+      });
+
+      // Prescription
+      formDataToSend.append(
+        "prescription",
+        prescription
+      );
+
+      const { data } = await orderService.createOrder(formDataToSend);
+
+      toast.success("Order placed successfully");
+      // Navigate away first, then clear the cart — clearing it before navigating
+      // left the cart empty while still on this page, which briefly showed the
+      // "Nothing to checkout" empty state during the delay before the redirect.
+      navigate(`/order-success/${data.order._id}`);
+      clearCart();
+    } catch (error) {
+      console.error(error);
+
+      toast.error(
+        error.response?.data?.message || "Failed to place order"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRazorpayPayment = async () => {
+    const scriptLoaded = await loadRazorpayScript();
+    if (!scriptLoaded) {
+      toast.error("Unable to load the payment gateway. Please check your connection and try again.");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const orderItemsPayload = cart.map((item) => ({
+        product: getProductId(item),
+        variantId: item.variant?._id,
+        quantity: item.quantity,
+      }));
+
+      const { data } = await orderService.createRazorpayOrder(orderItemsPayload);
+
+      const rzp = new window.Razorpay({
+        key: data.keyId,
+        amount: data.amount,
+        currency: data.currency,
+        order_id: data.razorpayOrderId,
+        name: "Medical & Surgical Solutions",
+        description: "Order Payment",
+        prefill: {
+          name: formData.fullName,
+          email: formData.email,
+          contact: formData.phone,
+        },
+        theme: { color: "#b52327" },
+        handler: (response) => {
+          submitOrder({
+            razorpayOrderId: response.razorpay_order_id,
+            razorpayPaymentId: response.razorpay_payment_id,
+            razorpaySignature: response.razorpay_signature,
+          });
+        },
+        modal: {
+          // User closed the modal without paying — just unlock the button,
+          // no error toast needed since nothing actually went wrong.
+          ondismiss: () => setLoading(false),
+        },
+      });
+
+      rzp.on("payment.failed", (resp) => {
+        setLoading(false);
+        toast.error(resp.error?.description || "Payment failed. Please try again.");
+      });
+
+      rzp.open();
+    } catch (error) {
+      console.error(error);
+      setLoading(false);
+      toast.error(error.response?.data?.message || "Failed to initiate payment");
+    }
+  };
+
   const handlePlaceOrder = async () => {
-  if (!validateForm()) return;
+    if (!validateForm()) return;
 
-  if (cart.length === 0) {
-    toast.error("Your cart is empty");
-    return;
-  }
+    if (cart.length === 0) {
+      toast.error("Your cart is empty");
+      return;
+    }
 
-  try {
+    if (paymentMethod === "cod" && !codAvailable) {
+      toast.error("Cash on Delivery is not available for the items in your cart");
+      return;
+    }
+
     setLoading(true);
 
-    const formDataToSend = new FormData();
-
-    // Customer Info
-    formDataToSend.append(
-      "customerInfo",
-      JSON.stringify({
-        fullName: formData.fullName,
-        phone: formData.phone,
-        email: formData.email,
-      })
-    );
-
-    // Address
-    formDataToSend.append(
-      "shippingAddress",
-      JSON.stringify({
-        address: formData.address,
-        city: formData.city,
-        state: formData.state,
-        pincode: formData.pincode,
-        landmark: formData.landmark,
-      })
-    );
-
-    // Products — variantId (when present) lets the backend resolve the
-    // authoritative variant price/name/sku instead of trusting the client.
-    formDataToSend.append(
-      "orderItems",
-      JSON.stringify(
-        cart.map((item) => ({
-          product: getProductId(item),
-          variantId: item.variant?._id,
-          name: item.title,
-          image: item.image,
-          price: getLineUnitPrice(item),
-          quantity: item.quantity,
-        }))
-      )
-    );
-
-    formDataToSend.append(
-      "paymentMethod",
-      paymentMethod
-    );
-
-    // Prescription
-    formDataToSend.append(
-      "prescription",
-      prescription
-    );
-
-    const { data } = await orderService.createOrder(formDataToSend);
-
-    toast.success("Order placed successfully");
-    // Navigate away first, then clear the cart — clearing it before navigating
-    // left the cart empty while still on this page, which briefly showed the
-    // "Nothing to checkout" empty state during the delay before the redirect.
-    navigate(`/order-success/${data.order._id}`);
-    clearCart();
-
-  } catch (error) {
-    console.error(error);
-
-    toast.error(
-      error.response?.data?.message || "Failed to place order"
-    );
-  } finally {
-    setLoading(false);
-  }
-};
+    if (paymentMethod === "razorpay") {
+      await handleRazorpayPayment();
+    } else {
+      await submitOrder();
+    }
+  };
   const paymentOptions = [
     {
       value: "cod",
       label: "Cash on Delivery",
-      desc: "Pay when your order arrives",
+      desc: codAvailable
+        ? "Pay when your order arrives"
+        : "Not available for the items in your cart",
+      disabled: !codAvailable,
       icon: (
         <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
@@ -204,23 +296,13 @@ const Checkout = () => {
     },
     {
       value: "razorpay",
-      label: "Razorpay",
-      desc: "Cards, UPI & Net Banking",
+      label: "Pay Online",
+      desc: "Cards, UPI & Net Banking via Razorpay",
+      disabled: false,
       icon: (
         <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
             d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" />
-        </svg>
-      ),
-    },
-    {
-      value: "upi",
-      label: "UPI Payment",
-      desc: "PhonePe, GPay, Paytm & more",
-      icon: (
-        <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
-            d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3" />
         </svg>
       ),
     },
@@ -423,18 +505,21 @@ const Checkout = () => {
                 {paymentOptions.map((opt) => (
                   <label
                     key={opt.value}
-                    className={`flex items-center gap-3 sm:gap-4 rounded-xl p-3.5 cursor-pointer border-2 transition-all duration-150 ${
-                      paymentMethod === opt.value
-                        ? "border-primaryColor bg-primaryColor/5"
-                        : "border-gray-100 hover:border-gray-200 bg-white"
+                    className={`flex items-center gap-3 sm:gap-4 rounded-xl p-3.5 border-2 transition-all duration-150 ${
+                      opt.disabled
+                        ? "opacity-50 cursor-not-allowed border-gray-100 bg-gray-50"
+                        : paymentMethod === opt.value
+                          ? "cursor-pointer border-primaryColor bg-primaryColor/5"
+                          : "cursor-pointer border-gray-100 hover:border-gray-200 bg-white"
                     }`}
                   >
                     <input type="radio" value={opt.value}
                       checked={paymentMethod === opt.value}
+                      disabled={opt.disabled}
                       onChange={(e) => setPaymentMethod(e.target.value)}
                       className="sr-only" />
                     <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors duration-150 ${
-                      paymentMethod === opt.value ? "bg-primaryColor text-white" : "bg-gray-100 text-gray-500"
+                      !opt.disabled && paymentMethod === opt.value ? "bg-primaryColor text-white" : "bg-gray-100 text-gray-500"
                     }`}>
                       {opt.icon}
                     </div>
@@ -445,7 +530,7 @@ const Checkout = () => {
                     <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors duration-150 ${
                       paymentMethod === opt.value ? "border-primaryColor" : "border-gray-300"
                     }`}>
-                      {paymentMethod === opt.value && (
+                      {!opt.disabled && paymentMethod === opt.value && (
                         <div className="w-2 h-2 rounded-full bg-primaryColor" />
                       )}
                     </div>
@@ -457,8 +542,9 @@ const Checkout = () => {
             {/* Mobile-only Place Order button */}
             <div className="lg:hidden">
               <button
+                disabled={loading}
                 onClick={handlePlaceOrder}
-                className="w-full flex items-center justify-center gap-2 bg-primaryColor hover:opacity-90 active:scale-[0.98] text-white py-4 rounded-xl font-semibold transition-all duration-200 shadow-lg shadow-primaryColor/25 text-sm"
+                className="w-full flex items-center justify-center gap-2 bg-primaryColor hover:opacity-90 active:scale-[0.98] text-white py-4 rounded-xl font-semibold transition-all duration-200 shadow-lg shadow-primaryColor/25 text-sm disabled:opacity-60 disabled:cursor-not-allowed"
               >
              {loading ? "Placing Order..." : "Place Order"}
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

@@ -28,7 +28,7 @@ export const STATUS_LABELS = {
 
 // The forward-only lifecycle. "cancelled" is a separate terminal status
 // reachable from the cancellable statuses via cancellation, not via this chain.
-const STATUS_FLOW = [
+export const STATUS_FLOW = [
   "pending",
   "confirmed",
   "processing",
@@ -60,4 +60,18 @@ export const canAdminUpdate = (currentStatus, newStatus) => {
   if (!ORDER_STATUS.includes(newStatus)) return false;
   if (isFinalStatus(currentStatus)) return false;
   return getNextAllowedStatus(currentStatus) === newStatus;
+};
+
+// Unlike canAdminUpdate (single-step-only, for a human clicking "next"), a
+// courier webhook can legitimately skip steps if we missed an intermediate
+// scan (e.g. "out_for_delivery" arriving before we ever saw "shipped"). This
+// only guards against moving BACKWARD or touching an already-final order —
+// it does not enforce the one-step-at-a-time rule.
+export const canCourierAdvanceTo = (currentStatus, newStatus) => {
+  if (!STATUS_FLOW.includes(newStatus)) return false;
+  if (isFinalStatus(currentStatus)) return false;
+  const currentIdx = STATUS_FLOW.indexOf(currentStatus);
+  const newIdx = STATUS_FLOW.indexOf(newStatus);
+  if (currentIdx === -1) return true;
+  return newIdx > currentIdx;
 };

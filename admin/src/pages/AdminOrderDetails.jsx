@@ -20,6 +20,8 @@ const AdminOrderDetails = () => {
   const [updating, setUpdating] =
     useState(false);
 
+  // const [syncing, setSyncing] = useState(false); // DTDC shipment gateway — disabled for now
+
   const fetchOrder = async () => {
     try {
       const res = await API.get(`/orders/admin/${id}`);
@@ -63,6 +65,24 @@ const AdminOrderDetails = () => {
         setUpdating(false);
       }
     };
+
+  // DTDC shipment gateway — disabled for now (account not yet fully
+  // activated). Uncomment along with the "Shipment" card JSX below and the
+  // backend route to re-enable.
+  // const syncTracking = async () => {
+  //   try {
+  //     setSyncing(true);
+  //     const res = await API.post(`/orders/admin/${id}/sync-tracking`);
+  //     if (res.data.success) {
+  //       toast.success("Fetched latest tracking from DTDC");
+  //       console.log("DTDC tracking response:", res.data.tracking);
+  //     }
+  //   } catch (error) {
+  //     toast.error(error?.response?.data?.message || "Failed to sync tracking");
+  //   } finally {
+  //     setSyncing(false);
+  //   }
+  // };
 
   if (!order) {
     return (
@@ -320,6 +340,63 @@ const AdminOrderDetails = () => {
           }
         </p>
       </div>
+
+      {/* Shipment / Tracking — DTDC gateway disabled for now (account not yet
+          fully activated). Uncomment this card, syncTracking above, and the
+          backend route/controller together to re-enable.
+
+      <div className="bg-white p-6 rounded-xl shadow mt-6">
+        <h2 className="font-bold text-xl mb-4">
+          Shipment
+        </h2>
+
+        {order.trackingId ? (
+          <div className="space-y-2">
+            <p>
+              <strong>Courier:</strong> {order.courierPartner || "DTDC"}
+            </p>
+            <p>
+              <strong>AWB / Tracking No.:</strong>{" "}
+              <span className="font-mono">{order.trackingId}</span>
+            </p>
+            {order.trackingUrl && (
+              <p>
+                <a
+                  href={order.trackingUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-blue-600 underline"
+                >
+                  Open DTDC tracking page
+                </a>
+                <span className="text-gray-500">
+                  {" "}
+                  (enter the AWB above to check status)
+                </span>
+              </p>
+            )}
+
+            <button
+              onClick={syncTracking}
+              disabled={syncing}
+              className="mt-2 bg-blue-600 text-white px-4 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {syncing ? "Syncing..." : "Sync Tracking Now"}
+            </button>
+            <p className="text-xs text-gray-400">
+              Status updates automatically as DTDC scans the shipment — this
+              button just checks right now instead of waiting.
+            </p>
+          </div>
+        ) : (
+          <p className="text-gray-500">
+            {nextStatus === "shipped"
+              ? "A DTDC shipment will be booked automatically when this order is marked as Shipped."
+              : "No shipment booked yet."}
+          </p>
+        )}
+      </div>
+      */}
 
       {/* Status Management */}
 

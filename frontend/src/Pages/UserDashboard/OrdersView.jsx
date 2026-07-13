@@ -243,18 +243,37 @@ export default function OrdersView() {
                   {/* Action buttons */}
                   <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
                     {o.trackingUrl && (
-                      <button
-                        onClick={() => window.open(o.trackingUrl, "_blank")}
-                        style={{
-                          display: "inline-flex", alignItems: "center", gap: 7,
-                          padding: "9px 18px", borderRadius: 9, fontSize: 13, fontWeight: 700,
-                          cursor: "pointer", border: `1.5px solid ${C.info}`,
-                          background: C.infoBg, color: C.info,
-                        }}>
-                        <Ico d={I.truck} size={15} color={C.info} />
-                        Track Order
-                        <Ico d={I.link} size={12} color={C.info} />
-                      </button>
+                      <>
+                        <button
+                          onClick={() => window.open(o.trackingUrl, "_blank")}
+                          style={{
+                            display: "inline-flex", alignItems: "center", gap: 7,
+                            padding: "9px 18px", borderRadius: 9, fontSize: 13, fontWeight: 700,
+                            cursor: "pointer", border: `1.5px solid ${C.info}`,
+                            background: C.infoBg, color: C.info,
+                          }}>
+                          <Ico d={I.truck} size={15} color={C.info} />
+                          Track Order
+                          <Ico d={I.link} size={12} color={C.info} />
+                        </button>
+
+                        {o.trackingId && (
+                          <button
+                            onClick={() => {
+                              navigator.clipboard?.writeText(o.trackingId);
+                              showToast("Tracking ID copied — paste it on the DTDC tracking page.");
+                            }}
+                            style={{
+                              display: "inline-flex", alignItems: "center", gap: 7,
+                              padding: "9px 18px", borderRadius: 9, fontSize: 13, fontWeight: 700,
+                              cursor: "pointer", border: `1.5px solid ${C.border}`,
+                              background: "#fff", color: C.muted,
+                            }}>
+                            <Ico d={I.copy} size={14} color={C.muted} />
+                            Copy Tracking ID
+                          </button>
+                        )}
+                      </>
                     )}
 
                     {canCancel && (

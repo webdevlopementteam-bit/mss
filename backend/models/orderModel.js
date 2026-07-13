@@ -133,7 +133,7 @@ const orderSchema = new mongoose.Schema(
         // Payment
         paymentMethod: {
             type: String,
-            enum: ["cod", "razorpay", "upi"],
+            enum: ["cod", "razorpay"],
             default: "cod",
         },
 
@@ -187,7 +187,7 @@ const orderSchema = new mongoose.Schema(
                 message: String,
                 updatedBy: {
                     type: String,
-                    enum: ["User", "Admin", "System"],
+                    enum: ["User", "Admin", "System", "DTDC"],
                     default: "System",
                 },
                 updatedAt: {

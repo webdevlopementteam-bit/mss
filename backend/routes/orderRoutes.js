@@ -1,6 +1,7 @@
 import express from "express";
 import {
   createOrder,
+  createRazorpayOrder,
   getMyOrders,
   getSingleOrder,
   getAllOrders,
@@ -8,6 +9,7 @@ import {
   updatePaymentStatus,
   cancelOrder,
   getSingleOrderAdmin,
+  // syncOrderTracking, // DTDC shipment gateway — disabled for now
 } from "../controllers/orderController.js";
 
 import {
@@ -24,6 +26,13 @@ router.post(
   requireProfileComplete,
   upload.single("prescription"),
   createOrder
+);
+
+router.post(
+  "/razorpay/create-order",
+  protect,
+  requireProfileComplete,
+  createRazorpayOrder
 );
 
 router.get("/my-orders", protect, getMyOrders);
@@ -65,5 +74,13 @@ router.put(
   checkPermission("manage_orders"),
   updatePaymentStatus
 );
+
+// DTDC shipment gateway — disabled for now (account not yet fully activated).
+// router.post(
+//   "/admin/:id/sync-tracking",
+//   protect,
+//   checkPermission("manage_orders"),
+//   syncOrderTracking
+// );
 
 export default router;

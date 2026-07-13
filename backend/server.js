@@ -20,6 +20,9 @@ import ratingRoutes from "./routes/ratingRoute.js";
 import homeCmsRoutes from "./routes/homeCmsRoutes.js";
 import uploadRoutes from "./routes/uploadRoute.js";
 import orderRoutes from "./routes/orderRoutes.js";
+// DTDC shipment gateway webhook — disabled for now (account not yet fully
+// activated). Uncomment along with the app.use() below to re-enable.
+// import webhookRoutes from "./routes/webhookRoutes.js";
 import path from "path";
 import cors from "cors";
 import cookieParser from "cookie-parser";
@@ -79,6 +82,7 @@ app.use("/api/rating",ratingRoutes);
 app.use("/api/cms", homeCmsRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/orders", orderRoutes);
+// app.use("/api/webhooks", webhookRoutes);
 
 // 404 handler 
 app.use((req, res) => {
