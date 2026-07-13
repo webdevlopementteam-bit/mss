@@ -3,9 +3,23 @@ import { createContext, useContext, useState } from "react";
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(
-    JSON.parse(localStorage.getItem("user")) || null
-  );
+  const getStoredUser = () => {
+  try {
+    const data = localStorage.getItem("user");
+
+    if (!data || data === "undefined" || data === "null") {
+      return null;
+    }
+
+    return JSON.parse(data);
+  } catch (err) {
+    console.error("Invalid user in localStorage:", err);
+    localStorage.removeItem("user");
+    return null;
+  }
+};
+
+const [user, setUser] = useState(getStoredUser);
 
   const login = (data) => {
     localStorage.setItem("token", data.token);

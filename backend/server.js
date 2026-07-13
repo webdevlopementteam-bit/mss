@@ -28,9 +28,9 @@ import helmet from "helmet";
 
 const app = express();
 const allowedOrigins = [
-  "https://admin.medicalsurgical.cybertricksmedia.in",
-  "https://medicalsurgical.cybertricksmedia.in",   // 🔥 ADD THIS
-  "https://www.medicalsurgical.cybertricksmedia.in",
+  "https://admin.mss.cybertricksmedia.in",
+  "https://mss.cybertricksmedia.in",
+  "https://www.mss.cybertricksmedia.in",
   "http://localhost:5173",
   "http://localhost:5174"
 ];
