@@ -293,9 +293,6 @@ useEffect(() => {
             <li className="text-white">Contact</li>
           </Link>
 
-          <Link to={accountLink}>
-            <li className="text-white">Account</li>
-          </Link>
         </ul>
 
         {/* Right */}
@@ -305,10 +302,10 @@ useEffect(() => {
             Recently Viewed
           </Link>
 
-          <div className="text-white">
-            <i className="fa-solid fa-truck-fast mr-2 text-white"></i>
-            Track My Order
-          </div>
+         <Link to="/user-dashboard?tab=orders&filter=shipped" className="text-white">
+  <i className="fa-solid fa-truck-fast mr-2 text-white"></i>
+  Track My Order
+</Link>
         </div>
       </div>
 

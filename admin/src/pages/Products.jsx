@@ -30,6 +30,7 @@ export default function Products() {
   const [deleteId, setDeleteId] = useState(null);
   const [currentVariant, setCurrentVariant] = useState([]);
   const [confirmVariantDelete, setConfirmVariantDelete] = useState(false);
+  const [clients, setClients] = useState([]);
   const [backupBasic, setBackupBasic] = useState({
     price: "",
     salePrice: "",
@@ -63,6 +64,7 @@ export default function Products() {
     metaTitle: "",
     metaDescription: "",
     deliveryCharge: "",
+    client: "",
     images: [],
     preview: [],
     homeSections: [],
@@ -88,6 +90,7 @@ export default function Products() {
       packing: "",
       metaTitle: "",
       metaDescription: "",
+      client: "",
       deliveryCharge: "",
       images: [],
       preview: [],
@@ -124,20 +127,21 @@ export default function Products() {
       url += `&${params.join("&")}`;
     }
 
-    const [p, b, c, a] = await Promise.all([
-      API.get(url),
-      API.get("/brand"),
-      API.get("/category"),
-      API.get("/attribute"),
-    ]);
+   const [p, b, c, a, cl] = await Promise.all([
+  API.get(url),
+  API.get("/brand"),
+  API.get("/category"),
+  API.get("/attribute"),
+  API.get("/client"),
+]);
 
-    setProducts(p.data.data || []);
-    setTotalPages(p.data.totalPages || 1);
-    setBrands(b.data.data || []);
-    setCategories(c.data.data || []);
-    setAttributes(a.data.data || []);
-  };
-
+setProducts(p.data.data || []);
+setTotalPages(p.data.totalPages || 1);
+setBrands(b.data.data || []);
+setCategories(c.data.data || []);
+setAttributes(a.data.data || []);
+setClients(cl.data.data || []);
+  }
   useEffect(() => {
     const delay = setTimeout(() => {
       fetchAll();
@@ -251,16 +255,11 @@ export default function Products() {
           ].includes(k)
         ) {
           return;
-        } else if (k !== "defaultCategory") {
-          fd.append(k, form[k]);
-        }
+        }  else {
+  fd.append(k, form[k]);
+}
       });
-      fd.append(
-  "homeSections",
-  JSON.stringify(
-    form.homeSections || []
-  )
-);
+      fd.append("homeSections", JSON.stringify(form.homeSections || []));
 
       // ================= NUMBERS FIX =================
       // ✅ FIX HASVARIANTS TYPE
@@ -276,9 +275,7 @@ export default function Products() {
       fd.append("moq", Number(form.moq || 0));
       fd.append("deliveryCharge", Number(form.deliveryCharge || 0));
 
-      if (form.defaultCategory) {
-        fd.append("defaultCategory", form.defaultCategory);
-      }
+    
 
       // ================= IMAGES FIX =================
 
@@ -306,8 +303,8 @@ export default function Products() {
         for (let i = 0; i < variants.length; i++) {
           const v = variants[i];
 
-          if (!v.price || !v.quantity || !v.sku) {
-            toast.error(`Variant ${i + 1}: fill price, quantity & SKU`);
+          if (!v.price || !v.quantity) {
+            toast.error(`Variant ${i + 1}: fill price, quantity`);
             return;
           }
 
@@ -379,7 +376,7 @@ export default function Products() {
 
       // 🔥 FIXES
       category: product.category?.map((c) => c._id) || [],
-      defaultCategory: product.defaultCategory?._id || "", // ✅ MAIN FIX
+      client: product.client?._id || "", // ✅ MAIN FIX
       brand: product.brand?._id || "",
 
       price: product.price?.toString() || "",
@@ -389,7 +386,7 @@ export default function Products() {
       moq: product.moq?.toString() || "",
       deliveryCharge: product.deliveryCharge?.toString() || "",
       hsn: product.hsn?.toString() || "",
-      homeSections:product.homeSections || [],
+      homeSections: product.homeSections || [],
       existingImages: product.images || [],
       preview: product.images?.map((img) => `${IMG_URL}/${img}`) || [],
     });
@@ -399,7 +396,6 @@ export default function Products() {
     // string so it round-trips correctly when this variant set is re-submitted.
     const formatted = variantData.map((v) => ({
       ...v,
-      sku: v.sku || "",
       isActive: v.isActive !== false,
       attributes: v.attributes.map((a) => ({
         attributeId: a.attributeId?._id || a.attributeId,
@@ -688,16 +684,16 @@ export default function Products() {
                   </td>
                   <td className="p-4 flex items-center gap-3 text-white">
                     <img
-  src={
-    p.images?.[0]
-      ? p.images[0].startsWith("http")
-        ? p.images[0]
-        : `${IMG_URL.replace(/\/$/, "")}/${p.images[0]}`
-      : "/no-image.png"
-  }
-  onError={(e) => (e.target.src = "/no-image.png")}
-  className="w-12 h-12 rounded-lg object-cover border border-white/10"
-/>
+                      src={
+                        p.images?.[0]
+                          ? p.images[0].startsWith("http")
+                            ? p.images[0]
+                            : `${IMG_URL.replace(/\/$/, "")}/${p.images[0]}`
+                          : "/no-image.png"
+                      }
+                      onError={(e) => (e.target.src = "/no-image.png")}
+                      className="w-12 h-12 rounded-lg object-cover border border-white/10"
+                    />
                     <span className="text-white">{p.title}</span>
                   </td>
 
@@ -711,9 +707,7 @@ export default function Products() {
 
                   <td className="p-4 text-white">{getSalePriceRange(p)}</td>
 
-                  <td className="p-4 text-white">
-                    {getTotalStock(p)}
-                  </td>
+                  <td className="p-4 text-white">{getTotalStock(p)}</td>
 
                   <td>{getStatus(p)}</td>
 
@@ -743,7 +737,7 @@ export default function Products() {
                       }}
                     />
                   </td>
-                                     {/* ACTION */}
+                  {/* ACTION */}
                   <td className="p-4 flex gap-2">
                     <button
                       onClick={() => handleEdit(p)}
@@ -1154,19 +1148,26 @@ export default function Products() {
                 </div>
 
                 {/* DEFAULT CATEGORY */}
+                {/* CLIENT */}
                 <div className="col-span-2">
-                  <label className="label">Default Category</label>
+                  <label className="label">Client</label>
                   <select
                     className="input"
-                    value={form.defaultCategory}
+                    value={form.client || ""}
                     onChange={(e) =>
-                      setForm({ ...form, defaultCategory: e.target.value })
+                      setForm({ ...form, client: e.target.value })
                     }
                   >
-                    <option value="" className="text-white">Select Default</option>
-                    {categories.map((c) => (
-                      <option key={c._id} value={c._id} className="text-white">
-                        {c.name}
+                    <option value="" className="text-white">
+                      Select Client
+                    </option>
+                    {clients.map((cl) => (
+                      <option
+                        key={cl._id}
+                        value={cl._id}
+                        className="text-white"
+                      >
+                        {cl.name}
                       </option>
                     ))}
                   </select>
@@ -1329,59 +1330,50 @@ export default function Products() {
                   />
                 </div> */}
 
-                 <div className="col-span-2 mt-4">
-  <label className="label">
-    Home Page Sections
-  </label>
+                <div className="col-span-2 mt-4">
+                  <label className="label">Home Page Sections</label>
 
-  <div className="grid grid-cols-2 gap-3 mt-2">
+                  <div className="grid grid-cols-2 gap-3 mt-2">
+                    {[
+                      "trending",
+                      "featured",
+                      "popular",
+                      "bestseller",
+                      "toprated",
+                      "onsale",
+                    ].map((section) => (
+                      <label
+                        key={section}
+                        className="flex items-center gap-2 text-white"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={form.homeSections?.includes(section)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setForm({
+                                ...form,
+                                homeSections: [
+                                  ...(form.homeSections || []),
+                                  section,
+                                ],
+                              });
+                            } else {
+                              setForm({
+                                ...form,
+                                homeSections: form.homeSections.filter(
+                                  (s) => s !== section,
+                                ),
+                              });
+                            }
+                          }}
+                        />
 
-    {[
-      "trending",
-      "featured",
-      "popular",
-      "bestseller",
-      "toprated",
-      "onsale",
-    ].map((section) => (
-      <label
-        key={section}
-        className="flex items-center gap-2 text-white"
-      >
-        <input
-          type="checkbox"
-          checked={
-            form.homeSections?.includes(
-              section
-            )
-          }
-          onChange={(e) => {
-            if (e.target.checked) {
-              setForm({
-                ...form,
-                homeSections: [
-                  ...(form.homeSections || []),
-                  section,
-                ],
-              });
-            } else {
-              setForm({
-                ...form,
-                homeSections:
-                  form.homeSections.filter(
-                    (s) =>
-                      s !== section
-                  ),
-              });
-            }
-          }}
-        />
-
-        {section}
-      </label>
-    ))}
-  </div>
-</div>
+                        {section}
+                      </label>
+                    ))}
+                  </div>
+                </div>
 
                 {/* TOGGLES */}
                 <div className="flex justify-between col-span-2 mt-2">
@@ -1395,7 +1387,7 @@ export default function Products() {
                 </div>
                 <div className="flex justify-between col-span-2">
                   <span className="text-white">Published</span>
-                 
+
                   <Toggle
                     value={form.isPublished}
                     onChange={() =>
@@ -1537,7 +1529,9 @@ export default function Products() {
                                               ...prev,
                                               [attrId]: e.target.checked
                                                 ? [...current, v]
-                                                : current.filter((x) => x !== v),
+                                                : current.filter(
+                                                    (x) => x !== v,
+                                                  ),
                                             };
                                           });
                                         }}
@@ -1569,7 +1563,9 @@ export default function Products() {
 
                         for (let attrId of selectedAttributes) {
                           if (!selectedValues[attrId]?.length) {
-                            toast.error("Select at least one value for each attribute");
+                            toast.error(
+                              "Select at least one value for each attribute",
+                            );
                             return;
                           }
                         }
@@ -1581,20 +1577,25 @@ export default function Products() {
                           const next = [];
                           for (const combo of combos) {
                             for (const value of values) {
-                              next.push([...combo, { attributeId: attrId, value }]);
+                              next.push([
+                                ...combo,
+                                { attributeId: attrId, value },
+                              ]);
                             }
                           }
                           combos = next;
                         }
 
                         const existingCombos = new Set(
-                          variants.map((v) => v.combination.toLowerCase())
+                          variants.map((v) => v.combination.toLowerCase()),
                         );
                         const newRows = [];
                         let skipped = 0;
 
                         for (const attrs of combos) {
-                          const combination = attrs.map((a) => a.value).join("-");
+                          const combination = attrs
+                            .map((a) => a.value)
+                            .join("-");
                           if (existingCombos.has(combination.toLowerCase())) {
                             skipped++;
                             continue;
@@ -1606,17 +1607,20 @@ export default function Products() {
                             price: "",
                             salePrice: "",
                             quantity: "",
-                            sku: "",
                             isActive: true,
                           });
                         }
 
                         if (newRows.length > 0) {
                           setVariants((prev) => [...prev, ...newRows]);
-                          toast.success(`${newRows.length} variant(s) generated`);
+                          toast.success(
+                            `${newRows.length} variant(s) generated`,
+                          );
                         }
                         if (skipped > 0) {
-                          toast(`${skipped} combination(s) already existed and were skipped`);
+                          toast(
+                            `${skipped} combination(s) already existed and were skipped`,
+                          );
                         }
 
                         // reset the picker so the next batch starts fresh
@@ -1631,13 +1635,14 @@ export default function Products() {
 
                     {selectedAttributes.length > 0 &&
                       selectedAttributes.every(
-                        (id) => (selectedValues[id]?.length || 0) > 0
+                        (id) => (selectedValues[id]?.length || 0) > 0,
                       ) && (
                         <span className="text-white/50 text-sm">
                           Will generate{" "}
                           {selectedAttributes.reduce(
-                            (acc, id) => acc * (selectedValues[id]?.length || 0),
-                            1
+                            (acc, id) =>
+                              acc * (selectedValues[id]?.length || 0),
+                            1,
                           )}{" "}
                           variant(s)
                         </span>
@@ -1662,8 +1667,10 @@ export default function Products() {
                             <th className="p-3 text-white">Price</th>
                             <th className="p-3 text-white">Sale</th>
                             <th className="p-3 text-white">Qty</th>
-                            <th className="p-3 text-white">SKU</th>
-                            <th className="p-3 text-white text-center">Status</th>
+                            {/* <th className="p-3 text-white">SKU</th> */}
+                            <th className="p-3 text-white text-center">
+                              Status
+                            </th>
                             <th className="p-3 text-white text-right">
                               Action
                             </th>
@@ -1732,7 +1739,7 @@ export default function Products() {
                                 />
                               </td>
 
-                              <td className="p-3">
+                              {/* <td className="p-3">
                                 <input
                                   className="input-sm"
                                   value={v.sku}
@@ -1742,14 +1749,16 @@ export default function Products() {
                                     setVariants(copy);
                                   }}
                                 />
-                              </td>
+                              </td> */}
 
                               <td className="p-3 text-center">
                                 <Toggle
                                   value={v.isActive !== false}
                                   onChange={() => {
                                     const copy = [...variants];
-                                    copy[i].isActive = !(copy[i].isActive !== false);
+                                    copy[i].isActive = !(
+                                      copy[i].isActive !== false
+                                    );
                                     setVariants(copy);
                                   }}
                                 />

@@ -1,8 +1,8 @@
 import mongoose from "mongoose";
 
 const productSchema = new mongoose.Schema({
-  title: { 
-    type: String, 
+  title: {
+    type: String,
     required: true,
     trim: true
   },
@@ -20,21 +20,26 @@ const productSchema = new mongoose.Schema({
   metaTitle: String,
   metaDescription: String,
 
+  // images: {
+  //   type: [String],
+  //   required: true,
+  //   validate: {
+  //     validator: function (value) {
+  //       return value.length > 0;
+  //     },
+  //     message: "At least one product image is required"
+  //   }
+  // },
+
   images: {
   type: [String],
-  required: true,
-  validate: {
-    validator: function (value) {
-      return value.length > 0;
-    },
-    message: "At least one product image is required"
-  }
+  default: []
 },
 
-  sku: {
-    type: String,
-    trim: true
-  },
+  // sku: {
+  //   type: String,
+  //   trim: true
+  // },
 
   hsn: Number,
 
@@ -44,9 +49,9 @@ const productSchema = new mongoose.Schema({
     required: true
   }],
 
-  defaultCategory: {
+  client: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Category"
+    ref: "Client"
   },
 
   price: {
@@ -59,11 +64,11 @@ const productSchema = new mongoose.Schema({
     type: Number,
     min: 0,
     validate: {
-  validator: function (value) {
-    if (!this.price) return true;
-    return value <= this.price;
-  }
-}
+      validator: function (value) {
+        if (!this.price) return true;
+        return value <= this.price;
+      }
+    }
   },
 
   deliveryCharge: {
@@ -82,8 +87,8 @@ const productSchema = new mongoose.Schema({
     default: 0
   },
 
-  slug: { 
-    type: String, 
+  slug: {
+    type: String,
     unique: true,
     lowercase: true
   },
@@ -111,22 +116,22 @@ const productSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
-isPublished: {
-  type: Boolean,
-  default: true
-},
-homeSections: {
-  type: [String],
-  enum: [
-    "trending",
-    "featured",
-    "popular",
-    "bestseller",
-    "toprated",
-    "onsale"
-  ],
-  default: []
-}
+  isPublished: {
+    type: Boolean,
+    default: true
+  },
+  homeSections: {
+    type: [String],
+    enum: [
+      "trending",
+      "featured",
+      "popular",
+      "bestseller",
+      "toprated",
+      "onsale"
+    ],
+    default: []
+  }
 
 }, { timestamps: true });
 

@@ -40,12 +40,12 @@ const variantSchema = new mongoose.Schema({
     default: 0
   },
 
-  sku: {
-    type: String,
-    trim: true,
-    unique: true,
-    sparse: true
-  },
+  // sku: {
+  //   type: String,
+  //   trim: true,
+  //   unique: true,
+  //   sparse: true
+  // },
 
   isActive: {
     type: Boolean,

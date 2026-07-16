@@ -1,6 +1,14 @@
 import { Link } from "react-router-dom";
 import { useShop, getCartLineId, getLineUnitPrice } from "../context/ShopContext";
 
+const IMG_URL = import.meta.env.VITE_IMAGE_BASE_URL;   // ✅ add this
+
+const getImage = (item) => {
+  const img = item.images?.[0] || item.image;
+  if (!img) return null;
+  return img.startsWith("http") ? img : `${IMG_URL}/${img}`;
+};
+
 export default function Cart() {
   const { cart, removeFromCart, updateQuantity } = useShop();
 
@@ -66,13 +74,13 @@ export default function Cart() {
                 <div className="flex items-start gap-3 sm:gap-4">
 
                   {/* Thumbnail */}
-                  {item.images?.[0] || item.image ? (
-                    <img
-                      src={item.images?.[0] || item.image}
-                      alt={item.title ?? item.name}
-                      className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl object-cover flex-shrink-0 bg-gray-100"
-                    />
-                  ) : (
+                  {getImage(item) ? (
+  <img
+    src={getImage(item)}
+    alt={item.title ?? item.name}
+    className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl object-cover flex-shrink-0 bg-gray-100"
+  />
+) : (
                     <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-gradient-to-br from-primaryColor/10 to-primaryColor/20 flex-shrink-0 flex items-center justify-center">
                       <svg className="w-6 h-6 sm:w-7 sm:h-7 text-primaryColor/50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}

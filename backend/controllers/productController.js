@@ -20,7 +20,7 @@ const normalizeCombination = (attrs) => {
 
 const buildVariantDocs = (productId, rawVariants) => {
   const seenCombinations = new Set();
-  const seenSkus = new Set();
+  // const seenSkus = new Set();
 
   return rawVariants.map((v, index) => {
     if (!Array.isArray(v.attributes) || v.attributes.length === 0) {
@@ -45,14 +45,14 @@ const buildVariantDocs = (productId, rawVariants) => {
     }
     seenCombinations.add(comboKey);
 
-    const sku = (v.sku || "").trim();
-    if (sku) {
-      const skuKey = sku.toLowerCase();
-      if (seenSkus.has(skuKey)) {
-        throw new Error(`Duplicate SKU in variants: ${sku}`);
-      }
-      seenSkus.add(skuKey);
-    }
+    // const sku = (v.sku || "").trim();
+    // if (sku) {
+    //   const skuKey = sku.toLowerCase();
+    //   if (seenSkus.has(skuKey)) {
+    //     throw new Error(`Duplicate SKU in variants: ${sku}`);
+    //   }
+    //   seenSkus.add(skuKey);
+    // }
 
     return {
       productId,
@@ -67,7 +67,7 @@ const buildVariantDocs = (productId, rawVariants) => {
       isActive: v.isActive === undefined ? true : Boolean(v.isActive),
       // Only include sku when it has a real value — writing "" would defeat
       // the sparse unique index and re-introduce the duplicate-key bug.
-      ...(sku ? { sku } : {}),
+      // ...(sku ? { sku } : {}),
     };
   });
 };
@@ -79,16 +79,16 @@ const buildVariantDocs = (productId, rawVariants) => {
 const syncProductVariants = async (productId, rawVariants) => {
   const docs = buildVariantDocs(productId, rawVariants);
 
-  const nonEmptySkus = docs.filter((d) => d.sku).map((d) => d.sku);
-  if (nonEmptySkus.length > 0) {
-    const conflict = await Variant.findOne({
-      sku: { $in: nonEmptySkus },
-      productId: { $ne: productId },
-    });
-    if (conflict) {
-      throw new Error(`SKU "${conflict.sku}" is already used by another product`);
-    }
-  }
+  // const nonEmptySkus = docs.filter((d) => d.sku).map((d) => d.sku);
+  // if (nonEmptySkus.length > 0) {
+  //   const conflict = await Variant.findOne({
+  //     sku: { $in: nonEmptySkus },
+  //     productId: { $ne: productId },
+  //   });
+  //   if (conflict) {
+  //     throw new Error(`SKU "${conflict.sku}" is already used by another product`);
+  //   }
+  // }
 
   await Variant.deleteMany({ productId });
   return Variant.insertMany(docs);
@@ -107,9 +107,8 @@ export const createProduct = async (req, res) => {
       gst,
       quantity,
       category,
-      defaultCategory,
+      client,
       brand,
-      sku,
       hsn,
       deliveryCharge,
       referenceNo,
@@ -130,12 +129,12 @@ export const createProduct = async (req, res) => {
       });
     }
 
-    if (!req.files || req.files.length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: "Product images are required",
-      });
-    }
+    // if (!req.files || req.files.length === 0) {
+    //   return res.status(400).json({
+    //     success: false,
+    //     message: "Product images are required",
+    //   });
+    // }
 
     const priceNum = Number(req.body.price);
     const saleNum = Number(req.body.salePrice);
@@ -177,12 +176,11 @@ export const createProduct = async (req, res) => {
       quantity: finalHasVariants ? 0 : quantity,
       isPublished: typeof isPublished !== "undefined" ? isPublished : true,
       homeSections: homeSections
-  ? JSON.parse(homeSections)
-  : [],
+        ? JSON.parse(homeSections)
+        : [],
       category,
-      defaultCategory: defaultCategory || undefined,
+      client: client || undefined,
       brand: brand || undefined,
-      sku,
       hsn,
       deliveryCharge,
       referenceNo,
@@ -243,7 +241,6 @@ export const getAllProduct = async (req, res) => {
       andConditions.push({
         $or: [
           { title: { $regex: search, $options: "i" } },
-          { sku: { $regex: search, $options: "i" } },
           /^\d+$/.test(search) ? { hsn: Number(search) } : null
         ].filter(Boolean)
       });
@@ -362,7 +359,7 @@ export const getAllProduct = async (req, res) => {
         }
       },
 
-      
+
       // 📦 STOCK FILTER (IMPORTANT)
       ...(req.query.status === "outofstock"
         ? [{ $match: { totalStock: 0 } }]
@@ -405,8 +402,8 @@ export const getAllProduct = async (req, res) => {
 export const getOneProduct = async (req, res) => {
   try {
     const product = mongoose.Types.ObjectId.isValid(req.params.id)
-      ? await Product.findById(req.params.id).populate("brand category defaultCategory")
-      : await Product.findOne({ slug: req.params.id }).populate("brand category defaultCategory");
+      ? await Product.findById(req.params.id).populate("brand category client")
+      : await Product.findOne({ slug: req.params.id }).populate("brand category client");
 
     if (!product) {
       return res.status(404).json({
@@ -458,9 +455,8 @@ export const updateProduct = async (req, res) => {
       gst,
       quantity,
       category,
-      defaultCategory,
+      client,
       brand,
-      sku,
       hsn,
       deliveryCharge,
       referenceNo,
@@ -527,14 +523,13 @@ export const updateProduct = async (req, res) => {
         product.quantity = Number(quantity);
       }
     }
-      if (homeSections) {
-  product.homeSections = JSON.parse(homeSections);
-}
+    if (homeSections) {
+      product.homeSections = JSON.parse(homeSections);
+    }
     if (typeof gst !== "undefined") product.gst = gst;
     if (category) product.category = category;
-    if (defaultCategory) product.defaultCategory = defaultCategory;
+    if (client) product.client = client;
     if (brand) product.brand = brand;
-    if (sku) product.sku = sku;
     if (hsn) product.hsn = hsn;
     if (deliveryCharge) product.deliveryCharge = deliveryCharge;
     if (referenceNo) product.referenceNo = referenceNo;
@@ -656,7 +651,7 @@ export const exportProductsCSV = async (req, res) => {
     const products = await Product.find()
       .populate("brand")
       .populate("category")
-      .populate("defaultCategory")
+      .populate("client")
       .lean();
 
     const variants = await Variant.find()
@@ -678,7 +673,6 @@ export const exportProductsCSV = async (req, res) => {
         price: p.price,
         salePrice: p.salePrice,
         quantity: p.quantity,
-        sku: p.sku,
         hsn: p.hsn,
         gst: p.gst,
         moq: p.moq,
@@ -689,7 +683,7 @@ export const exportProductsCSV = async (req, res) => {
         isPublished: p.isPublished,
         brand: p.brand?.name || "",
         category: p.category?.map(c => c.name).join("|") || "",
-        defaultCategory: p.defaultCategory?.name || "",
+        client: p.client?.name || "",
         images: p.images?.join("|") || ""
       };
 
@@ -707,7 +701,6 @@ export const exportProductsCSV = async (req, res) => {
           price: v.price,
           salePrice: v.salePrice,
           quantity: v.quantity,
-          sku: v.sku,
           attributes: v.attributes
             ?.map(a => `${a.attributeId.displayName}:${a.value}`)
             .join("|")
@@ -781,7 +774,7 @@ export const importProductsCSV = async (req, res) => {
                   salePrice: row.hasVariants === "true" ? 0 : Number(row.salePrice || 0),
                   quantity: row.hasVariants === "true" ? 0 : Number(row.quantity || 0),
 
-                  sku: row.sku || "",
+                  
                   hsn: Number(row.hsn || 0),
                   gst: Number(row.gst || 0),
 
@@ -795,7 +788,6 @@ export const importProductsCSV = async (req, res) => {
                     : [],
 
                   category: [categoryDoc._id],
-                  defaultCategory: categoryDoc._id,
                   brand: brandDoc?._id || null,
 
                   hasVariants: row.hasVariants === "true",
@@ -870,7 +862,7 @@ export const importProductsCSV = async (req, res) => {
                   price: Number(row.price || 0),
                   salePrice: Number(row.salePrice || 0),
                   quantity: Number(row.quantity || 0),
-                  sku: row.sku || ""
+                  // sku: row.sku || ""
                 });
               }
             }

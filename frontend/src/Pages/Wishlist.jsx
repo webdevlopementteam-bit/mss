@@ -1,6 +1,14 @@
 import { useShop, getProductId } from "../context/ShopContext";
 import { Link } from "react-router-dom";
 
+const IMG_URL = import.meta.env.VITE_IMAGE_BASE_URL;   // ✅ add this
+
+const getImage = (item) => {
+  const img = item.images?.[0] || item.image;
+  if (!img) return null;
+  return img.startsWith("http") ? img : `${IMG_URL}/${img}`;
+};
+
 export default function Wishlist() {
   const { wishlist, removeFromWishlist, addToCart } = useShop();
 
@@ -78,7 +86,7 @@ export default function Wishlist() {
       <div className="px-4 sm:px-6 lg:px-side pb-16">
         <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 sm:gap-5">
           {wishlist.map((item) => {
-            const image = item.images?.[0] || item.image;
+            const image = getImage(item);
             const name = item.title ?? item.name;
             const price = item.salePrice ?? item.price;
 
