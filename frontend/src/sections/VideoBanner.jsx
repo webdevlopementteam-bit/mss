@@ -1,24 +1,33 @@
-import React from 'react'
-import banner1 from "../assets/home/banner1.jpg";
+import React, { useRef, useState } from "react";
+import bannerVideo from "../assets/videobanner.mp4";
 
 export const VideoBanner = () => {
+  const videoRef = useRef(null);
+  const [muted, setMuted] = useState(true);
+
+  const toggleMute = () => {
+    if (videoRef.current) {
+      videoRef.current.muted = !muted;
+      setMuted(!muted);
+    }
+  };
+
   return (
-   <>
-    <div
-           className="mt-16 py-44 flex justify-center items-center  "
-           style={{
-             backgroundImage: `url(${banner1})`,
-             backgroundPosition: "center center",
-             backgroundSize: "cover",
-           }}
-         >
-           <a
-             href="#"
-             className="bg-primaryColor rounded-full w-16 h-16 flex justify-center items-center animate-ringing"
-           >
-             <i className="fa-solid fa-play text-white text-xl"></i>
-           </a>
-         </div>
-   </>
-  )
-}
+    <div className="lg:mt-16 relative overflow-hidden flex justify-center items-center h-[150px] md:h-[500px]">
+      <video
+        ref={videoRef}
+        src={bannerVideo}
+        autoPlay
+        muted={muted}
+        loop
+        playsInline
+        className="absolute inset-0 w-full h-full object-cover"
+      />
+
+
+
+    </div>
+  );
+};
+
+export default VideoBanner;

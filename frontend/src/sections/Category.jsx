@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import Slider from "react-slick";
+import { useNavigate } from "react-router-dom";
 import API from "../api/axios";
 
 import "slick-carousel/slick/slick.css";
@@ -13,21 +14,34 @@ const IMG_URL = import.meta.env.VITE_IMAGE_BASE_URL;
 export const Category = () => {
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("");
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const res = await API.get("/category");
-        const data = res.data.data || [];
-        setCategories(data);
-        setSelectedCategory(data[0]?.name || "");
-      } catch (error) {
-        console.log(error);
-      }
-    };
+  const fetchCategories = async () => {
+    try {
+      const res = await API.get("/category?limit=30");
+      const data = res.data.data || [];
+      setCategories(data);
+      setSelectedCategory(data[0]?.name || "");
+    } catch (error) {
+      console.log(error);
+    }
+  };
 
-    fetchCategories();
-  }, []);
+  fetchCategories();
+}, []);
+
+  // react-slick's infinite + variableWidth mode needs enough real slides to
+  // build seamless clones; with too few categories it leaves a blank gap
+  // mid-loop, so repeat the list until there's a comfortable buffer.
+  const MIN_SLIDES_FOR_SEAMLESS_LOOP = 12;
+  const displayCategories =
+    categories.length > 0 && categories.length < MIN_SLIDES_FOR_SEAMLESS_LOOP
+      ? Array.from(
+          { length: Math.ceil(MIN_SLIDES_FOR_SEAMLESS_LOOP / categories.length) },
+          () => categories
+        ).flat()
+      : categories;
 
   const settings = {
     dots: false,
@@ -69,10 +83,13 @@ export const Category = () => {
       {/* Slider */}
       <div className="relative px-4 md:px-14 lg:px-20 mt-12">
         <Slider {...settings}>
-          {categories.map((category) => (
-            <div key={category._id} className="px-2">
+          {displayCategories.map((category, index) => (
+            <div key={`${category._id}-${index}`} className="px-2">
               <div
-                onClick={() => setSelectedCategory(category.name)}
+                onClick={() => {
+                  setSelectedCategory(category.name);
+                  navigate(`/shop?category=${category._id}`);
+                }}
                 className={`
                   w-[130px]
                   sm:w-[150px]

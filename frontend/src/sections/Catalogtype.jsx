@@ -93,7 +93,7 @@ export const Catalogtype = () => {
                     <div className="mt-2">
   {item.hasVariants ? (
     <span className="text-primaryColor font-semibold text-sm md:text-lg">
-      From ₹{item.minPrice ?? item.price}
+      From ₹{item.minSalePrice ?? item.minPrice ?? item.price}
     </span>
   ) : item.salePrice &&
   Number(item.salePrice) < Number(item.price) ? (

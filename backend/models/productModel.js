@@ -36,10 +36,10 @@ const productSchema = new mongoose.Schema({
   default: []
 },
 
-  // sku: {
-  //   type: String,
-  //   trim: true
-  // },
+  fsn: {
+    type: String,
+    trim: true
+  },
 
   hsn: Number,
 
@@ -49,9 +49,14 @@ const productSchema = new mongoose.Schema({
     required: true
   }],
 
-  client: {
+  subcategory: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Client"
+    ref: "Subcategory"
+  },
+
+  company: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Company"
   },
 
   price: {

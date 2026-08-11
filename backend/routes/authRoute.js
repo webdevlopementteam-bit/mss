@@ -1,11 +1,12 @@
 import express from "express";
 import {
   googleAuth,
-  signup,
-  verifyEmailOtp,
-  resendOtp,
+  initiateRegistration,
+  verifyRegistrationOtp,
+  resendRegistrationOtp,
   login,
   forgotPassword,
+  resendPasswordResetOtp,
   verifyResetOtp,
   resetPassword,
   refreshToken,
@@ -29,17 +30,22 @@ const router = express.Router();
 // GOOGLE OAUTH
 router.post("/google", googleAuth);
 
-// EMAIL SIGNUP + OTP VERIFICATION
-router.post("/signup", validate.validateRequired(["name", "email", "password"]), signup);
-router.post("/verify-email-otp", validate.validateRequired(["email", "otp"]), verifyEmailOtp);
-router.post("/resend-otp", validate.validateRequired(["email", "purpose"]), resendOtp);
+// MOBILE-OTP REGISTRATION
+router.post(
+  "/register/initiate",
+  validate.validateRequired(["name", "mobile", "email", "password", "confirmPassword"]),
+  initiateRegistration
+);
+router.post("/register/verify-otp", validate.validateRequired(["mobile", "otp"]), verifyRegistrationOtp);
+router.post("/register/resend-otp", validate.validateRequired(["mobile"]), resendRegistrationOtp);
 
-// EMAIL + PASSWORD LOGIN
-router.post("/login", validate.validateRequired(["email", "password"]), login);
+// LOGIN (email or mobile identifier)
+router.post("/login", validate.validateRequired(["identifier", "password"]), login);
 
-// FORGOT / RESET PASSWORD
-router.post("/forgot-password", validate.validateRequired(["email"]), forgotPassword);
-router.post("/verify-reset-otp", validate.validateRequired(["email", "otp"]), verifyResetOtp);
+// FORGOT / RESET PASSWORD (mobile-based)
+router.post("/forgot-password", validate.validateRequired(["mobile"]), forgotPassword);
+router.post("/forgot-password/resend-otp", validate.validateRequired(["mobile"]), resendPasswordResetOtp);
+router.post("/verify-reset-otp", validate.validateRequired(["mobile", "otp"]), verifyResetOtp);
 router.post("/reset-password", validate.validateRequired(["resetToken", "newPassword"]), resetPassword);
 
 // TOKEN LIFECYCLE

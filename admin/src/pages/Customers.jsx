@@ -145,10 +145,11 @@ const Customers = () => {
 
       <div className="rounded-2xl bg-[#0f172a] border border-white/5 overflow-hidden">
         {/* HEADER */}
-        <div className="grid grid-cols-[1fr_2fr_2fr_1fr_1fr_1fr_1fr] px-6 py-4 text-sm text-white/80 border-b border-white/10">
+        <div className="grid grid-cols-[1fr_2fr_2fr_1.4fr_1fr_1fr_1fr_1fr] px-6 py-4 text-sm text-white/80 border-b border-white/10">
           <p className="text-white/70">ID</p>
           <p className="text-white/70">Name</p>
           <p className="text-white/70">Email</p>
+          <p className="text-white/70">Mobile</p>
           <p className="text-white/70">Provider</p>
           <p className="text-white/70">Profile</p>
           <p className="text-white/70">Status</p>
@@ -164,7 +165,7 @@ const Customers = () => {
           users.map((user) => (
             <div
               key={user._id}
-              className="grid grid-cols-[1fr_2fr_2fr_1fr_1fr_1fr_1fr] px-6 py-4 items-center border-b border-white/5 hover:bg-white/5 transition"
+              className="grid grid-cols-[1fr_2fr_2fr_1.4fr_1fr_1fr_1fr_1fr] px-6 py-4 items-center border-b border-white/5 hover:bg-white/5 transition"
             >
               {/* ID */}
               <p className="text-gray-300">{user._id.slice(-4)}</p>
@@ -185,6 +186,22 @@ const Customers = () => {
 
               {/* EMAIL */}
               <p className="text-gray-300 truncate">{user.email}</p>
+
+              {/* MOBILE */}
+              <div className="flex flex-col gap-1">
+                <p className="text-gray-300">{user.mobile || "—"}</p>
+                {user.mobile && (
+                  <span
+                    className={`px-2 py-0.5 text-[11px] rounded-full w-fit ${
+                      user.mobileVerified
+                        ? "bg-green-500/20 text-green-400"
+                        : "bg-yellow-500/20 text-yellow-400"
+                    }`}
+                  >
+                    {user.mobileVerified ? "Verified" : "Unverified"}
+                  </span>
+                )}
+              </div>
 
               {/* PROVIDER */}
               <span
@@ -332,6 +349,8 @@ const Customers = () => {
               {[
                 ["Name", viewUser.name],
                 ["Email", viewUser.email],
+                ["Mobile", viewUser.mobile],
+                ["Mobile Verified", viewUser.mobile ? (viewUser.mobileVerified ? "Yes" : "No") : "—"],
                 ["Phone", viewUser.phone],
                 ["Organisation", viewUser.organisation],
                 ["Address", viewUser.address],

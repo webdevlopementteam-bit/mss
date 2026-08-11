@@ -1,31 +1,78 @@
-
 import { useEffect, useRef, useState } from "react";
 import logo from "../assets/home/logo.png";
-import { categories } from "../data";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import API from "../api/axios";
 import { useShop } from "../context/ShopContext";
 import { useAuth } from "../context/AuthContext";
+
+const IMG_URL = import.meta.env.VITE_IMAGE_BASE_URL;
 
 const Header = () => {
   const { cart, wishlist } = useShop();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const accountLink = user ? "/user-dashboard" : "/login";
   const [open, setOpen] = useState(false);
   const [categoryOpen, setCategoryOpen] = useState(false);
   const [mobileMenu, setMobileMenu] = useState(false);
+  const [categories, setCategories] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const dropdownRef = useRef(null);
   const categoryRef = useRef(null);
-const desktopCategoryRef = useRef(null); // desktop navbar
+const desktopCategoryRef = useRef(null); // desktop search bar "All Category"
+const mobileCategoryRef = useRef(null); // mobile bottom bar "Categories"
+
+useEffect(() => {
+  const fetchCategories = async () => {
+    try {
+      const res = await API.get("/category?limit=200");
+      setCategories(res.data.data || []);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+  fetchCategories();
+}, []);
+
+// Search-box "All Category" dropdown: last 10 categories.
+const searchCategories = categories.slice(-10);
+
+// Image-based "All Categories" dropdown (desktop navbar + mobile bottom
+// bar): first 10 categories, with a "View More" link to /shop below.
+const navCategories = categories.slice(0, 10);
+
+const handleCategoryClick = (e, category) => {
+  e.stopPropagation();
+  setOpen(false);
+  setCategoryOpen(false);
+  navigate(`/shop?category=${category._id}`);
+};
+
+const handleViewMoreCategories = () => {
+  setCategoryOpen(false);
+  navigate("/shop");
+};
+
+const handleSearchSubmit = (e) => {
+  e.preventDefault();
+  const q = searchQuery.trim();
+  navigate(q ? `/shop?search=${encodeURIComponent(q)}` : "/shop");
+};
+
 useEffect(() => {
   const handleClick = (e) => {
-    if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+    const insideOpenArea =
+      (dropdownRef.current && dropdownRef.current.contains(e.target)) ||
+      (desktopCategoryRef.current && desktopCategoryRef.current.contains(e.target));
+    if (!insideOpenArea) {
       setOpen(false);
     }
-    if (categoryRef.current && !categoryRef.current.contains(e.target)) {
-      setCategoryOpen(false);
-    }
-    if (desktopCategoryRef.current && !desktopCategoryRef.current.contains(e.target)) {
+
+    const insideCategoryArea =
+      (categoryRef.current && categoryRef.current.contains(e.target)) ||
+      (mobileCategoryRef.current && mobileCategoryRef.current.contains(e.target));
+    if (!insideCategoryArea) {
       setCategoryOpen(false);
     }
   };
@@ -72,13 +119,13 @@ useEffect(() => {
               </p>
 
               <div className="flex gap-3">
-                <i className="fa-brands fa-facebook text-primaryColor hover:text-black transition-all duration-300 cursor-pointer"></i>
+               <a href="https://www.facebook.com/people/Medical-and-Surgical-Solutions/61571157007880/"> <i className="fa-brands fa-facebook text-primaryColor hover:text-black transition-all duration-300 cursor-pointer"></i></a>
 
-                <i className="fa-brands fa-x-twitter text-primaryColor hover:text-black transition-all duration-300 cursor-pointer"></i>
+                <a href="https://www.youtube.com/@MEDICALANDSURGICALSOLUTIONS"><i className="fa-brands fa-youtube text-primaryColor hover:text-black transition-all duration-300 cursor-pointer"></i></a>
 
-                <i className="fa-brands fa-instagram text-primaryColor hover:text-black transition-all duration-300 cursor-pointer"></i>
+                <a href="https://www.instagram.com/mssofficial2011/"><i className="fa-brands fa-instagram text-primaryColor hover:text-black transition-all duration-300 cursor-pointer"></i></a>
 
-                <i className="fa-brands fa-linkedin text-primaryColor hover:text-black transition-all duration-300 cursor-pointer"></i>
+                <a href="https://www.linkedin.com/company/medical-surgical-solutions/"><i className="fa-brands fa-linkedin text-primaryColor hover:text-black transition-all duration-300 cursor-pointer"></i></a>
               </div>
             </div>
           </div>
@@ -113,9 +160,9 @@ useEffect(() => {
 
               {open && (
                 <div className="absolute top-12 left-0 bg-white rounded-xl shadow-lg p-3 min-w-[220px] z-50">
-                  {categories.map((category) => (
-                    <div key={category.id}>
-                      <p className="hover:bg-primaryColor hover:text-white px-4 py-2 rounded-lg transition-all duration-300">
+                  {searchCategories.map((category) => (
+                    <div key={category._id} onClick={(e) => handleCategoryClick(e, category)}>
+                      <p className="hover:bg-primaryColor hover:text-white px-4 py-2 rounded-lg transition-all duration-300 cursor-pointer">
                         {category.name}
                       </p>
                     </div>
@@ -124,13 +171,22 @@ useEffect(() => {
               )}
             </div>
 
-            <input
-              type="text"
-              placeholder="Search Here..."
-              className="flex-1 ml-2 md:ml-4 outline-none border-none text-sm md:text-base"
-            />
+            <form
+              onSubmit={handleSearchSubmit}
+              className="flex-1 flex items-center ml-2 md:ml-4"
+            >
+              <input
+                type="text"
+                placeholder="Search Here..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="flex-1 outline-none border-none text-sm md:text-base"
+              />
 
-            <i className="fa-solid fa-magnifying-glass text-[#757F95]"></i>
+              <button type="submit" aria-label="Search">
+                <i className="fa-solid fa-magnifying-glass text-[#757F95]"></i>
+              </button>
+            </form>
           </div>
           {/* Desktop Right Section */}
           <div className="hidden lg:flex gap-7">
@@ -217,9 +273,9 @@ useEffect(() => {
 
             {open && (
               <div className="absolute top-12 left-0 bg-white rounded-xl shadow-lg p-3 min-w-[220px] z-50">
-                {categories.map((category) => (
-                  <div key={category.id}>
-                    <p className="hover:bg-primaryColor hover:text-white px-4 py-2 rounded-lg transition-all duration-300">
+                {searchCategories.map((category) => (
+                  <div key={category._id} onClick={(e) => handleCategoryClick(e, category)}>
+                    <p className="hover:bg-primaryColor hover:text-white px-4 py-2 rounded-lg transition-all duration-300 cursor-pointer">
                       {category.name}
                     </p>
                   </div>
@@ -228,13 +284,22 @@ useEffect(() => {
             )}
           </div>
 
-          <input
-            type="text"
-            placeholder="Search Here..."
-            className="flex-1 ml-2 md:ml-4 outline-none border-none text-sm md:text-base"
-          />
+          <form
+            onSubmit={handleSearchSubmit}
+            className="flex-1 flex items-center ml-2 md:ml-4"
+          >
+            <input
+              type="text"
+              placeholder="Search Here..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="flex-1 outline-none border-none text-sm md:text-base"
+            />
 
-          <i className="fa-solid fa-magnifying-glass text-[#757F95]"></i>
+            <button type="submit" aria-label="Search">
+              <i className="fa-solid fa-magnifying-glass text-[#757F95]"></i>
+            </button>
+          </form>
         </div>
       </div>
 
@@ -251,13 +316,14 @@ useEffect(() => {
 
           {categoryOpen && (
             <div className="absolute left-0 top-full bg-white rounded-xl shadow-lg w-64 p-4 z-50">
-              {categories.map((category) => (
+              {navCategories.map((category) => (
                 <div
-                  key={category.id}
-                  className="flex items-center gap-3 py-2"
+                  key={category._id}
+                  onClick={(e) => handleCategoryClick(e, category)}
+                  className="flex items-center gap-3 py-2 cursor-pointer"
                 >
                   <img
-                    src={category.image}
+                    src={`${IMG_URL}/${category.image}`}
                     alt={category.name}
                     className="w-5"
                   />
@@ -267,6 +333,13 @@ useEffect(() => {
                   </p>
                 </div>
               ))}
+
+              <div
+                onClick={handleViewMoreCategories}
+                className="mt-2 pt-2 border-t border-gray-100 text-center text-sm font-semibold text-primaryColor hover:text-secondaryColor cursor-pointer"
+              >
+                View More
+              </div>
             </div>
           )}
         </div>
@@ -302,7 +375,7 @@ useEffect(() => {
             Recently Viewed
           </Link>
 
-         <Link to="/user-dashboard?tab=orders&filter=shipped" className="text-white">
+         <Link to="https://www.dtdc.com/track-your-shipment/" target="_blank" className="text-white">
   <i className="fa-solid fa-truck-fast mr-2 text-white"></i>
   Track My Order
 </Link>
@@ -347,7 +420,7 @@ useEffect(() => {
 
   {/* Categories */}
   <div
-    ref={categoryRef}
+    ref={mobileCategoryRef}
     className="relative flex flex-col items-center gap-1 cursor-pointer"
     onClick={() => setCategoryOpen(!categoryOpen)}
   >
@@ -358,12 +431,23 @@ useEffect(() => {
 
     {categoryOpen && (
       <div className="absolute bottom-16 left-0 bg-white rounded-xl shadow-lg w-56 p-3 z-50 border border-gray-100">
-        {categories.map((category) => (
-          <div key={category.id} className="flex items-center gap-3 py-2 px-2 rounded-lg hover:bg-primaryColor/10 transition-colors duration-200">
-            <img src={category.image} alt={category.name} className="w-5 h-5" />
+        {navCategories.map((category) => (
+          <div
+            key={category._id}
+            onClick={(e) => handleCategoryClick(e, category)}
+            className="flex items-center gap-3 py-2 px-2 rounded-lg hover:bg-primaryColor/10 transition-colors duration-200 cursor-pointer"
+          >
+            <img src={`${IMG_URL}/${category.image}`} alt={category.name} className="w-5 h-5" />
             <p className="font-medium text-sm">{category.name}</p>
           </div>
         ))}
+
+        <div
+          onClick={handleViewMoreCategories}
+          className="mt-1 pt-2 border-t border-gray-100 text-center text-sm font-semibold text-primaryColor cursor-pointer"
+        >
+          View More
+        </div>
       </div>
     )}
   </div>
@@ -409,4 +493,3 @@ useEffect(() => {
 };
 
 export default Header;
-

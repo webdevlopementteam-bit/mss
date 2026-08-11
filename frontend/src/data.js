@@ -2,7 +2,12 @@ import medicine from "./assets/home/medicine.svg";
 import product1 from "./assets/home/product1.png";
 import product2 from "./assets/home/product2.png";
 import product3 from "./assets/home/product3.png";
-import test1 from "./assets/home/test1.jpg";
+import test1 from "./assets/testimonial/test1.jpeg";
+import test2 from "./assets/testimonial/test2.webp";
+import test3 from "./assets/testimonial/test3.webp";
+import test4 from "./assets/testimonial/test4.webp";
+import test5 from "./assets/testimonial/test5.jpeg";
+import test6 from "./assets/testimonial/test6.webp";
 import blog1 from "./assets/home/blog1.jpg";
 import post1 from "./assets/home/post1.jpeg";
 import post2 from "./assets/home/post2.jpeg";
@@ -68,6 +73,7 @@ export const categories = [
     isPublished: true,
   },
 ];
+
 export const products = [
   {
     id: "1",
@@ -548,13 +554,12 @@ export const popularProduct = [
 ];
 
 export const testimonials = [
-    {id:'1', image:test1, name:'Parker Jimenez', role:'customer',comment:'There are many variations of long passages available but the content majority have suffered to the editor page when looking at its layout alteration in some injected.'},
-    {id:'2', image:test1, name:'Parker Jimenez', role:'customer',comment:'There are many variations of long passages available but the content majority have suffered to the editor page when looking at its layout alteration in some injected.'},
-    {id:'3', image:test1, name:'Parker Jimenez', role:'customer',comment:'There are many variations of long passages available but the content majority have suffered to the editor page when looking at its layout alteration in some injected.'},
-    {id:'4', image:test1, name:'Parker Jimenez', role:'customer',comment:'There are many variations of long passages available but the content majority have suffered to the editor page when looking at its layout alteration in some injected.'},
-    {id:'5', image:test1, name:'Parker Jimenez', role:'customer',comment:'There are many variations of long passages available but the content majority have suffered to the editor page when looking at its layout alteration in some injected.'},
-    {id:'6', image:test1, name:'Parker Jimenez', role:'customer',comment:'There are many variations of long passages available but the content majority have suffered to the editor page when looking at its layout alteration in some injected.'},
-    {id:'7', image:test1, name:'Parker Jimenez', role:'customer',comment:'There are many variations of long passages available but the content majority have suffered to the editor page when looking at its layout alteration in some injected.'}
+    {id:'1', image:test1, name:'Rahul Sharma', role:'customer',comment:'Medical & Surgical Solutions has made it really convenient to find healthcare products online. The website is easy to navigate, the product range is impressive, and ordering was a smooth experience.'},
+    {id:'2', image:test2, name:'Amit Verma', role:'customer',comment:'I was looking for reliable surgical and healthcare supplies and found a good variety here. The product information was helpful, and the overall ordering experience was simple and convenient.'},
+    {id:'3', image:test3, name:'Neha Singh', role:'customer',comment:'I really liked the wide selection of medical and healthcare products available on the website. It was easy to search for what I needed and place an order without any hassle.'},
+    {id:'4', image:test4, name:'Rajendra Kumar', role:'customer',comment:'The website provides a good range of medical and surgical products in one place. I appreciate the convenience of being able to check products and order them online from home.'},
+    {id:'5', image:test5, name:'Sunita Devi', role:'customer',comment:'Finding healthcare supplies online has become much easier with Medical & Surgical Solutions. The website is straightforward, and there are many products to choose from for different healthcare needs'},
+    {id:'6', image:test6, name:'Arjun Mehta', role:'customer',comment:'A convenient platform for purchasing medical and surgical supplies online. I found the product categories easy to explore and the overall shopping experience quite smooth.'},
 ]
 
 export const blogsdata = [

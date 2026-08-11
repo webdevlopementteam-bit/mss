@@ -13,15 +13,72 @@ import PrevArrow from "../components/PrevArrow";
 import Testimonial from "../sections/Testimonial";
 import Policies from "../sections/Policies";
 import Instagrammedion from "../sections/Instagrammedion";
+import { useState, useEffect, useRef } from "react";
+import API from "../api/axios";
+import bannerVideo from "../assets/videobanner.mp4";
 
 const About = () => {
+  const [companies, setCompanies] = useState([]);
+  const [loadingCompanies, setLoadingCompanies] = useState(true);
+  const videoRef = useRef(null);
+  const [muted, setMuted] = useState(true);
+
+  // Tracks whether we're on a mobile-width viewport so the team & company
+  // sliders can be forced to an exact slide count, independent of
+  // react-slick's own breakpoint matching (which was not reliably kicking in).
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== "undefined" ? window.innerWidth < 768 : false,
+  );
+
+  const toggleMute = () => {
+    if (videoRef.current) {
+      videoRef.current.muted = !muted;
+      setMuted(!muted);
+    }
+  };
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  useEffect(() => {
+    const fetchCompanies = async () => {
+      try {
+        // NOTE: if your `API` axios instance already has `baseURL` set to
+        // something like "http://localhost:5000/api", then this path
+        // should be just "/company" (not "/api/company"), otherwise the
+        // request hits ".../api/api/company" and 404s.
+        const res = await API.get(`/company?limit=30`);
+        console.log("companies response:", res.data);
+        if (res.data.success) {
+          setCompanies(res.data.data);
+        } else {
+          console.warn("companies fetch: success=false", res.data);
+        }
+      } catch (error) {
+        console.error(
+          "Failed to fetch companies:",
+          error?.response?.status,
+          error?.response?.data || error.message,
+        );
+      } finally {
+        setLoadingCompanies(false);
+      }
+    };
+    fetchCompanies();
+  }, []);
+
   var settings = {
     dots: false,
     infinite: true,
     speed: 500,
-    slidesToShow: 5,
+    // Forced to 2 on mobile-width viewports instead of relying solely on
+    // react-slick's breakpoint matching.
+    slidesToShow: isMobile ? 2 : 5,
     slidesToScroll: 1,
-    arrows: true,
+    arrows: !isMobile,
     autoplay: true,
     autoplaySpeed: 3000,
     nextArrow: <NextArrow />,
@@ -33,11 +90,11 @@ const About = () => {
       },
       {
         breakpoint: 768,
-        settings: { slidesToShow: 2 },
+        settings: { slidesToShow: 2, arrows: false },
       },
       {
         breakpoint: 480,
-        settings: { slidesToShow: 1 },
+        settings: { slidesToShow: 2, arrows: false },
       },
     ],
   };
@@ -46,7 +103,9 @@ const About = () => {
     dots: true,
     infinite: true,
     speed: 500,
-    slidesToShow: 4,
+    // Forced to 1 on mobile-width viewports instead of relying solely on
+    // react-slick's breakpoint matching.
+    slidesToShow: isMobile ? 1 : 4,
     slidesToScroll: 1,
     autoplay: true,
     autoplaySpeed: 3000,
@@ -61,7 +120,11 @@ const About = () => {
         settings: { slidesToShow: 2 },
       },
       {
-        breakpoint: 640,
+        breakpoint: 768,
+        settings: { slidesToShow: 1 },
+      },
+      {
+        breakpoint: 480,
         settings: { slidesToShow: 1 },
       },
     ],
@@ -79,7 +142,9 @@ const About = () => {
         }}
       >
         <div className="relative z-10 flex flex-col justify-center items-center px-4 md:px-side">
-          <h2 className="text-2xl md:text-3xl font-semibold text-white">About Us</h2>
+          <h2 className="text-2xl md:text-3xl font-semibold text-white">
+            About Us
+          </h2>
           <p className="text-white mt-3 text-sm md:text-base">
             <span className="text-white hover:text-primaryColor transition-all duration-500 group">
               <Link to="/">
@@ -155,16 +220,21 @@ const About = () => {
             ].map(({ icon, label, brand }) => (
               <div key={label} className="flex gap-3 items-center">
                 <p className="py-1 px-2 rounded-full bg-secondaryColor flex-shrink-0">
-                  <i className={`${brand ? "fa-brands" : "fa-solid"} ${icon} text-white`}></i>
+                  <i
+                    className={`${brand ? "fa-brands" : "fa-solid"} ${icon} text-white`}
+                  ></i>
                 </p>
                 <p className="font-semibold text-sm md:text-base">{label}</p>
               </div>
             ))}
           </div>
           <button className="relative overflow-hidden px-5 md:px-6 py-2.5 md:py-3 mt-7 font-semibold text-white bg-primaryColor rounded-xl group">
-            <span className="relative z-10 text-white transition-colors duration-300 text-sm md:text-base">
+            <Link
+              to="/shop"
+              className="relative z-10 text-white transition-colors duration-300 text-sm md:text-base"
+            >
               Shop Now <i className="fa-solid fa-arrow-right text-white"></i>
-            </span>
+            </Link>
             <span className="absolute inset-0 rounded-xl scale-0 opacity-0 bg-secondaryColor group-hover:scale-100 group-hover:opacity-100 transition-all duration-500 ease-in-out"></span>
           </button>
         </div>
@@ -193,47 +263,53 @@ const About = () => {
       </div>
 
       {/* Testimonials */}
-      <Testimonial/>
+      <Testimonial />
 
       {/* Video banner */}
-      <div
-        className="py-24 md:py-44 flex justify-center items-center"
-        style={{
-          backgroundImage: `url(${banner1})`,
-          backgroundPosition: "center center",
-          backgroundSize: "cover",
-        }}
-      >
-        <a
-          href="#"
-          className="bg-primaryColor rounded-full w-14 h-14 md:w-16 md:h-16 flex justify-center items-center animate-ringing"
-        >
-          <i className="fa-solid fa-play text-white text-lg md:text-xl"></i>
-        </a>
-      </div>
+       <div className=" relative overflow-hidden flex justify-center items-center h-[150px] md:h-[500px]">
+      <video
+        ref={videoRef}
+        src={bannerVideo}
+        autoPlay
+        muted={muted}
+        loop
+        playsInline
+        className="absolute inset-0 w-full h-full object-cover"
+      />
+
+    </div>
 
       {/* Team */}
-      <div className="pt-10 md:pt-16 pb-16 md:pb-20 px-4 md:px-side text-center bg-[#F5F7FA]">
-        <p className="uppercase text-primaryColor font-semibold tracking-widest text-sm md:text-base">
+      <div className="bg-[#F5F7FA] px-4 sm:px-6 md:px-8 lg:px-side pt-10 sm:pt-12 md:pt-16 pb-12 sm:pb-16 md:pb-20 text-center">
+        {/* Heading */}
+        <p className="text-primaryColor text-xs sm:text-sm md:text-base font-semibold uppercase tracking-[0.2em]">
           Our Team
         </p>
-        <h3 className="mt-3 text-2xl md:text-3xl font-extrabold">
+
+        <h3 className="mt-2 sm:mt-3 text-xl sm:text-2xl md:text-3xl lg:text-4xl font-extrabold leading-tight">
           Meet Our Expert <span className="text-primaryColor">Team</span>
         </h3>
 
-        <div className="mt-8 md:mt-10">
-          <Slider {...testimonialsettings}>
+        {/* Team Slider */}
+        <div className="mt-6 sm:mt-8 md:mt-10">
+          <Slider key={isMobile ? "mobile" : "desktop"} {...testimonialsettings}>
             {team.map((member) => (
-              <div key={member.id} className="px-2 md:px-3">
-                <div className="bg-white rounded-xl p-3">
+              <div key={member.id} className="px-1.5 sm:px-2 md:px-3">
+                <div className="bg-white rounded-lg sm:rounded-xl p-2.5 sm:p-3 md:p-4 shadow-sm">
+                  {/* Image */}
                   <img
                     src={member.image}
-                    className="w-full h-48 md:h-64 object-cover rounded-xl"
+                    className="w-full h-64 object-cover rounded-lg sm:rounded-xl"
                     alt={member.name}
                   />
-                  <div className="mt-3 text-center">
-                    <p className="font-semibold text-base md:text-lg">{member.name}</p>
-                    <p className="font-semibold text-primaryColor text-sm md:text-base">
+
+                  {/* Details */}
+                  <div className="mt-2.5 sm:mt-3 text-center">
+                    <p className="font-semibold text-sm sm:text-base md:text-lg leading-tight">
+                      {member.name}
+                    </p>
+
+                    <p className="mt-1 font-semibold text-primaryColor text-xs sm:text-sm md:text-base leading-tight">
                       {member.position}
                     </p>
                   </div>
@@ -245,36 +321,49 @@ const About = () => {
       </div>
 
       {/* Policies */}
-    <Policies/>
+      <Policies />
       {/* Instagram */}
-      <Instagrammedion/>
+      <Instagrammedion />
+      {/* Trusted companies */}
       {/* Trusted companies */}
       <div className="py-10 md:py-16 px-4 md:px-side text-center bg-[#F5F7FA]">
+        <p className="uppercase text-primaryColor font-semibold tracking-widest text-sm md:text-base">
+          Our Partners
+        </p>
         <h3 className="mt-3 text-2xl md:text-4xl font-bold">
           Trusted by over <span className="text-primaryColor">3.2k+</span>{" "}
-          companies{" "}
+          companies
         </h3>
 
-        <div className="flex flex-wrap gap-3 md:gap-4 justify-center mx-0 md:mx-side mt-8 md:mt-10">
-          {categories.map((category) => (
-            <div key={category.id}>
-              <div className="border-[2px] border-primaryColor/20 py-4 md:py-[20px] rounded-3xl transition-all duration-700 group hover:border-primaryColor flex flex-col justify-center items-center text-center">
-                <div className="py-2 md:py-3 px-6 md:px-7 flex justify-center items-center text-center">
-                  <img
-                    src={category.image}
-                    alt={category.name}
-                    className="group-hover:scale-110 transition-all duration-500 w-10 md:w-14 invert"
-                  />
+        <div className="mt-8 md:mt-10">
+          {loadingCompanies ? (
+            <p className="text-black/50">Loading...</p>
+          ) : companies.length === 0 ? (
+            <p className="text-black/50">No companies found</p>
+          ) : (
+            <Slider key={isMobile ? "mobile" : "desktop"} {...settings}>
+              {companies.map((company) => (
+                <div key={company._id} className="px-2 md:px-3">
+                  <div className="bg-white border border-black/5 rounded-2xl shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-500 py-4 md:py-6 px-3 md:px-5 flex justify-center items-center h-24 md:h-28">
+                    <img
+                      src={`${import.meta.env.VITE_API_URL}/${company.image}`}
+                      alt={company.name}
+                      className="max-h-12 md:max-h-14 max-w-full object-contain grayscale hover:grayscale-0 transition-all duration-500"
+                    />
+                  </div>
                 </div>
-              </div>
-            </div>
-          ))}
+              ))}
+            </Slider>
+          )}
         </div>
 
-        <button className="relative overflow-hidden px-5 md:px-6 py-2.5 md:py-3 mt-7 font-semibold text-white bg-primaryColor rounded-xl group">
-          <span className="relative z-10 text-white transition-colors duration-300 text-sm md:text-base">
+        <button className="relative overflow-hidden px-5 md:px-6 py-2.5 md:py-3 mt-10 font-semibold text-white bg-primaryColor rounded-xl group">
+          <Link
+            to="/shop"
+            className="relative z-10 text-white transition-colors duration-300 text-sm md:text-base"
+          >
             Shop Now <i className="fa-solid fa-arrow-right text-white"></i>
-          </span>
+          </Link>
           <span className="absolute inset-0 rounded-xl scale-0 opacity-0 bg-secondaryColor group-hover:scale-100 group-hover:opacity-100 transition-all duration-500 ease-in-out"></span>
         </button>
       </div>

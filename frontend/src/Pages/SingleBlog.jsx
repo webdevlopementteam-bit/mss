@@ -2,6 +2,11 @@ import { Link, useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import blogbanner from "../assets/blog banner.png";
 import { getOneBlog } from "../api/services";
+import { setPageMeta, resetPageMeta } from "../utils/pageMeta";
+
+// blog.description is rich-text HTML — strip tags before using it as a
+// fallback meta description so raw markup never ends up in the tag.
+const stripHtml = (html) => html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
 
 const SingleBlog = () => {
   const { slug } = useParams(); // 👈 URL se value aayegi
@@ -20,6 +25,21 @@ const SingleBlog = () => {
 
     fetchBlog();
   }, [slug]);
+
+  // SEO: use the admin-entered Meta Title / Meta Description when present,
+  // falling back to the blog's own name/description (same pattern as the
+  // product details page).
+  useEffect(() => {
+    if (!blog) return;
+
+    const title = blog.metaTitle || blog.name;
+    const rawDescription = blog.metaDescription || stripHtml(blog.description || "");
+    const description = rawDescription ? rawDescription.slice(0, 160) : undefined;
+
+    setPageMeta({ title, description });
+
+    return () => resetPageMeta();
+  }, [blog]);
 
   if (!blog) return <p>Loading...</p>;
 

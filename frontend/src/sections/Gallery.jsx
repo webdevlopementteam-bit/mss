@@ -1,16 +1,19 @@
 import React from "react";
-import banner1 from "../assets/home/banner1.jpg";
-import banner2 from "../assets/home/banner2.png";
-import banner3 from "../assets/home/banner3.jpg";
+import gallery1 from "../assets/gallery/gallery1.jpeg";
+import gallery2 from "../assets/gallery/gallery2.jpeg";
+import gallery3 from "../assets/gallery/gallery3.jpeg";
+import gallery4 from "../assets/gallery/gallery4.jpeg";
+import gallery5 from "../assets/gallery/gallery5.jpeg";
+import gallery6 from "../assets/gallery/gallery6.jpeg";
 
 export const Gallery = () => {
   const galleryImages = [
-    { image: banner1, large: true },
-    { image: banner2, large: false },
-    { image: banner3, large: false },
-    { image: banner2, large: false },
-    { image: banner3, large: false },
-    { image: banner1, large: true },
+    { image: gallery1, large: true },
+    { image: gallery3, large: false },
+    { image: gallery4, large: false },
+    { image: gallery5, large: false },
+    { image: gallery6, large: false },
+    { image: gallery2, large: true },
   ];
 
   return (

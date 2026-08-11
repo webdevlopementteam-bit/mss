@@ -12,7 +12,7 @@ const Login = () => {
   const [theme, setTheme] = useState("dark");
 
   const [form, setForm] = useState({
-    email: "",
+    identifier: "",
     password: "",
   });
 
@@ -83,11 +83,11 @@ const Login = () => {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <input
-            type="email"
-            name="email"
-            value={form.email}
+            type="text"
+            name="identifier"
+            value={form.identifier}
             onChange={handleChange}
-            placeholder="Email address"
+            placeholder="Email or Mobile Number"
             className="w-full px-4 py-3 rounded-xl bg-transparent border border-[var(--border)] text-[var(--text)] placeholder-[var(--muted)] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
           />
 

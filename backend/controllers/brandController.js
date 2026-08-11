@@ -55,6 +55,10 @@ export const getAllBrand = async (req, res) => {
       name: { $regex: search, $options: "i" },
     };
 
+    if (typeof req.query.isPublished !== "undefined") {
+      query.isPublished = req.query.isPublished === "true";
+    }
+
     const total = await Brand.countDocuments(query);
 
     const brands = await Brand.find(query)

@@ -1,14 +1,14 @@
 import { Link } from "react-router-dom";
 import footerbanner from "../assets/home/footerbanner.jpg";
 import logo from "../assets/home/logo.png";
-import rupay from "../assets/home/rupay.png";
+import razorpay from "../assets/razorpay.png";
 import { categories } from "../data";
 
 const Footer = () => {
   return (
     <>
       <div
-       className="bg-primaryColor/60 px-4 md:px-6 lg:px-side py-10 relative overflow-hidden before:content-[' '] before:absolute before:w-96 before:h-96 before:bg-primaryColor/10 before:rounded-full before:-top-40 after:content-[' '] after:absolute after:w-96 after:h-96 after:bg-primaryColor/10 after:rounded-full after:-bottom-40 after:right-10"
+        className="bg-primaryColor/60 px-4 md:px-6 lg:px-side py-10 relative overflow-hidden before:content-[' '] before:absolute before:w-96 before:h-96 before:bg-primaryColor/10 before:rounded-full before:-top-40 after:content-[' '] after:absolute after:w-96 after:h-96 after:bg-primaryColor/10 after:rounded-full after:-bottom-40 after:right-10"
         // style={{
         //   backgroundImage: `url(${footerbanner})`,
         //   backgroundPosition: "center center",
@@ -16,7 +16,7 @@ const Footer = () => {
         // }}
       >
         <div className="relative z-10">
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-7 gap-8 lg:gap-10 pb-10 border-b-[1px] border-gray-500">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-6 gap-8 lg:gap-10 pb-10 border-b-[1px] border-gray-500">
             <div className="xl:col-span-2">
               <img src={logo} alt="logo" className="w-28" />
               <p className="text-white mt-3">
@@ -24,98 +24,108 @@ const Footer = () => {
                 partner for healthcare professionals, hospitals, and
                 institutions.
               </p>
-              <img src={rupay} alt="rupay" className="mt-2" />
+              <img src={razorpay} alt="rupay" className="mt-2 w-[50%]" />
             </div>
             <div className="mt-7">
               <p className="text-white text-lg relative pb-4 before:content-[' '] before:absolute before:w-4 before:h-[2px] before:bg-primaryColor before:bottom-0 before:left-0 after:content-[' '] after:absolute after:w-10 after:h-[2px] after:bg-gray-700 after:bottom-0 after:left-5">
                 Quick Links
               </p>
               <ul className="mt-4 flex flex-col justify-center items-start gap-1">
-                <Link to="/"><li className="text-white cursor-pointer translate-x-0 hover:translate-x-2 group transition-all duration-500 hover:text-primaryColor relative ">
-                  Home{" "}
-                  <span className="transition-all duration-500  absolute w-2 h-2 bg-primaryColor rounded-full top-1/3 -left-3 translate-x-0 opacity-0 group-hover:translate-x-0 group-hover:opacity-100"></span>
-                </li></Link>
-                <Link to="/about"><li className="text-white cursor-pointer translate-x-0 hover:translate-x-2 group transition-all duration-500 hover:text-primaryColor relative ">
-                  About{" "}
-                  <span className="transition-all duration-500  absolute w-2 h-2 bg-primaryColor rounded-full top-1/3 -left-3 translate-x-0 opacity-0 group-hover:translate-x-0 group-hover:opacity-100"></span>
-                </li></Link>
-               <Link to="/shop">
-                 <li className="text-white cursor-pointer translate-x-0 hover:translate-x-2 group transition-all duration-500 hover:text-primaryColor relative ">
-                  Shop{" "}
-                  <span className="transition-all duration-500  absolute w-2 h-2 bg-primaryColor rounded-full top-1/3 -left-3 translate-x-0 opacity-0 group-hover:translate-x-0 group-hover:opacity-100"></span>
-                </li>
-               </Link>
-               <Link to="/blog">
-                 <li className="text-white cursor-pointer translate-x-0 hover:translate-x-2 group transition-all duration-500 hover:text-primaryColor relative ">
-                  Blog{" "}
-                  <span className="transition-all duration-500  absolute w-2 h-2 bg-primaryColor rounded-full top-1/3 -left-3 translate-x-0 opacity-0 group-hover:translate-x-0 group-hover:opacity-100"></span>
-                </li>
-               </Link>
-                 <Link to="/award"><li className="text-white cursor-pointer translate-x-0 hover:translate-x-2 group transition-all duration-500 hover:text-primaryColor relative ">
-                  Award{" "}
-                  <span className="transition-all duration-500  absolute w-2 h-2 bg-primaryColor rounded-full top-1/3 -left-3 translate-x-0 opacity-0 group-hover:translate-x-0 group-hover:opacity-100"></span>
-                </li></Link>
-                <Link to="/contact"><li className="text-white cursor-pointer translate-x-0 hover:translate-x-2 group transition-all duration-500 hover:text-primaryColor relative ">
-                  Contact{" "}
-                  <span className="transition-all duration-500  absolute w-2 h-2 bg-primaryColor rounded-full top-1/3 -left-3 translate-x-0 opacity-0 group-hover:translate-x-0 group-hover:opacity-100"></span>
-                </li></Link>
-                <li className="text-white cursor-pointer translate-x-0 hover:translate-x-2 group transition-all duration-500 hover:text-primaryColor relative ">
-                  Account{" "}
-                  <span className="transition-all duration-500  absolute w-2 h-2 bg-primaryColor rounded-full top-1/3 -left-3 translate-x-0 opacity-0 group-hover:translate-x-0 group-hover:opacity-100"></span>
-                </li>
-               
+                <Link to="/">
+                  <li className="text-white cursor-pointer translate-x-0 hover:translate-x-2 group transition-all duration-500 hover:text-primaryColor relative ">
+                    Home{" "}
+                    <span className="transition-all duration-500  absolute w-2 h-2 bg-primaryColor rounded-full top-1/3 -left-3 translate-x-0 opacity-0 group-hover:translate-x-0 group-hover:opacity-100"></span>
+                  </li>
+                </Link>
+                <Link to="/about">
+                  <li className="text-white cursor-pointer translate-x-0 hover:translate-x-2 group transition-all duration-500 hover:text-primaryColor relative ">
+                    About{" "}
+                    <span className="transition-all duration-500  absolute w-2 h-2 bg-primaryColor rounded-full top-1/3 -left-3 translate-x-0 opacity-0 group-hover:translate-x-0 group-hover:opacity-100"></span>
+                  </li>
+                </Link>
+                <Link to="/shop">
+                  <li className="text-white cursor-pointer translate-x-0 hover:translate-x-2 group transition-all duration-500 hover:text-primaryColor relative ">
+                    Shop{" "}
+                    <span className="transition-all duration-500  absolute w-2 h-2 bg-primaryColor rounded-full top-1/3 -left-3 translate-x-0 opacity-0 group-hover:translate-x-0 group-hover:opacity-100"></span>
+                  </li>
+                </Link>
+                <Link to="/blog">
+                  <li className="text-white cursor-pointer translate-x-0 hover:translate-x-2 group transition-all duration-500 hover:text-primaryColor relative ">
+                    Blog{" "}
+                    <span className="transition-all duration-500  absolute w-2 h-2 bg-primaryColor rounded-full top-1/3 -left-3 translate-x-0 opacity-0 group-hover:translate-x-0 group-hover:opacity-100"></span>
+                  </li>
+                </Link>
+                <Link to="/award">
+                  <li className="text-white cursor-pointer translate-x-0 hover:translate-x-2 group transition-all duration-500 hover:text-primaryColor relative ">
+                    Award{" "}
+                    <span className="transition-all duration-500  absolute w-2 h-2 bg-primaryColor rounded-full top-1/3 -left-3 translate-x-0 opacity-0 group-hover:translate-x-0 group-hover:opacity-100"></span>
+                  </li>
+                </Link>
+                <Link to="/contact">
+                  <li className="text-white cursor-pointer translate-x-0 hover:translate-x-2 group transition-all duration-500 hover:text-primaryColor relative ">
+                    Contact{" "}
+                    <span className="transition-all duration-500  absolute w-2 h-2 bg-primaryColor rounded-full top-1/3 -left-3 translate-x-0 opacity-0 group-hover:translate-x-0 group-hover:opacity-100"></span>
+                  </li>
+                </Link>
+                <Link to="/login">
+                  <li className="text-white cursor-pointer translate-x-0 hover:translate-x-2 group transition-all duration-500 hover:text-primaryColor relative ">
+                    Account{" "}
+                    <span className="transition-all duration-500  absolute w-2 h-2 bg-primaryColor rounded-full top-1/3 -left-3 translate-x-0 opacity-0 group-hover:translate-x-0 group-hover:opacity-100"></span>
+                  </li>
+                </Link>
               </ul>
-            </div>
-            <div className="mt-7">
-              <p className="text-white text-lg relative pb-4 before:content-[' '] before:absolute before:w-4 before:h-[2px] before:bg-primaryColor before:bottom-0 before:left-0 after:content-[' '] after:absolute after:w-10 after:h-[2px] after:bg-gray-700 after:bottom-0 after:left-5">
-                Browse Category
-              </p>
-              <div className="mt-4 max-h-64 overflow-y-auto pr-2">
-                {categories.map((category) => (
-                  <div key={category.id}>
-                    <ul className="pt-1">
-                      <li className="text-white cursor-pointer translate-x-0 hover:translate-x-2 group transition-all duration-500 hover:text-primaryColor relative ">
-                        {category.name}{" "}
-                        <span className="transition-all duration-500  absolute w-2 h-2 bg-primaryColor rounded-full top-1/3 -left-3 translate-x-0 opacity-0 group-hover:translate-x-0 group-hover:opacity-100"></span>
-                      </li>
-                    </ul>
-                  </div>
-                ))}
-              </div>
             </div>
             <div className="mt-7">
               <p className="text-white text-lg relative pb-4 before:content-[' '] before:absolute before:w-4 before:h-[2px] before:bg-primaryColor before:bottom-0 before:left-0 after:content-[' '] after:absolute after:w-10 after:h-[2px] after:bg-gray-700 after:bottom-0 after:left-5">
                 Support Center
               </p>
               <ul className="mt-4 flex flex-col justify-center items-start gap-1">
-                <Link to="/faq"><li className="text-white cursor-pointer translate-x-0 hover:translate-x-2 group transition-all duration-500 hover:text-primaryColor relative ">
-                  FAQ's{" "}
-                  <span className="transition-all duration-500  absolute w-2 h-2 bg-primaryColor rounded-full top-1/3 -left-3 translate-x-0 opacity-0 group-hover:translate-x-0 group-hover:opacity-100"></span>
-                </li></Link>
-               <Link to="/privacy-policy"> <li className="text-white cursor-pointer translate-x-0 hover:translate-x-2 group transition-all duration-500 hover:text-primaryColor relative ">
-                  Privacy Policy{" "}
-                  <span className="transition-all duration-500  absolute w-2 h-2 bg-primaryColor rounded-full top-1/3 -left-3 translate-x-0 opacity-0 group-hover:translate-x-0 group-hover:opacity-100"></span>
-                </li></Link>
-                <Link to="/terms-conditions"><li className="text-white cursor-pointer translate-x-0 hover:translate-x-2 group transition-all duration-500 hover:text-primaryColor relative ">
-                  Terms & Conditions{" "}
-                  <span className="transition-all duration-500  absolute w-2 h-2 bg-primaryColor rounded-full top-1/3 -left-3 translate-x-0 opacity-0 group-hover:translate-x-0 group-hover:opacity-100"></span>
-                </li></Link>
-                <li className="text-white cursor-pointer translate-x-0 hover:translate-x-2 group transition-all duration-500 hover:text-primaryColor relative ">
+                <Link to="/faq">
+                  <li className="text-white cursor-pointer translate-x-0 hover:translate-x-2 group transition-all duration-500 hover:text-primaryColor relative ">
+                    FAQ's{" "}
+                    <span className="transition-all duration-500  absolute w-2 h-2 bg-primaryColor rounded-full top-1/3 -left-3 translate-x-0 opacity-0 group-hover:translate-x-0 group-hover:opacity-100"></span>
+                  </li>
+                </Link>
+                <Link to="/privacy-policy">
+                  {" "}
+                  <li className="text-white cursor-pointer translate-x-0 hover:translate-x-2 group transition-all duration-500 hover:text-primaryColor relative ">
+                    Privacy Policy{" "}
+                    <span className="transition-all duration-500  absolute w-2 h-2 bg-primaryColor rounded-full top-1/3 -left-3 translate-x-0 opacity-0 group-hover:translate-x-0 group-hover:opacity-100"></span>
+                  </li>
+                </Link>
+                <Link to="/terms-conditions">
+                  <li className="text-white cursor-pointer translate-x-0 hover:translate-x-2 group transition-all duration-500 hover:text-primaryColor relative ">
+                    Terms & Conditions{" "}
+                    <span className="transition-all duration-500  absolute w-2 h-2 bg-primaryColor rounded-full top-1/3 -left-3 translate-x-0 opacity-0 group-hover:translate-x-0 group-hover:opacity-100"></span>
+                  </li>
+                </Link>
+                <Link to="https://www.dtdc.com/track-your-shipment/">
+                  <li className="text-white cursor-pointer translate-x-0 hover:translate-x-2 group transition-all duration-500 hover:text-primaryColor relative ">
                   Track Your Order{" "}
                   <span className="transition-all duration-500  absolute w-2 h-2 bg-primaryColor rounded-full top-1/3 -left-3 translate-x-0 opacity-0 group-hover:translate-x-0 group-hover:opacity-100"></span>
                 </li>
-                <Link to="/return-policy"><li className="text-white cursor-pointer translate-x-0 hover:translate-x-2 group transition-all duration-500 hover:text-primaryColor relative ">
-                  Return Policy{" "}
-                  <span className="transition-all duration-500  absolute w-2 h-2 bg-primaryColor rounded-full top-1/3 -left-3 translate-x-0 opacity-0 group-hover:translate-x-0 group-hover:opacity-100"></span>
-                </li></Link>
-                <li className="text-white cursor-pointer translate-x-0 hover:translate-x-2 group transition-all duration-500 hover:text-primaryColor relative ">
+                </Link>
+                
+                <Link to="/return-policy">
+                  <li className="text-white cursor-pointer translate-x-0 hover:translate-x-2 group transition-all duration-500 hover:text-primaryColor relative ">
+                    Return Policy{" "}
+                    <span className="transition-all duration-500  absolute w-2 h-2 bg-primaryColor rounded-full top-1/3 -left-3 translate-x-0 opacity-0 group-hover:translate-x-0 group-hover:opacity-100"></span>
+                  </li>
+                </Link>
+                <Link to="/user-dashboard">
+                  <li className="text-white cursor-pointer translate-x-0 hover:translate-x-2 group transition-all duration-500 hover:text-primaryColor relative ">
                   Dashboard{" "}
                   <span className="transition-all duration-500  absolute w-2 h-2 bg-primaryColor rounded-full top-1/3 -left-3 translate-x-0 opacity-0 group-hover:translate-x-0 group-hover:opacity-100"></span>
                 </li>
-                <li className="text-white cursor-pointer translate-x-0 hover:translate-x-2 group transition-all duration-500 hover:text-primaryColor relative ">
+                </Link>
+                
+                <Link to="/recently-viewed">
+                  <li className="text-white cursor-pointer translate-x-0 hover:translate-x-2 group transition-all duration-500 hover:text-primaryColor relative ">
                   Recently Viewed{" "}
                   <span className="transition-all duration-500  absolute w-2 h-2 bg-primaryColor rounded-full top-1/3 -left-3 translate-x-0 opacity-0 group-hover:translate-x-0 group-hover:opacity-100"></span>
                 </li>
+                </Link>
+                
               </ul>
             </div>
             <div className="mt-7 xl:col-span-2">
@@ -169,31 +179,78 @@ const Footer = () => {
                 Right Reserved | Powered by{" "}
                 <span className="text-primaryColor font-semibold">
                   <a href="https://www.cybertricksmedia.com/" target="_blank">
-                    Bharat Bizmart
+                    Cybertricksmedia Pvt Ltd
                   </a>
                 </span>
               </p>
             </div>
             <div className="hidden md:flex flex-col sm:flex-row gap-3 items-center">
-          <p className="font-semibold text-white">Follow Us: </p>
-          <div className="flex gap-2">
-            <p className="py-[7px] px-2 rounded-full bg-primaryColor/30 transition-all duration-700 hover:bg-primaryColor"><i className="fa-brands fa-facebook text-white  transition-all duration-700"></i></p>
-            <p className="py-[7px] px-2 rounded-full bg-primaryColor/30 transition-all duration-700 hover:bg-primaryColor"><i className="fa-brands fa-x-twitter text-white  transition-all duration-700"></i></p>
-            <p className="py-[7px] px-2 rounded-full bg-primaryColor/30 transition-all duration-700 hover:bg-primaryColor"><i className="fa-brands fa-instagram text-white  transition-all duration-700"></i></p>
-            <p className="py-[7px] px-2 rounded-full bg-primaryColor/30 transition-all duration-700 hover:bg-primaryColor"><i className="fa-brands fa-linkedin text-white  transition-all duration-700"></i></p>
-          </div>
-        </div>
-        
+              <p className="font-semibold text-white">Follow Us: </p>
+               <div className="flex gap-2">
+              <a
+                href="https://www.facebook.com/people/Medical-and-Surgical-Solutions/61571157007880/"
+                target="_blank"
+                className="py-[7px] px-2 rounded-full bg-primaryColor/30 transition-all duration-700 hover:bg-primaryColor"
+              >
+                <i className="fa-brands fa-facebook text-white  transition-all duration-700"></i>
+              </a>
+              <a
+                href="https://www.youtube.com/@MEDICALANDSURGICALSOLUTIONS"
+                target="_blank"
+                className="py-[7px] px-2 rounded-full bg-primaryColor/30 transition-all duration-700 hover:bg-primaryColor"
+              >
+                <i className="fa-brands fa-youtube text-white  transition-all duration-700"></i>
+              </a>
+              <a
+                href="https://www.instagram.com/mssofficial2011/"
+                target="_blank"
+                className="py-[7px] px-2 rounded-full bg-primaryColor/30 transition-all duration-700 hover:bg-primaryColor"
+              >
+                <i className="fa-brands fa-instagram text-white  transition-all duration-700"></i>
+              </a>
+              <a
+                href="https://www.linkedin.com/company/medical-surgical-solutions/"
+                target="_blank"
+                className="py-[7px] px-2 rounded-full bg-primaryColor/30 transition-all duration-700 hover:bg-primaryColor"
+              >
+                <i className="fa-brands fa-linkedin text-white  transition-all duration-700"></i>
+              </a>
+            </div>
+            </div>
           </div>
           <div className="md:hidden flex flex-col gap-3  items-start mt-3">
-          <p className="font-semibold text-white">Follow Us: </p>
-          <div className="flex gap-2">
-            <p className="py-[7px] px-2 rounded-full bg-primaryColor/30 transition-all duration-700 hover:bg-primaryColor"><i className="fa-brands fa-facebook text-white  transition-all duration-700"></i></p>
-            <p className="py-[7px] px-2 rounded-full bg-primaryColor/30 transition-all duration-700 hover:bg-primaryColor"><i className="fa-brands fa-x-twitter text-white  transition-all duration-700"></i></p>
-            <p className="py-[7px] px-2 rounded-full bg-primaryColor/30 transition-all duration-700 hover:bg-primaryColor"><i className="fa-brands fa-instagram text-white  transition-all duration-700"></i></p>
-            <p className="py-[7px] px-2 rounded-full bg-primaryColor/30 transition-all duration-700 hover:bg-primaryColor"><i className="fa-brands fa-linkedin text-white  transition-all duration-700"></i></p>
+            <p className="font-semibold text-white">Follow Us: </p>
+            <div className="flex gap-2">
+              <a
+                href="https://www.facebook.com/people/Medical-and-Surgical-Solutions/61571157007880/"
+                target="_blank"
+                className="py-[7px] px-2 rounded-full bg-primaryColor/30 transition-all duration-700 hover:bg-primaryColor"
+              >
+                <i className="fa-brands fa-facebook text-white  transition-all duration-700"></i>
+              </a>
+              <a
+                href="https://www.youtube.com/@MEDICALANDSURGICALSOLUTIONS"
+                target="_blank"
+                className="py-[7px] px-2 rounded-full bg-primaryColor/30 transition-all duration-700 hover:bg-primaryColor"
+              >
+                <i className="fa-brands fa-youtube text-white  transition-all duration-700"></i>
+              </a>
+              <a
+                href="https://www.instagram.com/mssofficial2011/"
+                target="_blank"
+                className="py-[7px] px-2 rounded-full bg-primaryColor/30 transition-all duration-700 hover:bg-primaryColor"
+              >
+                <i className="fa-brands fa-instagram text-white  transition-all duration-700"></i>
+              </a>
+              <a
+                href="https://www.linkedin.com/company/medical-surgical-solutions/"
+                target="_blank"
+                className="py-[7px] px-2 rounded-full bg-primaryColor/30 transition-all duration-700 hover:bg-primaryColor"
+              >
+                <i className="fa-brands fa-linkedin text-white  transition-all duration-700"></i>
+              </a>
+            </div>
           </div>
-        </div>
         </div>
       </div>
     </>

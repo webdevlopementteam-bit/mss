@@ -24,10 +24,23 @@ const BrandArrow = ({ direction, onClick }) => (
 export const Popularbrands = () => {
   const [brands, setBrands] = useState([]);
 
+  // Tracks mobile-width viewport so slidesToShow can be forced directly,
+  // instead of relying only on react-slick's own breakpoint matching
+  // (which was not reliably kicking in on similar sliders elsewhere).
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== "undefined" ? window.innerWidth < 640 : false,
+  );
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 640);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   useEffect(() => {
     const fetchBrands = async () => {
       try {
-        const res = await API.get("/brand");
+        const res = await API.get("/brand?limit=30&isPublished=true");
         setBrands(res.data?.data || []);
       } catch (error) {
         console.log(error);
@@ -45,23 +58,33 @@ export const Popularbrands = () => {
       : `${import.meta.env.VITE_IMAGE_BASE_URL}/${img}`;
   };
 
+  const mobileSlidesToShow = Math.min(2, brands.length || 1);
+
   const settings = {
     dots: false,
-    infinite: brands.length > 6,
+    infinite: isMobile ? brands.length > 2 : brands.length > 6,
     speed: 700,
     autoplay: true,
     autoplaySpeed: 2800,
     pauseOnHover: true,
-    slidesToShow: 6.3,
-    slidesToScroll: 1,
-    swipeToSlide: true,
-    arrows: true,
+    slidesToShow: isMobile ? mobileSlidesToShow : 6.3,
+    slidesToScroll: isMobile ? 2 : 1,
+    swipeToSlide: !isMobile,
+    arrows: !isMobile,
     nextArrow: <BrandArrow direction="next" />,
     prevArrow: <BrandArrow direction="prev" />,
     responsive: [
       { breakpoint: 1280, settings: { slidesToShow: 4.3 } },
       { breakpoint: 1024, settings: { slidesToShow: 3.3, arrows: false } },
-      { breakpoint: 640, settings: { slidesToShow: 2.3, arrows: false } },
+      {
+        breakpoint: 640,
+        settings: {
+          // exactly 2 brands visible on mobile
+          slidesToShow: mobileSlidesToShow,
+          slidesToScroll: 2,
+          arrows: false,
+        },
+      },
     ],
   };
 
@@ -79,20 +102,20 @@ export const Popularbrands = () => {
       </div>
 
       {/* Slider */}
-      <div className="relative px-4 md:px-10 lg:px-16 overflow-hidden h-[178px] md:h-[208px]">
-        <Slider {...settings}>
+      <div className="relative px-3 sm:px-4 md:px-10 lg:px-16 overflow-hidden h-[168px] sm:h-[178px] md:h-[208px]">
+        <Slider key={isMobile ? "mobile" : "desktop"} {...settings}>
           {brands.map((brand) => (
-            <div key={brand._id} className="px-2.5">
-              <div className="group relative bg-white rounded-[22px] py-5 md:py-6 px-4 flex flex-col items-center justify-center h-[160px] md:h-[190px] border border-[#EFE6DF] shadow-[0_4px_16px_rgba(43,36,32,0.04)] hover:border-[#E3D2B5] hover:shadow-[0_16px_34px_rgba(43,36,32,0.1)] transition-all duration-400 ease-out hover:-translate-y-1.5 cursor-pointer">
-                <div className="w-20 h-20 md:w-24 md:h-24 rounded-2xl bg-[#FAF7F3] flex items-center justify-center overflow-hidden">
+            <div key={brand._id} className="px-1.5 sm:px-2.5">
+              <div className="group relative bg-white rounded-2xl md:rounded-[22px] py-4 sm:py-5 md:py-6 px-3 sm:px-4 flex flex-col items-center justify-center h-[150px] sm:h-[160px] md:h-[190px] border border-[#EFE6DF] shadow-[0_4px_16px_rgba(43,36,32,0.04)] hover:border-[#E3D2B5] hover:shadow-[0_16px_34px_rgba(43,36,32,0.1)] transition-all duration-400 ease-out hover:-translate-y-1.5 cursor-pointer">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-xl md:rounded-2xl bg-[#FAF7F3] flex items-center justify-center overflow-hidden">
                   <img
                     src={getImage(brand.image)}
                     alt={brand.name}
-                    className="w-16 h-16 md:w-20 md:h-20 object-contain transition-transform duration-400 ease-out group-hover:scale-110"
+                    className="w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-xl md:rounded-2xl object-contain transition-transform duration-400 ease-out group-hover:scale-110"
                   />
                 </div>
 
-                <p className="mt-4 text-center text-xs md:text-sm font-semibold text-[#2B2420] leading-tight line-clamp-2">
+                <p className="mt-3 sm:mt-4 text-center text-[11px] sm:text-xs md:text-sm font-semibold text-[#2B2420] leading-tight line-clamp-2">
                   {brand.name}
                 </p>
 

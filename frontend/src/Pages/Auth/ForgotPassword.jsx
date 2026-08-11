@@ -2,19 +2,29 @@ import React, { useState } from "react";
 import { toast } from "react-toastify";
 import { useNavigate, Link } from "react-router-dom";
 import * as authService from "../../api/authService";
+import { isValidMobile } from "../../utils/validators";
+import AuthShell from "./AuthShell";
+import AuthInput from "./AuthInput";
 
 const ForgotPassword = () => {
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
+  const [mobile, setMobile] = useState("");
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!isValidMobile(mobile)) {
+      setError("Enter a valid 10-digit Indian mobile number");
+      return;
+    }
+
     try {
       setLoading(true);
-      const { data } = await authService.forgotPassword(email);
-      toast.success(data.message || "If that email exists, a reset code has been sent");
-      navigate("/reset-password", { state: { email } });
+      const { data } = await authService.forgotPassword(mobile);
+      toast.success(data.message || "If that mobile number exists, a reset code has been sent");
+      navigate("/reset-password", { state: { mobile } });
     } catch (error) {
       toast.error(error.response?.data?.message || "Something went wrong");
     } finally {
@@ -23,42 +33,41 @@ const ForgotPassword = () => {
   };
 
   return (
-    <section className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
-      <div className="w-full max-w-md bg-white rounded-3xl shadow-lg p-8">
-        <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold">Forgot Password</h2>
-          <p className="text-gray-500 mt-2">
-            Enter your email to receive a reset code
-          </p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <input
-            type="email"
-            placeholder="Email Address"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full border rounded-xl p-3 outline-none"
-            required
-          />
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-black text-white py-3 rounded-xl font-semibold"
-          >
-            {loading ? "Sending..." : "Send Reset Code"}
-          </button>
-        </form>
-
-        <p className="text-center text-sm text-gray-500 mt-6">
+    <AuthShell
+      title="Forgot password"
+      subtitle="Enter your mobile number to receive a reset code"
+      footer={
+        <p className="text-sm text-[#64748b]">
           Remembered your password?{" "}
-          <Link to="/login" className="text-blue-600 font-semibold">
-            Login
+          <Link to="/login" className="text-primaryColor font-semibold">
+            Sign in
           </Link>
         </p>
-      </div>
-    </section>
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <AuthInput
+          icon="fa-mobile-screen"
+          type="tel"
+          placeholder="Mobile Number"
+          value={mobile}
+          onChange={(e) => {
+            setMobile(e.target.value);
+            setError("");
+          }}
+          maxLength={10}
+          error={error}
+        />
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full bg-primaryColor hover:bg-[#9c1e22] transition-colors text-white py-[14px] rounded-2xl font-semibold text-[15px] disabled:opacity-70"
+        >
+          {loading ? "Sending..." : "Send Reset Code"}
+        </button>
+      </form>
+    </AuthShell>
   );
 };
 

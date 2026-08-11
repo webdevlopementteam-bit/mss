@@ -20,11 +20,12 @@ export default function Sidebar() {
   const isCatalogActive = [
     "/brands",
     "/categories",
+    "/subcategories",
     "/products",
     "/attributes",
     "/coupons",
     "/blog",
-    "/client",
+    "/company",
     "/pincode",
   ].includes(location.pathname);
 
@@ -91,13 +92,14 @@ export default function Sidebar() {
               {[
                 { name: "Brands", path: "/brands" },
                 { name: "Categories", path: "/categories" },
+                { name: "Subcategories", path: "/subcategories" },
                 { name: "Products", path: "/products" },
                 { name: "Attributes", path: "/attributes" },
                 { name: "Coupons", path: "/coupons" },
                 { name: "Pincode", path: "/pincode" },
                 { name: "Award", path: "/award" },
                 { name: "Blog", path: "/blog" },
-                { name: "Client", path: "/client" },
+                { name: "Company", path: "/company" },
               ].map((item) => (
                 <NavLink
                   key={item.path}

@@ -53,12 +53,17 @@ export const getNextAllowedStatus = (status) => {
   return STATUS_FLOW[idx + 1];
 };
 
-// The only admin-driven transition allowed is moving to the immediate next
-// step in STATUS_FLOW. Cancelled/delivered orders can never be updated here —
+// Admin can only manually drive the order up through "packed" — everything
+// from "shipped" onward is DTDC's job (booked automatically the moment an
+// order is marked packed, then advanced by the DTDC webhook/sync as the
+// courier scans it). Cancelled/delivered orders can never be updated here —
 // cancellation only happens through the dedicated cancel endpoint.
+const ADMIN_MANUAL_TARGETS = ["confirmed", "processing", "packed"];
+
 export const canAdminUpdate = (currentStatus, newStatus) => {
   if (!ORDER_STATUS.includes(newStatus)) return false;
   if (isFinalStatus(currentStatus)) return false;
+  if (!ADMIN_MANUAL_TARGETS.includes(newStatus)) return false;
   return getNextAllowedStatus(currentStatus) === newStatus;
 };
 

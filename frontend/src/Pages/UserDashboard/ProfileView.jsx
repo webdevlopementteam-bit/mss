@@ -8,7 +8,10 @@ const toProfileShape = (user) => ({
   firstName: user?.firstName || "",
   lastName: user?.lastName || "",
   email: user?.email || "",
-  phone: user?.phone || "",
+  // Mobile is verified at registration and must never be re-typed here —
+  // prefer the authoritative verified `mobile`, falling back to the legacy
+  // `phone` field only for pre-mobile-OTP accounts that never got one.
+  phone: user?.mobile || user?.phone || "",
   organisation: user?.organisation || "",
   address: user?.address || "",
   city: user?.city || "",
@@ -31,11 +34,6 @@ export default function ProfileView() {
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(""), 3500); };
 
   const saveProfile = async () => {
-    if (!draft.phone?.trim()) {
-      showToast("Mobile number is required.");
-      return;
-    }
-
     try {
       setSaving(true);
       const { firstName, lastName, phone, organisation, address, city, state, zip } = draft;
@@ -103,8 +101,8 @@ export default function ProfileView() {
             onChange={e => setDraft(p => ({ ...p, lastName: e.target.value }))} disabled={!editMode} />
           <Field label="Email address" value={profile.email} type="email"
             onChange={() => {}} disabled />
-          <Field label="Phone number *" half value={editMode ? draft.phone : profile.phone}
-            onChange={e => setDraft(p => ({ ...p, phone: e.target.value }))} disabled={!editMode} />
+          <Field label="Mobile number" half value={profile.phone}
+            onChange={() => {}} disabled />
           <Field label="Organisation / Hospital" half value={editMode ? draft.organisation : profile.organisation}
             onChange={e => setDraft(p => ({ ...p, organisation: e.target.value }))} disabled={!editMode} />
         </div>

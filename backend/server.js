@@ -5,6 +5,7 @@ import connectDB from "./database/db.js";
 // Routes
 import brandRoutes from "./routes/brandRoute.js";
 import categoryRoutes from "./routes/categoryRoute.js";
+import subcategoryRoutes from "./routes/subcategoryRoute.js";
 import pincodeRoutes from "./routes/pincodeRoute.js";
 import attributeRoutes from "./routes/attributeRoute.js";
 
@@ -13,16 +14,14 @@ import errorHandler from "./middleware/errorHandler.js";
 import authRoutes from "./routes/authRoute.js";
 import awardRoutes from "./routes/awardRoute.js";
 import blogRoutes from "./routes/blogRoute.js";
-import clientRoutes from "./routes/clientRoute.js";
+import companyRoutes from "./routes/companyRoute.js";
 import couponRoutes from "./routes/couponRoute.js";
 import productRoutes from "./routes/productRoute.js";
 import ratingRoutes from "./routes/ratingRoute.js";
 import homeCmsRoutes from "./routes/homeCmsRoutes.js";
 import uploadRoutes from "./routes/uploadRoute.js";
 import orderRoutes from "./routes/orderRoutes.js";
-// DTDC shipment gateway webhook — disabled for now (account not yet fully
-// activated). Uncomment along with the app.use() below to re-enable.
-// import webhookRoutes from "./routes/webhookRoutes.js";
+import webhookRoutes from "./routes/webhookRoutes.js";
 import path from "path";
 import cors from "cors";
 import cookieParser from "cookie-parser";
@@ -70,19 +69,20 @@ app.get("/", (req, res) => {
 // API Routes
 app.use("/api/brand", brandRoutes);
 app.use("/api/category", categoryRoutes);
+app.use("/api/subcategory", subcategoryRoutes);
 app.use("/api/pincode", pincodeRoutes);
 app.use("/api/attribute", attributeRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/award",awardRoutes);
 app.use("/api/blog",blogRoutes);
-app.use("/api/client",clientRoutes);
+app.use("/api/company",companyRoutes);
 app.use("/api/coupon",couponRoutes);
 app.use("/api/product",productRoutes);
 app.use("/api/rating",ratingRoutes);
 app.use("/api/cms", homeCmsRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/orders", orderRoutes);
-// app.use("/api/webhooks", webhookRoutes);
+app.use("/api/webhooks", webhookRoutes);
 
 // 404 handler 
 app.use((req, res) => {

@@ -9,6 +9,23 @@ const getImage = (item) => {
   return img.startsWith("http") ? img : `${IMG_URL}/${img}`;
 };
 
+// Variant products have price/salePrice = 0 at the top level (real prices
+// live on the variants) — items added from a listing card carry a
+// server-computed minSalePrice, while items added from the product detail
+// page instead carry the raw variants array, so fall back to computing it
+// client-side from whichever shape is available.
+const getWishlistPrice = (item) => {
+  if (!item.hasVariants) {
+    return item.salePrice || item.price || 0;
+  }
+  if (item.minSalePrice != null) return item.minSalePrice;
+  if (Array.isArray(item.variants) && item.variants.length > 0) {
+    const effective = item.variants.map((v) => (v.salePrice > 0 ? v.salePrice : v.price));
+    return Math.min(...effective);
+  }
+  return item.minPrice ?? 0;
+};
+
 export default function Wishlist() {
   const { wishlist, removeFromWishlist, addToCart } = useShop();
 
@@ -88,7 +105,7 @@ export default function Wishlist() {
           {wishlist.map((item) => {
             const image = getImage(item);
             const name = item.title ?? item.name;
-            const price = item.salePrice ?? item.price;
+            const price = getWishlistPrice(item);
 
             return (
               <div
@@ -136,7 +153,7 @@ export default function Wishlist() {
 
                   <div className="flex items-baseline gap-1.5 mt-2">
                     <span className="text-primaryColor font-bold text-lg sm:text-xl tracking-tight">
-                      ₹{price.toLocaleString("en-IN")}
+                      {item.hasVariants && "From "}₹{price.toLocaleString("en-IN")}
                     </span>
                   </div>
 

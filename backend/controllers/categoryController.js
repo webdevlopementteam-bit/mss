@@ -1,4 +1,5 @@
 import Category from "../models/categoryModel.js";
+import Subcategory from "../models/subcategoryModel.js";
 import fs from "fs";
 
 // 🔹 slug generator
@@ -179,6 +180,18 @@ export const deleteCategory = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: "Delete child categories first",
+      });
+    }
+
+    // check subcategories exist
+    const hasSubcategories = await Subcategory.findOne({
+      category: category._id,
+    });
+
+    if (hasSubcategories) {
+      return res.status(400).json({
+        success: false,
+        message: "Delete subcategories first",
       });
     }
 

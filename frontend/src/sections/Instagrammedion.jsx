@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Slider from "react-slick";
+import API from "../api/axios";
 
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
@@ -7,9 +8,30 @@ import "slick-carousel/slick/slick-theme.css";
 import NextArrow from "../components/NextArrow";
 import PrevArrow from "../components/PrevArrow";
 
-import { instapost } from "../data";
-
 export const Instagrammedion = () => {
+  const [instagramPosts, setInstagramPosts] = useState([]);
+
+  useEffect(() => {
+    const fetchInstagramPosts = async () => {
+      try {
+        const res = await API.get("/cms/home");
+        setInstagramPosts(res.data?.instagramPosts || []);
+      } catch (error) {
+        console.log(error);
+      }
+    };
+
+    fetchInstagramPosts();
+  }, []);
+
+  const getImage = (img) => {
+    if (!img) return "";
+
+    return img.startsWith("http")
+      ? img
+      : `${import.meta.env.VITE_IMAGE_BASE_URL}${img}`;
+  };
+
   const settings = {
     dots: false,
     infinite: true,
@@ -32,6 +54,10 @@ export const Instagrammedion = () => {
     ],
   };
 
+  if (instagramPosts.length === 0) {
+    return null;
+  }
+
   return (
     <section className="my-10 md:my-16 overflow-hidden">
       {/* Heading */}
@@ -44,10 +70,14 @@ export const Instagrammedion = () => {
       {/* Slider */}
       <div className="relative px-4 md:px-14 lg:px-20 mt-8 md:mt-10">
         <Slider {...settings}>
-          {instapost.map((post) => (
-            <div key={post.id} className="px-2">
-              <div
+          {instagramPosts.map((post) => (
+            <div key={post._id} className="px-2">
+              <a
+                href={post.link || undefined}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="
+                  block
                   w-[180px]
                   sm:w-[220px]
                   md:w-[260px]
@@ -62,7 +92,7 @@ export const Instagrammedion = () => {
               >
                 {/* Image */}
                 <img
-                  src={post.image}
+                  src={getImage(post.image)}
                   alt="instagram-post"
                   className="
                     w-full
@@ -70,7 +100,7 @@ export const Instagrammedion = () => {
                     sm:h-[260px]
                     md:h-[320px]
                     lg:h-[340px]
-                    object-cover
+                    object-contain
                     transition-all
                     duration-700
                     group-hover:scale-110
@@ -108,7 +138,7 @@ export const Instagrammedion = () => {
                     <i className="fa-brands fa-instagram text-xl md:text-2xl text-white"></i>
                   </span>
                 </div>
-              </div>
+              </a>
             </div>
           ))}
         </Slider>

@@ -31,20 +31,20 @@ export const Productbanner = () => {
   };
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-5 px-4 lg:px-side mt-10 md:mt-16">
+    <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-5 px-4 sm:px-6 md:px-8 lg:px-side mt-8 sm:mt-10 md:mt-16">
       {salesBanners.slice(0, 3).map((banner, index) => (
         <div
           key={index}
           style={{
             backgroundImage: `url(${getImage(banner.image)})`,
             backgroundPosition: "center",
-            backgroundSize: "cover",
+            backgroundSize: "contain",
           }}
-          className={`px-4 md:px-6 py-10 md:py-32 rounded-2xl flex flex-col items-start justify-center ${
-            index === 2 ? "col-span-2 lg:col-span-1" : ""
+          className={`px-4 sm:px-5 md:px-6 py-8 sm:py-12 md:py-20 lg:py-32 rounded-xl sm:rounded-2xl min-h-[160px] sm:min-h-[220px] md:min-h-[320px] flex flex-col items-start justify-center ${
+            index === 2 ? "xs:col-span-2 lg:col-span-1" : ""
           }`}
         >
-         
+
         </div>
       ))}
     </div>

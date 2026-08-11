@@ -7,11 +7,12 @@ import ProtectedRoutes from "./routes/ProtectedRoutes";
 import { AuthProvider } from "./context/AuthContext";
 import Products from "./pages/Products";
 import Categories from "./pages/Categories";
+import Subcategories from "./pages/Subcategories";
 import Brands from "./pages/Brands";
 import Attributes from "./pages/Attributes";
 import Coupons from "./pages/Coupons";
 import Blog from "./pages/Blog";
-import Client from "./pages/Client";
+import Company from "./pages/Company";
 import Customers from "./pages/Customers";
 import Ratings from "./pages/Ratings";
 import Award from "./pages/Award";
@@ -52,13 +53,14 @@ function App() {
               <Route index element={<Dashboard />} />
               <Route path="products" element={<Products />} />
               <Route path="categories" element={<Categories />} />
+              <Route path="subcategories" element={<Subcategories />} />
               <Route path="brands" element={<Brands />} />
               <Route path="attributes" element={<Attributes />} />
               <Route path="pincode" element={<Pincode />} />
               <Route path="award" element={<Award />} />
               <Route path="coupons" element={<Coupons />} />
               <Route path="blog" element={<Blog />} />
-              <Route path="client" element={<Client />} />
+              <Route path="company" element={<Company />} />
               <Route path="customers" element={<Customers />} />
               <Route path="ratings" element={<Ratings />} />
               <Route path="create-product" element={<CreateProduct />} />

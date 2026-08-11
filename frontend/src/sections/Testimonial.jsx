@@ -28,101 +28,98 @@ export const Testimonial = () => {
         backgroundSize: "cover",
         backgroundPosition: "center center",
       }}
-      className="py-12 md:py-16 lg:py-20 overflow-hidden"
+      className="relative py-14 md:py-20 lg:py-24 overflow-hidden"
     >
-      <div className="px-4 md:px-6 lg:px-side">
+      {/* Dark overlay for text contrast */}
+      <div className="absolute inset-0 bg-black/40"></div>
+
+      <div className="relative z-10 px-4 md:px-6 lg:px-side">
         {/* Heading */}
-        <div className="text-center">
-          <p className="text-sm md:text-lg uppercase text-white font-semibold tracking-[4px]">
+        <div className="text-center max-w-xl mx-auto">
+          <p className="text-sm md:text-base uppercase text-secondaryColor font-semibold tracking-[4px]">
             Testimonials
           </p>
 
-          <h3 className="mt-3 text-2xl md:text-3xl lg:text-4xl text-white font-semibold">
-            What Our Client Say&apos;s About Us
+          <h3 className="mt-3 text-2xl md:text-4xl text-white font-bold leading-tight">
+            What Our Clients Say About Us
           </h3>
+
+          <p className="mt-3 text-white/70 text-sm md:text-base">
+            Real experiences from people who trust us
+          </p>
         </div>
 
         {/* Slider */}
-        <div className="relative mt-10">
+        <div className="relative mt-12">
           <Slider {...testimonialsettings}>
             {testimonials.map((test) => (
-              <div key={test.id} className="px-2 md:px-3">
+              <div key={test.id} className="px-3">
                 <div
                   className="
-                    w-[280px]
-                    sm:w-[320px]
-                    md:w-[360px]
-                    lg:w-[320px]
+                    w-[290px]
+                    sm:w-[330px]
+                    md:w-[370px]
+                    lg:w-[340px]
                     bg-white
-                    rounded-3xl
-                    md:rounded-[40px]
-                    p-4
-                    md:p-6
-                    lg:p-7
+                    rounded-[28px]
+                    md:rounded-[36px]
+                    p-6
+                    md:p-7
                     relative
-                    min-h-[320px]
-                    md:min-h-[360px]
+                    min-h-[300px]
+                    md:min-h-[330px]
                     flex
                     flex-col
+                    shadow-lg
                     transition-all
-                    duration-300
-                    hover:-translate-y-1
+                    duration-500
+                    hover:-translate-y-2
                     hover:shadow-2xl
                   "
                 >
-                  {/* Quote Background */}
-                  <div
-                    className="absolute inset-0 pointer-events-none"
-                    style={{
-                      backgroundImage: `url(${quotes})`,
-                      backgroundSize: "35%",
-                      backgroundRepeat: "no-repeat",
-                      backgroundPosition:
-                        "calc(100% - 20px) calc(100% - 20px)",
-                      opacity: 0.12,
-                    }}
+                  {/* Big quote mark */}
+                  <img
+                    src={quotes}
+                    alt=""
+                    className="absolute top-6 right-6 w-10 md:w-12 opacity-10 pointer-events-none"
                   />
 
-                  {/* User Info */}
-                  <div className="relative z-10 flex items-center gap-3 bg-secondaryColor rounded-2xl md:rounded-full p-3">
-                    <img
-                      src={test.image}
-                      alt={test.name}
-                      className="
-                        w-14
-                        h-14
-                        md:w-20
-                        md:h-20
-                        rounded-full
-                        object-cover
-                        flex-shrink-0
-                      "
-                    />
-
-                    <div className="text-left">
-                      <h4 className="text-white font-semibold text-sm md:text-lg lg:text-md">
-                        {test.name}
-                      </h4>
-
-                      <p className="text-blue-900 text-xs md:text-sm lg:text-base font-semibold">
-                        {test.role}
-                      </p>
-                    </div>
-                  </div>
+                  
 
                   {/* Comment */}
-                  <p className="relative z-10 mt-5 text-sm md:text-base text-black/70 leading-relaxed flex-grow">
-                    {test.comment}
+                  <p className="relative z-10 mt-4 text-sm md:text-[15px] text-black/70 leading-relaxed flex-grow">
+                    "{test.comment}"
                   </p>
 
                   {/* Rating */}
-                  <div className="relative z-10 mt-5 flex justify-center gap-1">
+                  <div className="relative z-10 flex gap-1">
                     {[...Array(5)].map((_, index) => (
                       <i
                         key={index}
-                        className="fa-solid fa-star text-secondaryColor text-sm md:text-base"
+                        className="fa-solid fa-star text-[#F0BD14] text-sm md:text-base"
                       ></i>
                     ))}
+                  </div>
+
+                  {/* Divider */}
+                  <div className="w-full h-px bg-black/10 my-5"></div>
+
+                  {/* User Info */}
+                  <div className="relative z-10 flex items-center gap-3">
+                    <img
+                      src={test.image}
+                      alt={test.name}
+                      className="w-12 h-12 md:w-14 md:h-14 rounded-full object-cover flex-shrink-0 ring-2 ring-secondaryColor/30"
+                    />
+
+                    <div className="text-left">
+                      <h4 className="text-black font-semibold text-sm md:text-base">
+                        {test.name}
+                      </h4>
+                      <p className="text-primaryColor text-xs md:text-sm font-medium">
+                        {test.role}
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>

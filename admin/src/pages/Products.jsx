@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import API from "../api/axios";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import toast from "react-hot-toast";
 const IMG_URL = import.meta.env.VITE_IMAGE_BASE_URL;
 const Toggle = ({ value, onChange }) => (
@@ -22,6 +22,7 @@ export default function Products() {
   const [products, setProducts] = useState([]);
   const [brands, setBrands] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [subcategories, setSubcategories] = useState([]);
   const [attributes, setAttributes] = useState([]);
   const [editId, setEditId] = useState(null);
   const [show, setShow] = useState(false);
@@ -30,7 +31,7 @@ export default function Products() {
   const [deleteId, setDeleteId] = useState(null);
   const [currentVariant, setCurrentVariant] = useState([]);
   const [confirmVariantDelete, setConfirmVariantDelete] = useState(false);
-  const [clients, setClients] = useState([]);
+  const [companies, setCompanies] = useState([]);
   const [backupBasic, setBackupBasic] = useState({
     price: "",
     salePrice: "",
@@ -47,15 +48,19 @@ export default function Products() {
   const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [pageWindowStart, setPageWindowStart] = useState(1);
 
   const [form, setForm] = useState({
     title: "",
     description: "",
     brand: "",
     category: [],
+    subcategory: "",
     price: "",
+    salePrice: "",
     quantity: "",
-    ref: "",
+    referenceNo: "",
+    fsn: "",
     hsn: "",
     gst: "",
     tags: [],
@@ -63,8 +68,9 @@ export default function Products() {
     packing: "",
     metaTitle: "",
     metaDescription: "",
+    slug: "",
     deliveryCharge: "",
-    client: "",
+    company: "",
     images: [],
     preview: [],
     homeSections: [],
@@ -80,9 +86,12 @@ export default function Products() {
       description: "",
       brand: "",
       category: [],
+      subcategory: "",
       price: "",
+      salePrice: "",
       quantity: "",
-      ref: "",
+      referenceNo: "",
+      fsn: "",
       hsn: "",
       gst: "",
       tags: [],
@@ -90,7 +99,8 @@ export default function Products() {
       packing: "",
       metaTitle: "",
       metaDescription: "",
-      client: "",
+      slug: "",
+      company: "",
       deliveryCharge: "",
       images: [],
       preview: [],
@@ -127,12 +137,13 @@ export default function Products() {
       url += `&${params.join("&")}`;
     }
 
-   const [p, b, c, a, cl] = await Promise.all([
+   const [p, b, c, a, cl, sc] = await Promise.all([
   API.get(url),
-  API.get("/brand"),
-  API.get("/category"),
+  API.get("/brand?limit=1000"),
+  API.get("/category?limit=1000"),
   API.get("/attribute"),
-  API.get("/client"),
+  API.get("/company?limit=1000"),
+  API.get("/subcategory?limit=3000"),
 ]);
 
 setProducts(p.data.data || []);
@@ -140,7 +151,8 @@ setTotalPages(p.data.totalPages || 1);
 setBrands(b.data.data || []);
 setCategories(c.data.data || []);
 setAttributes(a.data.data || []);
-setClients(cl.data.data || []);
+setCompanies(cl.data.data || []);
+setSubcategories(sc.data.data || []);
   }
   useEffect(() => {
     const delay = setTimeout(() => {
@@ -152,7 +164,14 @@ setClients(cl.data.data || []);
 
   useEffect(() => {
     setPage(1);
+    setPageWindowStart(1);
   }, [search, selectedCategory, sort, status]);
+
+  useEffect(() => {
+    if (pageWindowStart > totalPages) {
+      setPageWindowStart(1);
+    }
+  }, [totalPages, pageWindowStart]);
 
   const handleImage = (e) => {
     const files = Array.from(e.target.files);
@@ -376,7 +395,8 @@ setClients(cl.data.data || []);
 
       // 🔥 FIXES
       category: product.category?.map((c) => c._id) || [],
-      client: product.client?._id || "", // ✅ MAIN FIX
+      subcategory: product.subcategory?._id || "",
+      company: product.company?._id || "", // ✅ MAIN FIX
       brand: product.brand?._id || "",
 
       price: product.price?.toString() || "",
@@ -385,7 +405,10 @@ setClients(cl.data.data || []);
       gst: product.gst?.toString() || "",
       moq: product.moq?.toString() || "",
       deliveryCharge: product.deliveryCharge?.toString() || "",
+      referenceNo: product.referenceNo || "",
+      fsn: product.fsn || "",
       hsn: product.hsn?.toString() || "",
+      slug: product.slug || "",
       homeSections: product.homeSections || [],
       existingImages: product.images || [],
       preview: product.images?.map((img) => `${IMG_URL}/${img}`) || [],
@@ -435,14 +458,14 @@ setClients(cl.data.data || []);
   return (
     <div className="p-6 pt-20 text-white">
       {/* HEADER */}
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-wrap justify-between items-center gap-3 mb-6">
         <h1 className="text-xl text-white">Products</h1>
-        <div className="flex gap-3">
-          <label className="bg-blue-600 text-white px-4 py-2 rounded-lg cursor-pointer">
-            Import CSV
+        <div className="flex flex-wrap gap-3">
+          <label className="bg-blue-600 hover:bg-blue-500 transition text-white px-4 py-2 rounded-lg cursor-pointer">
+            Import Products
             <input
               type="file"
-              accept=".csv"
+              accept=".csv,.xlsx,.xls"
               hidden
               onChange={async (e) => {
                 const file = e.target.files[0];
@@ -533,20 +556,20 @@ setClients(cl.data.data || []);
         </div>
       )}
 
-      <div className="mb-4 flex gap-3">
+      <div className="mb-4 flex flex-wrap items-center gap-3">
         {/* SEARCH */}
         <input
           placeholder="Search product..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="px-4 py-2 rounded-lg bg-[#0f131c] border border-white/10 text-white w-[350px]"
+          className="px-4 py-2 rounded-lg bg-[#0f131c] border border-white/10 text-white flex-1 min-w-[220px]"
         />
 
         {/* CATEGORY FILTER */}
         <select
           value={selectedCategory}
           onChange={(e) => setSelectedCategory(e.target.value)}
-          className="pl-4 pr-14 py-2 rounded-lg bg-[#0f131c] border border-white/10 text-white"
+          className="px-4 py-2 rounded-lg bg-[#0f131c] border border-white/10 text-white min-w-[160px]"
         >
           <option value="" className="text-white">
             All Categories
@@ -562,7 +585,7 @@ setClients(cl.data.data || []);
         <select
           value={sort}
           onChange={(e) => setSort(e.target.value)}
-          className="pl-4 pr-14 py-2 rounded-lg bg-[#0f131c] border border-white/10 text-white"
+          className="px-4 py-2 rounded-lg bg-[#0f131c] border border-white/10 text-white min-w-[160px]"
         >
           <option value="" className="text-white">
             Sort by Price
@@ -578,7 +601,7 @@ setClients(cl.data.data || []);
         <select
           value={status}
           onChange={(e) => setStatus(e.target.value)}
-          className="pl-4 pr-14 rounded-lg bg-[#0f131c] border border-white/10 text-white"
+          className="px-4 py-2 rounded-lg bg-[#0f131c] border border-white/10 text-white min-w-[160px]"
         >
           <option value="" className="text-white">
             All Status
@@ -600,7 +623,7 @@ setClients(cl.data.data || []);
         {/* SEARCH BUTTON */}
         <button
           onClick={() => fetchAll()}
-          className="px-6 py-2 bg-red-500 rounded-lg text-white"
+          className="px-6 py-2 bg-red-500 hover:bg-red-400 transition rounded-lg text-white"
         >
           Apply
         </button>
@@ -616,7 +639,7 @@ setClients(cl.data.data || []);
               fetchAll();
             }, 0);
           }}
-          className="px-6 py-2 bg-gray-600 rounded-lg text-white"
+          className="px-6 py-2 bg-gray-600 hover:bg-gray-500 transition rounded-lg text-white"
         >
           Reset
         </button>
@@ -625,7 +648,8 @@ setClients(cl.data.data || []);
       {/* TABLE */}
 
       <div className="bg-[#0f131c] rounded-xl overflow-hidden">
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto">
+        <table className="w-full min-w-[900px] text-sm">
           <thead className="text-white/60 border-b border-white/10">
             <tr>
               <th className="p-4 text-white text-left">
@@ -656,11 +680,14 @@ setClients(cl.data.data || []);
           </thead>
 
           <tbody>
-            {products.map((p) => {
-              console.log("TITLE:", p.title);
-              console.log("IMAGES:", p.images);
-              console.log("FIRST IMAGE:", p.images?.[0]);
-              console.log("----------------------");
+            {products.length === 0 ? (
+              <tr>
+                <td colSpan={9} className="p-10 text-center text-white/40">
+                  No products found
+                </td>
+              </tr>
+            ) : (
+            products.map((p) => {
               return (
                 <tr
                   key={p._id}
@@ -755,43 +782,61 @@ setClients(cl.data.data || []);
                   </td>
                 </tr>
               );
-            })}
+            })
+            )}
           </tbody>
         </table>
-
-        <div className="flex items-center justify-end gap-2 mt-6">
-          <button
-            disabled={page === 1}
-            onClick={() => setPage(page - 1)}
-            className="px-4 py-2 bg-gray-700 text-white rounded disabled:opacity-50"
-          >
-            Prev
-          </button>
-
-          <div className="flex gap-2">
-            {[...Array(totalPages)].map((_, i) => (
-              <button
-                key={i}
-                onClick={() => setPage(i + 1)}
-                className={`px-3 py-1 rounded ${
-                  page === i + 1
-                    ? "bg-blue-600 text-white"
-                    : "bg-gray-600 text-white"
-                }`}
-              >
-                {i + 1}
-              </button>
-            ))}
-          </div>
-
-          <button
-            disabled={page === totalPages}
-            onClick={() => setPage(page + 1)}
-            className="px-4 py-2 bg-gray-700 text-white rounded disabled:opacity-50"
-          >
-            Next
-          </button>
         </div>
+
+        {totalPages > 1 && (
+          <div className="flex justify-center p-4">
+            <div className="flex items-center gap-1 bg-white/5 rounded-full px-3 py-2 overflow-x-auto max-w-full">
+              <button
+                disabled={pageWindowStart === 1}
+                onClick={() =>
+                  setPageWindowStart((prev) => Math.max(1, prev - 10))
+                }
+                className="w-8 h-8 flex items-center justify-center rounded-full text-white/50 hover:text-white hover:bg-white/10 transition disabled:opacity-30 disabled:hover:bg-transparent shrink-0"
+              >
+                <ChevronLeft size={16} />
+              </button>
+
+              <div className="flex items-center gap-1">
+                {[...Array(Math.min(pageWindowStart + 9, totalPages) - pageWindowStart + 1)].map(
+                  (_, i) => {
+                    const num = pageWindowStart + i;
+                    const active = page === num;
+                    return (
+                      <button
+                        key={num}
+                        onClick={() => setPage(num)}
+                        className={`w-8 h-8 shrink-0 flex items-center justify-center rounded-full text-sm transition ${
+                          active
+                            ? "bg-gradient-to-br from-[var(--primary)] to-[var(--primary-container)] text-white font-medium"
+                            : "text-white/60 hover:text-white hover:bg-white/10"
+                        }`}
+                      >
+                        {num}
+                      </button>
+                    );
+                  },
+                )}
+              </div>
+
+              <button
+                disabled={pageWindowStart + 9 >= totalPages}
+                onClick={() =>
+                  setPageWindowStart((prev) =>
+                    Math.min(prev + 10, totalPages),
+                  )
+                }
+                className="w-8 h-8 flex items-center justify-center rounded-full text-white/50 hover:text-white hover:bg-white/10 transition disabled:opacity-30 disabled:hover:bg-transparent shrink-0"
+              >
+                <ChevronRight size={16} />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {deleteId && (
@@ -833,9 +878,9 @@ setClients(cl.data.data || []);
 
       {show && (
         <div className="fixed inset-0 bg-black/60 flex justify-end z-50">
-          <div className="w-[650px] bg-[#0f131c] h-full p-6 overflow-y-auto">
+          <div className="w-full max-w-[650px] bg-[#0f131c] h-full p-6 overflow-y-auto custom-scroll">
             {/* HEADER */}
-            <div className="flex justify-between mb-6">
+            <div className="flex justify-between items-center mb-6">
               <h2 className="text-lg font-semibold text-white">
                 {editId ? "Edit Product" : "Add Product"}
               </h2>
@@ -845,7 +890,7 @@ setClients(cl.data.data || []);
                   setActiveTab("basic");
                   setShow(false);
                 }}
-                className="text-white"
+                className="text-white/60 hover:text-white hover:bg-white/10 transition w-8 h-8 flex items-center justify-center rounded-lg"
               >
                 ✕
               </button>
@@ -1017,7 +1062,7 @@ setClients(cl.data.data || []);
                     />
                   </div>
 
-                  <div>
+                  <div className="mb-3">
                     <label className="label">Meta Description</label>
                     <textarea
                       className="input"
@@ -1027,6 +1072,22 @@ setClients(cl.data.data || []);
                         setForm({ ...form, metaDescription: e.target.value })
                       }
                     />
+                  </div>
+
+                  <div>
+                    <label className="label">Custom URL Slug</label>
+                    <input
+                      className="input"
+                      placeholder="Leave blank to auto-generate from product name"
+                      value={form.slug || ""}
+                      onChange={(e) =>
+                        setForm({ ...form, slug: e.target.value })
+                      }
+                    />
+                    <p className="text-white/40 text-xs mt-1">
+                      Optional. Used in the product page URL — must be unique.
+                      Leave blank to auto-generate from the product name.
+                    </p>
                   </div>
                 </div>
 
@@ -1133,7 +1194,7 @@ setClients(cl.data.data || []);
                     className="input"
                     value={form.category[0] || ""}
                     onChange={(e) =>
-                      setForm({ ...form, category: [e.target.value] })
+                      setForm({ ...form, category: [e.target.value], subcategory: "" })
                     }
                   >
                     <option value="" className="text-white">
@@ -1147,21 +1208,54 @@ setClients(cl.data.data || []);
                   </select>
                 </div>
 
+                {/* SUBCATEGORY */}
+                <div>
+                  <label className="label">Subcategory</label>
+                  {(() => {
+                    const categoryOptions = subcategories.filter(
+                      (sc) => (sc.category?._id || sc.category) === form.category[0],
+                    );
+                    return (
+                      <select
+                        className="input"
+                        value={form.subcategory || ""}
+                        onChange={(e) =>
+                          setForm({ ...form, subcategory: e.target.value })
+                        }
+                        disabled={!form.category[0]}
+                      >
+                        <option value="" className="text-white">
+                          {!form.category[0]
+                            ? "Select a category first"
+                            : categoryOptions.length === 0
+                            ? "No subcategories for this category"
+                            : "Select Subcategory"}
+                        </option>
+                        {categoryOptions.map((sc) => (
+                          <option key={sc._id} value={sc._id} className="text-white">
+                            {sc.name}
+                          </option>
+                        ))}
+                      </select>
+                    );
+                  })()}
+                </div>
+
                 {/* DEFAULT CATEGORY */}
-                {/* CLIENT */}
+                {/* COMPANY */}
                 <div className="col-span-2">
-                  <label className="label">Client</label>
+                  <label className="label">Company</label>
                   <select
                     className="input"
-                    value={form.client || ""}
+                    value={form.company || ""}
                     onChange={(e) =>
-                      setForm({ ...form, client: e.target.value })
+                      setForm({ ...form, company: e.target.value })
                     }
                   >
                     <option value="" className="text-white">
-                      Select Client
+                      Select Company
                     </option>
-                    {clients.map((cl) => (
+                    {companies.map((cl) => (
                       <option
                         key={cl._id}
                         value={cl._id}
@@ -1189,7 +1283,7 @@ setClients(cl.data.data || []);
                       onChange={(e) => {
                         const val = e.target.value;
 
-                        if (!/^\d*$/.test(val)) return;
+                        if (!/^\d*\.?\d*$/.test(val)) return;
 
                         setForm({ ...form, price: val });
                       }}
@@ -1218,7 +1312,7 @@ setClients(cl.data.data || []);
                         const val = e.target.value;
 
                         // ✅ only numbers allow
-                        if (!/^\d*$/.test(val)) return;
+                        if (!/^\d*\.?\d*$/.test(val)) return;
 
                         setForm({ ...form, salePrice: val });
                       }}
@@ -1229,9 +1323,9 @@ setClients(cl.data.data || []);
                     <label className="label">Reference no.</label>
                     <input
                       className="input"
-                      value={form.ref || ""}
+                      value={form.referenceNo || ""}
                       onChange={(e) =>
-                        setForm({ ...form, ref: e.target.value })
+                        setForm({ ...form, referenceNo: e.target.value })
                       }
                     />
                   </div>
@@ -1247,7 +1341,7 @@ setClients(cl.data.data || []);
                       const val = e.target.value;
 
                       // only numbers allow
-                      if (!/^\d*$/.test(val)) return;
+                      if (!/^\d*\.?\d*$/.test(val)) return;
 
                       setForm({ ...form, gst: val });
                     }}
@@ -1263,13 +1357,22 @@ setClients(cl.data.data || []);
                       const val = e.target.value;
 
                       // only numbers allow
-                      if (!/^\d*$/.test(val)) return;
+                      if (!/^\d*\.?\d*$/.test(val)) return;
 
                       // max 8 digits
                       if (val.length > 8) return;
 
                       setForm({ ...form, hsn: val });
                     }}
+                  />
+                </div>
+
+                <div>
+                  <label className="label">FSN</label>
+                  <input
+                    className="input"
+                    value={form.fsn || ""}
+                    onChange={(e) => setForm({ ...form, fsn: e.target.value })}
                   />
                 </div>
 
@@ -1657,8 +1760,8 @@ setClients(cl.data.data || []);
                       Select attributes and click generate
                     </p>
                   ) : (
-                    <div className="mt-4 border border-white/10 rounded-xl overflow-hidden">
-                      <table className="w-full text-sm">
+                    <div className="mt-4 border border-white/10 rounded-xl overflow-x-auto">
+                      <table className="w-full min-w-[560px] text-sm">
                         <thead className="bg-[#1e293b] text-gray-300">
                           <tr>
                             <th className="p-3 text-left text-white">

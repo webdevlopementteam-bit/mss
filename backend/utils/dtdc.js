@@ -67,7 +67,7 @@ export const createShipment = async (order) => {
         customer_reference_number: order._id.toString(),
         cod_collection_mode: order.paymentMethod === "cod" ? "CASH" : "",
         cod_amount: order.paymentMethod === "cod" ? String(order.totalAmount || 0) : "",
-        commodity_id: "7", // OTHERS — no medical-specific commodity code in DTDC's list
+        commodity_id: process.env.DTDC_COMMODITY_ID || "7", // defaults to OTHERS if unset
         description: (order.orderItems || []).map((i) => i.name).join(", ").slice(0, 250),
         reference_number: "",
       },

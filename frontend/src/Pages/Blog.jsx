@@ -51,7 +51,7 @@ const Blog = () => {
         <p className="text-sm uppercase text-primaryColor font-bold tracking-[0.2em]">
           Our Blog
         </p>
-        <h3 className="mt-3 text-4xl font-bold">
+        <h3 className="mt-3 text-3xl md:text-4xl font-bold">
           Our Latest News & <span className="text-primaryColor">Blog</span>
         </h3>
 

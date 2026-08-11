@@ -9,7 +9,7 @@ import {
   updatePaymentStatus,
   cancelOrder,
   getSingleOrderAdmin,
-  // syncOrderTracking, // DTDC shipment gateway — disabled for now
+  syncOrderTracking,
 } from "../controllers/orderController.js";
 
 import {
@@ -75,12 +75,11 @@ router.put(
   updatePaymentStatus
 );
 
-// DTDC shipment gateway — disabled for now (account not yet fully activated).
-// router.post(
-//   "/admin/:id/sync-tracking",
-//   protect,
-//   checkPermission("manage_orders"),
-//   syncOrderTracking
-// );
+router.post(
+  "/admin/:id/sync-tracking",
+  protect,
+  checkPermission("manage_orders"),
+  syncOrderTracking
+);
 
 export default router;

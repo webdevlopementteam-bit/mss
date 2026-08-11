@@ -17,7 +17,15 @@ API.interceptors.request.use((config) => {
 });
 
 // Endpoints that should never trigger a silent-refresh attempt on 401
-const NO_REFRESH_URLS = ["/auth/login", "/auth/signup", "/auth/google", "/auth/refresh-token"];
+const NO_REFRESH_URLS = [
+  "/auth/login",
+  "/auth/register",
+  "/auth/google",
+  "/auth/refresh-token",
+  "/auth/forgot-password",
+  "/auth/verify-reset-otp",
+  "/auth/reset-password",
+];
 
 let isRefreshing = false;
 let refreshSubscribers = [];

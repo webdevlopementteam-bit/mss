@@ -1,5 +1,6 @@
 import Coupon from "../models/couponModel.js";
 import fs from "fs";
+import { validateCoupon } from "../utils/couponValidation.js";
 
 // 🔹 CREATE COUPON
 export const createCoupon = async (req, res) => {
@@ -243,71 +244,12 @@ export const applyCoupon = async (req, res) => {
   try {
     const { code, cartAmount, products, categories } = req.body;
 
-    const coupon = await Coupon.findOne({ couponCode: code });
-
-    if (!coupon) {
-      return res.status(404).json({ message: "Invalid coupon code" });
-    }
-
-    //  not published
-    if (!coupon.isPublished) {
-      return res.status(400).json({ message: "Coupon not active" });
-    }
-
-    const now = new Date();
-
-    //  not started
-    if (coupon.validityTime.startDate > now) {
-      return res.status(400).json({ message: "Coupon not started yet" });
-    }
-
-    //  expired
-    if (coupon.validityTime.endDate < now) {
-      return res.status(400).json({ message: "Coupon expired" });
-    }
-
-    //  min amount check
-    if (cartAmount < coupon.minAmount) {
-      return res.status(400).json({
-        message: `Minimum amount should be ₹${coupon.minAmount}`,
-      });
-    }
-
-    // APPLY TYPE CHECK
-    if (coupon.applyOn === "CATEGORY") {
-      const match = categories.some((cat) =>
-        coupon.categories.includes(cat)
-      );
-
-      if (!match) {
-        return res.status(400).json({
-          message: "Coupon not valid for selected category",
-        });
-      }
-    }
-
-    if (coupon.applyOn === "PRODUCT") {
-      const match = products.some((prod) =>
-        coupon.products.includes(prod)
-      );
-
-      if (!match) {
-        return res.status(400).json({
-          message: "Coupon not valid for selected product",
-        });
-      }
-    }
-
-    //  CALCULATE DISCOUNT
-    let discountAmount = 0;
-
-    if (coupon.discountType === "FIXED") {
-      discountAmount = coupon.discount;
-    }
-
-    if (coupon.discountType === "PERCENTAGE") {
-      discountAmount = (cartAmount * coupon.discount) / 100;
-    }
+    const { coupon, discountAmount } = await validateCoupon({
+      code,
+      cartAmount,
+      productIds: products || [],
+      categoryIds: categories || [],
+    });
 
     const finalAmount = cartAmount - discountAmount;
 
@@ -317,9 +259,8 @@ export const applyCoupon = async (req, res) => {
       discountAmount,
       finalAmount,
     });
-
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(err.status || 500).json({ message: err.message });
   }
 };
 

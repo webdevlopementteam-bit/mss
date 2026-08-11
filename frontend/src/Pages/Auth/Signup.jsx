@@ -2,114 +2,138 @@ import React, { useState } from "react";
 import { toast } from "react-toastify";
 import { useNavigate, Link } from "react-router-dom";
 import * as authService from "../../api/authService";
+import { isValidMobile, isValidEmail, isValidPassword, PASSWORD_HINT } from "../../utils/validators";
+import AuthShell from "./AuthShell";
+import AuthInput from "./AuthInput";
 
 const Signup = () => {
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
     name: "",
+    mobile: "",
     email: "",
     password: "",
     confirmPassword: "",
   });
+  const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
-    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    setErrors((prev) => ({ ...prev, [name]: "" }));
+  };
+
+  const validate = () => {
+    const next = {};
+    if (!formData.name.trim()) next.name = "Full name is required";
+    if (!isValidMobile(formData.mobile)) next.mobile = "Enter a valid 10-digit Indian mobile number";
+    if (!isValidEmail(formData.email)) next.email = "Enter a valid email address";
+    if (!isValidPassword(formData.password)) next.password = PASSWORD_HINT;
+    if (formData.confirmPassword !== formData.password) next.confirmPassword = "Passwords do not match";
+    setErrors(next);
+    return Object.keys(next).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (formData.password !== formData.confirmPassword) {
-      toast.error("Passwords do not match");
-      return;
-    }
+    if (!validate()) return;
 
     try {
       setLoading(true);
-      const { data } = await authService.signup({
-        name: formData.name,
-        email: formData.email,
+      const { data } = await authService.initiateRegistration({
+        name: formData.name.trim(),
+        mobile: formData.mobile,
+        email: formData.email.trim(),
         password: formData.password,
+        confirmPassword: formData.confirmPassword,
       });
-      toast.success(data.message || "OTP sent to your email");
-      navigate("/verify-email-otp", { state: { email: formData.email } });
+      toast.success(data.message || "OTP sent to your mobile number");
+      navigate("/verify-mobile-otp", { state: { mobile: formData.mobile } });
     } catch (error) {
-      toast.error(error.response?.data?.message || "Signup failed");
+      toast.error(error.response?.data?.message || "Registration failed");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <section className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
-      <div className="w-full max-w-md bg-white rounded-3xl shadow-lg p-8">
-        <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold">Create Account</h2>
-          <p className="text-gray-500 mt-2">Sign up with your email</p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <input
-            type="text"
-            name="name"
-            placeholder="Full Name"
-            value={formData.name}
-            onChange={handleChange}
-            className="w-full border rounded-xl p-3 outline-none"
-            required
-          />
-
-          <input
-            type="email"
-            name="email"
-            placeholder="Email Address"
-            value={formData.email}
-            onChange={handleChange}
-            className="w-full border rounded-xl p-3 outline-none"
-            required
-          />
-
-          <input
-            type="password"
-            name="password"
-            placeholder="Password"
-            value={formData.password}
-            onChange={handleChange}
-            className="w-full border rounded-xl p-3 outline-none"
-            minLength={6}
-            required
-          />
-
-          <input
-            type="password"
-            name="confirmPassword"
-            placeholder="Confirm Password"
-            value={formData.confirmPassword}
-            onChange={handleChange}
-            className="w-full border rounded-xl p-3 outline-none"
-            minLength={6}
-            required
-          />
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-black text-white py-3 rounded-xl font-semibold"
-          >
-            {loading ? "Creating Account..." : "Create Account"}
-          </button>
-        </form>
-
-        <p className="text-center text-sm text-gray-500 mt-6">
+    <AuthShell
+      title="Create your account"
+      subtitle="Register to start ordering medical supplies"
+      footer={
+        <p className="text-sm text-[#64748b]">
           Already have an account?{" "}
-          <Link to="/login" className="text-blue-600 font-semibold">
-            Login
+          <Link to="/login" className="text-primaryColor font-semibold">
+            Sign in
           </Link>
         </p>
-      </div>
-    </section>
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+        <AuthInput
+          icon="fa-user"
+          name="name"
+          placeholder="Full Name"
+          value={formData.name}
+          onChange={handleChange}
+          error={errors.name}
+        />
+
+        <AuthInput
+          icon="fa-mobile-screen"
+          type="tel"
+          name="mobile"
+          placeholder="Mobile Number"
+          value={formData.mobile}
+          onChange={handleChange}
+          maxLength={10}
+          error={errors.mobile}
+        />
+
+        <AuthInput
+          icon="fa-envelope"
+          type="email"
+          name="email"
+          placeholder="Email Address"
+          value={formData.email}
+          onChange={handleChange}
+          error={errors.email}
+        />
+
+        <AuthInput
+          icon="fa-lock"
+          type="password"
+          name="password"
+          placeholder="Password"
+          value={formData.password}
+          onChange={handleChange}
+          error={errors.password}
+        />
+        {!errors.password && (
+          <p className="text-[#94a3b8] text-xs -mt-3 ml-1">{PASSWORD_HINT}</p>
+        )}
+
+        <AuthInput
+          icon="fa-lock"
+          type="password"
+          name="confirmPassword"
+          placeholder="Confirm Password"
+          value={formData.confirmPassword}
+          onChange={handleChange}
+          error={errors.confirmPassword}
+        />
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full bg-primaryColor hover:bg-[#9c1e22] transition-colors text-white py-[14px] rounded-2xl font-semibold text-[15px] disabled:opacity-70"
+        >
+          {loading ? "Sending OTP..." : "Register"}
+        </button>
+      </form>
+    </AuthShell>
   );
 };
 

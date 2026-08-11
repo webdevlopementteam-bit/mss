@@ -44,7 +44,6 @@ import CategoryPage from "../demo/CategoryPage";
 import BrandPage from "../demo/BrandPage";
 import { VideoBanner } from "../sections/VideoBanner";
 
-
 const Home = () => {
   const [selectedCategory, setSelectedCategory] = useState(categories[0].name);
   const filteredProducts = popularProducts
@@ -99,360 +98,24 @@ const Home = () => {
   return (
     <>
       {/* slider */}
-      <Hero/>
+      <Hero />
 
-      {/* <div className="bg-primaryColor/30 h-[430px] overflow-hidden relative rounded-3xl mt-7 mx-side before:content-[' '] before:absolute before:w-[360px] before:h-[340px] before:bg-primaryColor before:rotate-12 before:-top-[20px] before:right-20 before:rounded-r-[50%] before:rounded-b-[50%]"></div> */}
+    
+      <Category />
 
-   {/*    <div className="rounded-3xl mt-7 mx-side">
-        <Slider {...carouselsettings}>
-          <img src={sliderbanner1} alt="sliderbanner1" className="rounded-3xl h-[600px] object-fill"/>
-          <img src={sliderbanner2} alt="sliderbanner2" className="rounded-3xl h-[600px] object-fill"/>
-        </Slider>
-      </div> */}
-          {/* top categories */}
-<Category/>
-  
-     {/*  <div className="flex justify-between items-center mx-side mt-16">
-        <div>
-          <h2 className="text-2xl font-semibold relative before:content-[' '] before:absolute before:h-[3px] before:w-8 before:bg-primaryColor before:top-[42px] after:content-[' '] after:absolute after:w-[80%] after:h-8 after:left-0 after:-bottom-3 after:bg-primaryColor/10 after:rounded-l-none after:rounded-b-2xl">
-            Top Category
-          </h2>
-        </div>
-        <div>
-          <p className="text-primaryColor font-semibold">
-            View More <i class="fa-solid fa-angles-right text-primaryColor"></i>
-          </p>
-        </div>
-      </div>
+     
 
-      <div className="mx-side mt-10">
-        <Slider {...categorySetting}>
-          {categories.map((category) => (
-            <div key={category.id} className="px-3">
-              <div className="border-[2px] border-primaryColor/20 py-[20px] rounded-[70px] transition-all duration-700 group hover:border-primaryColor flex flex-col justify-center items-center text-center">
-                <div className="border-[2px] border-dashed rounded-full border-primaryColor p-2">
-                  <div className="p-5 bg-primaryColor rounded-full flex justify-center items-center text-center">
-                    <img
-                      src={category.image}
-                      alt={category.name}
-                      className="group-hover:scale-110 transition-all duration-500 w-14 invert"
-                    />
-                  </div>
-                </div>
-                <p className="mt-4 font-semibold text-[17px] text-[#023350]">
-                  {category.name}
-                </p>
-              </div>
-            </div>
-          ))}
-        </Slider>
-      </div> */}
+      <Productbanner />
+      <TrendingItems />
+      
+      <Policies />
 
-      {/* display products banner */}
-    {/*   <div className="grid grid-cols-3 gap-5 mx-side mt-16">
-        <div
-          style={{
-            backgroundImage: `url(${banner2})`,
-            backgroundPosition: "center center",
-            backgroundSize: "cover",
-          }}
-          className="px-6 py-16 rounded-2xl flex flex-col items-start justify-center"
-        >
-          <p className="text-white bg-secondaryColor px-3 py-1 rounded-2xl uppercase text-xs">
-            Beauty Product
-          </p>
-          <p className="mt-3 text-xl font-semibold">
-            VLCC Anti <br />
-            Blemish <br />
-            Facial Kit
-          </p>
-          <a
-            href="#"
-            className="mt-2 text-sm pb-1 border-b-2 border-black hover:text-secondaryColor hover:border-secondaryColor transition-all duration-300"
-          >
-            DISCOVER MORE
-          </a>
-        </div>
-        <div
-          style={{
-            backgroundImage: `url(${banner2})`,
-            backgroundPosition: "center center",
-            backgroundSize: "cover",
-          }}
-          className="px-6 py-16 rounded-2xl flex flex-col items-start justify-center"
-        >
-          <p className="text-white bg-secondaryColor px-3 py-1 rounded-2xl uppercase text-xs">
-            Beauty Product
-          </p>
-          <p className="mt-2 text-xl font-semibold">
-            VLCC Anti <br />
-            Blemish <br />
-            Facial Kit
-          </p>
-          <a
-            href="#"
-            className="mt-4 text-sm pb-1 border-b-2 border-black hover:text-secondaryColor hover:border-secondaryColor transition-all duration-300"
-          >
-            DISCOVER MORE
-          </a>
-        </div>
-        <div
-          style={{
-            backgroundImage: `url(${banner2})`,
-            backgroundPosition: "center center",
-            backgroundSize: "cover",
-          }}
-          className="px-6 py-16 rounded-2xl flex flex-col items-start justify-center"
-        >
-          <p className="text-white bg-secondaryColor px-3 py-1 rounded-2xl uppercase text-xs">
-            Beauty Product
-          </p>
-          <p className="mt-2 text-xl font-semibold">
-            VLCC Anti <br />
-            Blemish <br />
-            Facial Kit
-          </p>
-          <a
-            href="#"
-            className="mt-4 text-sm pb-1 border-b-2 border-black hover:text-secondaryColor hover:border-secondaryColor transition-all duration-300"
-          >
-            DISCOVER MORE
-          </a>
-        </div>
-      </div> */}
+      <Popularitem />
 
-      <Productbanner/>
-      <TrendingItems/>
-      {/* trending items */}
-  {/*     <div className="flex justify-between items-center mx-side mt-16">
-        <div>
-          <h2 className="text-2xl font-semibold relative before:content-[' '] before:absolute before:h-[3px] before:w-8 before:bg-primaryColor before:top-[42px] after:content-[' '] after:absolute after:w-[80%] after:h-8 after:left-0 after:-bottom-3 after:bg-primaryColor/10 after:rounded-l-none after:rounded-b-2xl">
-            Trending Items
-          </h2>
-        </div>
-        <div>
-          <p className="text-primaryColor font-semibold">
-            View More <i class="fa-solid fa-angles-right text-primaryColor"></i>
-          </p>
-        </div>
-      </div>
+      <Singlebanner />
 
-      <div className="mx-side mt-10">
-        <Slider {...settings}>
-          {products.map((product) => (
-            <div key={product.id} className="px-3">
-              <div className="bg-primaryColor/10 rounded-3xl p-5 h-full relative group">
-                <p
-                  className={`absolute text-white right-7 top-4  px-2 rounded-xl uppercase text-xs ${product.badge == "sale" ? "py-1 bg-primaryColor" : product.badge ? "bg-secondaryColor py-1" : "py-0"}`}
-                >
-                  {product.badge}
-                </p>
-                <img src={product.image} alt={product.name} />
-                <div className="flex gap-2 justify-center items-center absolute transition-all duration-500 opacity-0 group-hover:opacity-100 -translate-y-7 group-hover:-translate-y-10 left-1/3">
-                  <div className="bg-primaryColor rounded-full w-10 h-10 flex items-center justify-center relative group/eye">
-                    <i class="fa-regular fa-eye text-white"></i>
-                    <p className="absolute -top-7 whitespace-nowrap rounded-md bg-primaryColor text-white text-xs px-3 py-1 opacity-0 scale-95 group-hover/eye:opacity-100 group-hover/eye:scale-100 transition-all duration-300 pointer-events-none ">
-                      Quick View
-                    </p>
-                  </div>
-                  <div className="bg-primaryColor rounded-full w-10 h-10 flex items-center justify-center relative group/wishlist">
-                    <i class="fa-regular fa-heart text-white"></i>
-                    <p className="absolute -top-7 whitespace-nowrap rounded-md bg-primaryColor text-white text-xs px-3 py-1 opacity-0 scale-95 group-hover/wishlist:opacity-100 group-hover/wishlist:scale-100 transition-all duration-300 pointer-events-none ">
-                      Wishlist
-                    </p>
-                  </div>
-                </div>
-                <p className="font-semibold text-[17px] mb-2">{product.name}</p>
-                <i className="fa-solid fa-star text-[#FBA707]"></i>
-                <i className="fa-solid fa-star text-[#FBA707]"></i>
-                <i className="fa-solid fa-star text-[#FBA707]"></i>
-                <i className="fa-solid fa-star text-[#FBA707]"></i>
-                <i className="fa-regular fa-star text-[#FBA707]"></i>
-                <div className="flex items-end justify-between">
-                  <p className="text-primaryColor font-semibold">
-                    ₹{product.price}
-                  </p>
-
-                  <div className="bg-primaryColor rounded-full w-10 h-10 flex items-center justify-center relative group/bag">
-                    <i class="fa-solid fa-bag-shopping text-lg text-white "></i>
-                    <p className="absolute -left-[90px] whitespace-nowrap rounded-[20px_90%_90%_20px] bg-primaryColor text-white text-xs px-3 py-1 opacity-0 scale-95 group-hover/bag:opacity-100 group-hover/bag:scale-100 transition-all duration-300 pointer-events-none ">
-                      Add To Cart
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </Slider>
-      </div>
- */}
- <Policies/>
-      {/* policies */}
-     {/*  <div className="mx-side mt-16">
-        <div className="bg-secondaryColor py-8 px-12 rounded-xl">
-          <div className="grid grid-cols-4 gap-7">
-            <div className="flex items-center justify-center gap-4 border-r-[1px] border-white/30">
-              <div className="bg-primaryColor relative z-10 w-14 h-14 rounded-[30%_70%_70%_30%/30%_30%_70%_70%] flex justify-center items-center before:content-[' '] before:w-14 before:h-14 before:border-2 before:absolute before:-z-0 before:border-primaryColor before:rounded-[30%_70%_70%_30%/30%_30%_70%_70%] before:-top-[5px] before:-left-[5px]">
-                <i className="fa-regular fa-truck text-white text-2xl "></i>
-              </div>
-              <div>
-                <h4 className="text-white text-[22px] font-semibold">
-                  Free Delivery
-                </h4>
-                <p className="text-white mt-1">Orders Over $120</p>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-center gap-4 border-r-[1px] border-white/30">
-              <div className="bg-primaryColor relative z-10 w-14 h-14 rounded-[30%_70%_70%_30%/30%_30%_70%_70%] flex justify-center items-center before:content-[' '] before:w-14 before:h-14 before:border-2 before:absolute before:-z-0 before:border-primaryColor before:rounded-[30%_70%_70%_30%/30%_30%_70%_70%] before:-top-[5px] before:-left-[5px]">
-                <i class="fa-solid fa-rotate text-white text-2xl"></i>
-              </div>
-              <div>
-                <h4 className="text-white text-[22px] font-semibold">
-                  Get Refund
-                </h4>
-                <p className="text-white mt-1">Within 30 Days Returns</p>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-center gap-4 border-r-[1px] border-white/30">
-              <div className="bg-primaryColor relative z-10 w-14 h-14 rounded-[30%_70%_70%_30%/30%_30%_70%_70%] flex justify-center items-center before:content-[' '] before:w-14 before:h-14 before:border-2 before:absolute before:-z-0 before:border-primaryColor before:rounded-[30%_70%_70%_30%/30%_30%_70%_70%] before:-top-[5px] before:-left-[5px]">
-                <i class="fa-solid fa-wallet text-white text-2xl"></i>
-              </div>
-              <div>
-                <h4 className="text-white text-[22px] font-semibold">
-                  Safe Payment
-                </h4>
-                <p className="text-white mt-1">100% Secure Payment</p>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-center gap-4">
-              <div className="bg-primaryColor relative z-10 w-14 h-14 rounded-[30%_70%_70%_30%/30%_30%_70%_70%] flex justify-center items-center before:content-[' '] before:w-14 before:h-14 before:border-2 before:absolute before:-z-0 before:border-primaryColor before:rounded-[30%_70%_70%_30%/30%_30%_70%_70%] before:-top-[5px] before:-left-[5px]">
-                <i class="fa-solid fa-headset text-white text-2xl"></i>
-              </div>
-              <div>
-                <h4 className="text-white text-[22px] font-semibold">
-                  24/7 Support
-                </h4>
-                <p className="text-white mt-1">Feel Free To Call Us</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
- */}
- <Popularitem/>
-      {/* popular items */}
-     {/*  <div className="grid grid-cols-4 gap-10 mx-side mt-20">
-        <div className="col-span-3">
-          <div className="flex justify-between items-center">
-            <div>
-              <h2 className="text-2xl font-semibold relative before:content-[' '] before:absolute before:h-[3px] before:w-8 before:bg-primaryColor before:top-[42px] after:content-[' '] after:absolute after:w-[80%] after:h-8 after:left-0 after:-bottom-3 after:bg-primaryColor/10 after:rounded-l-none after:rounded-b-2xl">
-                Popular Items
-              </h2>
-            </div>
-            <div>
-              <p className="text-primaryColor font-semibold">
-                All Products{" "}
-                <i class="fa-solid fa-angles-right text-primaryColor"></i>
-              </p>
-            </div>
-          </div>
-          <div className="flex gap-3 justify-center items-center mt-8">
-            {categories.map((category) => (
-              <p
-                className={` font-semibold text-sm py-2 px-6 rounded-3xl text-white  transition-all duration-500 cursor-pointer ${selectedCategory == category.name ? "bg-primaryColor text-white" : "bg-primaryColor/70 hover:bg-primaryColor hover:text-white"}`}
-                key={category.id}
-                onClick={() => setSelectedCategory(category.name)}
-              >
-                {category.name}
-              </p>
-            ))}
-          </div>
-          <div className="flex justify-center items-center mt-10">
-            {filteredProducts.map((product) => (
-              <div key={product.id} className="px-3">
-                <div className="bg-primaryColor/10 rounded-3xl p-5 h-full relative group">
-                  <p
-                    className={`absolute text-white right-7 top-4  px-2 rounded-xl uppercase text-xs ${product.badge == "sale" ? "py-1 bg-primaryColor" : product.badge == "hot" ? "bg-secondaryColor py-1" : product.badge == "10% off" ? "bg-yellow-500 py-1" : product.badge ? "py-1 bg-sky-400" : " "}`}
-                  >
-                    {product.badge}
-                  </p>
-                  <img src={product.image} alt={product.name} />
-                  <div className="flex gap-2 justify-center items-center absolute transition-all duration-500 opacity-0 group-hover:opacity-100 -translate-y-7 group-hover:-translate-y-10 left-1/3">
-                    <div className="bg-primaryColor rounded-full w-10 h-10 flex items-center justify-center relative group/eye">
-                      <i class="fa-regular fa-eye text-white"></i>
-                      <p className="absolute -top-7 whitespace-nowrap rounded-md bg-primaryColor text-white text-xs px-3 py-1 opacity-0 scale-95 group-hover/eye:opacity-100 group-hover/eye:scale-100 transition-all duration-300 pointer-events-none ">
-                        Quick View
-                      </p>
-                    </div>
-                    <div className="bg-primaryColor rounded-full w-10 h-10 flex items-center justify-center relative group/wishlist">
-                      <i class="fa-regular fa-heart text-white"></i>
-                      <p className="absolute -top-7 whitespace-nowrap rounded-md bg-primaryColor text-white text-xs px-3 py-1 opacity-0 scale-95 group-hover/wishlist:opacity-100 group-hover/wishlist:scale-100 transition-all duration-300 pointer-events-none ">
-                        Wishlist
-                      </p>
-                    </div>
-                  </div>
-                  <p className="font-semibold text-[17px] mb-2">
-                    {product.name}
-                  </p>
-                  <i className="fa-solid fa-star text-[#FBA707]"></i>
-                  <i className="fa-solid fa-star text-[#FBA707]"></i>
-                  <i className="fa-solid fa-star text-[#FBA707]"></i>
-                  <i className="fa-solid fa-star text-[#FBA707]"></i>
-                  <i className="fa-regular fa-star text-[#FBA707]"></i>
-                  <div className="flex items-end justify-between">
-                    <p className="text-primaryColor font-semibold">
-                      ₹{product.price}
-                    </p>
-
-                    <div className="bg-primaryColor rounded-full w-10 h-10 flex items-center justify-center relative group/bag">
-                      <i class="fa-solid fa-bag-shopping text-lg text-white "></i>
-                      <p className="absolute -left-[90px] whitespace-nowrap rounded-[20px_90%_90%_20px] bg-primaryColor text-white text-xs px-3 py-1 opacity-0 scale-95 group-hover/bag:opacity-100 group-hover/bag:scale-100 transition-all duration-300 pointer-events-none ">
-                        Add To Cart
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-        <div className="bg-primaryColor/20 flex justify-center items-end rounded-3xl">
-          <img src={doctor} alt="doctor" className="w-72" />
-        </div>
-      </div> */}
-
-      {/* banner */}
-      <Singlebanner/>
-     {/*  <div
-        style={{
-          backgroundImage: `url(${banner})`,
-          backgroundPosition: "center center",
-          backgroundSize: "cover",
-        }}
-        className="py-16 mx-side mt-16 rounded-3xl flex flex-col justify-end items-center"
-      >
-        <p className="text-xl font-semibold text-white">Mega Collections</p>
-        <h4 className="text-4xl mt-2 font-semibold text-white">
-          Huge Sale Up To 40% Off
-        </h4>
-        <span className="text-xl mt-5 py-1 border-y-[2px] text-white">
-          at our outlet stores
-        </span>
-        <button className="relative overflow-hidden px-6 py-2 mt-5 font-semibold text-white bg-secondaryColor/70 rounded-full group">
-          <span className="relative z-10 text-white transition-colors duration-300">
-            Shop Now <i className="fa-solid fa-arrow-right text-white"></i>
-          </span>
-
-          <span className="absolute inset-0 rounded-full scale-0 opacity-0 bg-primaryColor group-hover:scale-100 group-hover:opacity-100  transition-all duration-500 ease-in-out"></span>
-        </button>
-      </div> */}
-
-      {/* popular brands */}
-      <Popularbrands/>
-    {/*   <div className="flex justify-between items-center mx-side mt-16">
+      <Popularbrands />
+      {/*   <div className="flex justify-between items-center mx-side mt-16">
         <div>
           <h2 className="text-2xl font-semibold relative before:content-[' '] before:absolute before:h-[3px] before:w-8 before:bg-primaryColor before:top-[42px] after:content-[' '] after:absolute after:w-[80%] after:h-8 after:left-0 after:-bottom-3 after:bg-primaryColor/10 after:rounded-l-none after:rounded-b-2xl">
             Popular Brands
@@ -484,8 +147,8 @@ const Home = () => {
       </div> */}
 
       {/* featured items */}
-      <FeaturedItem/>
-   {/*    <div className="flex justify-between items-center mx-side mt-16">
+      <FeaturedItem />
+      {/*    <div className="flex justify-between items-center mx-side mt-16">
         <div>
           <h2 className="text-2xl font-semibold relative before:content-[' '] before:absolute before:h-[3px] before:w-8 before:bg-primaryColor before:top-[42px] after:content-[' '] after:absolute after:w-[80%] after:h-8 after:left-0 after:-bottom-3 after:bg-primaryColor/10 after:rounded-l-none after:rounded-b-2xl">
             Featured Items
@@ -551,7 +214,7 @@ const Home = () => {
       {/* <CategoryPage/>
        <BrandPage/> */}
       {/* video banner */}
-  {/*     <div
+      {/*     <div
         className="mt-16 py-44 flex justify-center items-center  "
         style={{
           backgroundImage: `url(${banner1})`,
@@ -567,11 +230,11 @@ const Home = () => {
         </a>
       </div> */}
 
-      <VideoBanner/>
+      <VideoBanner />
 
       {/* catalogue type */}
-      <Catalogtype/>
-    {/*   <div className="mx-side mt-16 grid grid-cols-3 gap-6">
+      <Catalogtype />
+      {/*   <div className="mx-side mt-16 grid grid-cols-3 gap-6">
         <div className="border-[1px] rounded-2xl px-5 pt-5 border-black/20">
           <h3 className="text-2xl font-semibold pb-2 relative border-b-[1px] border-black/15 before:content-[' '] before:absolute before:h-[1px] before:bottom-0 before:w-10 before:bg-primaryColor">
             On sale
@@ -700,7 +363,7 @@ const Home = () => {
       </div>
  */}
       {/* sale carousel */}
-      <SaleCarousel/>
+      {/* <SaleCarousel/> */}
       {/* <div className="bg-primaryColor/20 px-side py-20 mt-16 relative overflow-hidden before:content-[' '] before:absolute before:w-96 before:h-96 before:bg-primaryColor/10 before:rounded-full before:-top-40 after:content-['DEAL'] after:absolute after:-right-32 after:text-[170px] after:font-bold after:top-1/4 after:text-primaryColor/20 after:-rotate-90 ">
         <Slider {...carouselsettings}>
           <div>
@@ -886,8 +549,8 @@ const Home = () => {
       </div> */}
 
       {/* gallery */}
-      <Gallery/>
-   {/*    <div className="mx-side mt-16 text-center">
+      <Gallery />
+      {/*    <div className="mx-side mt-16 text-center">
         <p className="font-semibold uppercase tracking-wider text-lg text-primaryColor">
           Our Gallery
         </p>
@@ -965,7 +628,7 @@ const Home = () => {
       </div>
  */}
       {/* testimonial section */}
-      <Testimonial/>
+      <Testimonial />
       {/* <div
         style={{
           backgroundImage: `url(${testimonialbanner})`,
@@ -1030,8 +693,8 @@ const Home = () => {
       </div> */}
 
       {/* blog */}
-      <Blogsection/>
-  {/*     <div className="mt-16 mx-side">
+      <Blogsection />
+      {/*     <div className="mt-16 mx-side">
         <div className="text-center">
           <p className="font-semibold uppercase tracking-wider text-lg text-primaryColor">
             Our Blog
@@ -1084,8 +747,8 @@ const Home = () => {
       </div> */}
 
       {/* email subscription section */}
-      <Emailsubscription/>
-   {/*    <div
+      <Emailsubscription />
+      {/*    <div
         className="mx-side mt-16 py-16 rounded-3xl relative overflow-hidden flex flex-col justify-center items-center"
         style={{ backgroundImage: `url(${subscriptionbanner})` }}
       >
@@ -1117,8 +780,8 @@ const Home = () => {
       </div> */}
 
       {/* instagram medion */}
-      <Instagrammedion/>
-   {/*    <div className="my-16 mx-side text-center">
+      <Instagrammedion />
+      {/*    <div className="my-16 mx-side text-center">
         <h4 className="text-3xl font-bold">
           Instagram <span className="text-primaryColor">@Medion</span>
         </h4>

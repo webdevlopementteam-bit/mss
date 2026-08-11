@@ -56,6 +56,11 @@ const Checkout = () => {
   const [dragOver, setDragOver] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  const [couponInput, setCouponInput] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState(null); // { code, discountAmount }
+  const [couponError, setCouponError] = useState("");
+  const [applyingCoupon, setApplyingCoupon] = useState(false);
+
   const subtotal = useMemo(
     () =>
       cart.reduce(
@@ -87,8 +92,54 @@ const Checkout = () => {
       ),
     [cart],
   );
-  const total = subtotal + shipping + gst;
+  const discount = appliedCoupon?.discountAmount || 0;
+  const total = subtotal + shipping + gst - discount;
   const itemCount = cart.reduce((acc, item) => acc + item.quantity, 0);
+
+  // Clear an applied coupon if the cart changes underneath it (e.g. an item
+  // is removed) — the discount was validated against a specific subtotal and
+  // shouldn't silently keep applying once that's no longer the real cart.
+  useEffect(() => {
+    setAppliedCoupon(null);
+    setCouponError("");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cart.length]);
+
+  const handleApplyCoupon = async () => {
+    const code = couponInput.trim();
+    if (!code) return;
+
+    setApplyingCoupon(true);
+    setCouponError("");
+
+    try {
+      const categories = cart.flatMap((item) =>
+        Array.isArray(item.category)
+          ? item.category.map((c) => c?._id || c)
+          : [],
+      );
+
+      const { data } = await orderService.applyCoupon({
+        code,
+        cartAmount: subtotal,
+        products: cart.map((item) => getProductId(item)),
+        categories,
+      });
+
+      setAppliedCoupon({ code: data.coupon, discountAmount: data.discountAmount });
+      toast.success(`Coupon "${data.coupon}" applied`);
+    } catch (error) {
+      setCouponError(error.response?.data?.message || "Invalid coupon code");
+    } finally {
+      setApplyingCoupon(false);
+    }
+  };
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponInput("");
+    setCouponError("");
+  };
 
   // COD is a per-product setting (admin toggle at product-creation time) —
   // if ANY item in the cart disallows it, the whole order must be prepaid
@@ -196,6 +247,10 @@ const Checkout = () => {
 
       formDataToSend.append("paymentMethod", paymentMethod);
 
+      if (appliedCoupon?.code) {
+        formDataToSend.append("couponCode", appliedCoupon.code);
+      }
+
       Object.entries(extraPaymentFields).forEach(([key, value]) => {
         formDataToSend.append(key, value);
       });
@@ -238,7 +293,7 @@ const Checkout = () => {
       }));
 
       const { data } =
-        await orderService.createRazorpayOrder(orderItemsPayload);
+        await orderService.createRazorpayOrder(orderItemsPayload, appliedCoupon?.code);
 
       const rzp = new window.Razorpay({
         key: data.keyId,
@@ -867,6 +922,56 @@ const Checkout = () => {
                 })}
               </div>
 
+              {/* Coupon */}
+              <div className="px-5 sm:px-6 py-4 border-t border-gray-100">
+                {appliedCoupon ? (
+                  <div className="flex items-center justify-between bg-green-50 border border-green-100 rounded-xl px-3.5 py-2.5">
+                    <div className="flex items-center gap-2 text-xs">
+                      <svg className="w-4 h-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span className="font-semibold text-green-700">
+                        {appliedCoupon.code}
+                      </span>
+                      <span className="text-green-600">applied</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleRemoveCoupon}
+                      className="text-xs text-gray-400 hover:text-red-500 font-medium"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="Have a coupon code?"
+                        value={couponInput}
+                        onChange={(e) => {
+                          setCouponInput(e.target.value.toUpperCase());
+                          setCouponError("");
+                        }}
+                        className={`${inputClass} py-2.5 text-xs`}
+                      />
+                      <button
+                        type="button"
+                        onClick={handleApplyCoupon}
+                        disabled={applyingCoupon || !couponInput.trim() || cart.length === 0}
+                        className="shrink-0 px-4 rounded-xl bg-gray-900 hover:bg-gray-800 text-white text-xs font-semibold disabled:opacity-40 transition-colors"
+                      >
+                        {applyingCoupon ? "Applying..." : "Apply"}
+                      </button>
+                    </div>
+                    {couponError && (
+                      <p className="text-red-500 text-[11px] mt-1.5">{couponError}</p>
+                    )}
+                  </>
+                )}
+              </div>
+
               {/* Price breakdown */}
               <div className="px-5 sm:px-6 pb-5 border-t border-gray-100 pt-4 space-y-2.5 text-sm">
                 <div className="flex justify-between text-gray-500 text-xs">
@@ -893,6 +998,14 @@ const Checkout = () => {
                       : "₹0"}
                   </span>
                 </div>
+                {appliedCoupon && (
+                  <div className="flex justify-between text-gray-500 text-xs">
+                    <span>Discount ({appliedCoupon.code})</span>
+                    <span className="text-green-600 font-medium">
+                      -₹{discount.toLocaleString("en-IN", { maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                )}
                 <div className="border-t border-gray-100 pt-3 flex justify-between font-bold">
                   <span className="text-gray-900 text-sm">Total</span>
                   <span className="text-primaryColor text-base">

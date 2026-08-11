@@ -4,21 +4,19 @@ import Product from "../models/productModel.js";
 import Variant from "../models/variantModel.js";
 import generateOrderPdf from "../utils/generateOrderPdf.js";
 import razorpay, { verifyRazorpaySignature } from "../utils/razorpay.js";
-// DTDC shipment gateway — disabled for now (DTDC account not yet fully
-// activated). Uncomment these imports and the marked blocks below to
-// re-enable auto-booking, the tracking webhook, and manual sync.
-// import {
-//   createShipment,
-//   pullTrackShipment,
-//   DTDC_TRACKING_PAGE_URL,
-// } from "../utils/dtdc.js";
-// import { DTDC_SCAN_TO_ORDER_STATUS } from "../utils/dtdcStatusMap.js";
+import {
+  createShipment,
+  pullTrackShipment,
+  DTDC_TRACKING_PAGE_URL,
+} from "../utils/dtdc.js";
+import { DTDC_SCAN_TO_ORDER_STATUS } from "../utils/dtdcStatusMap.js";
+import { validateCoupon } from "../utils/couponValidation.js";
 import {
   ORDER_STATUS,
   STATUS_LABELS,
   canUserCancel,
   canAdminUpdate,
-  // canCourierAdvanceTo, // only used by the DTDC webhook handler below
+  canCourierAdvanceTo,
   getNextAllowedStatus,
   isFinalStatus,
 } from "../utils/orderStatus.js";
@@ -27,13 +25,17 @@ import {
 // computes the authoritative pricing — shared by createOrder and
 // createRazorpayOrder so a price is never trusted from the client and the
 // two endpoints can never disagree about what a cart actually costs.
-const computeOrderPricing = async (orderItems) => {
+// couponCode is optional and re-validated server-side (never trusts a
+// client-sent discount amount) — omitting it behaves exactly as before.
+const computeOrderPricing = async (orderItems, couponCode = null) => {
   let subtotal = 0;
   let shippingCharge = 0;
   let gstAmount = 0;
   let codEligible = true;
 
   const finalItems = [];
+  const productIds = [];
+  const categoryIds = [];
 
   for (const item of orderItems) {
     let variantDoc = null;
@@ -96,6 +98,8 @@ const computeOrderPricing = async (orderItems) => {
       gstAmount += (lineSubtotal * (Number(productDoc.gst) || 0)) / 100;
       shippingCharge += Number(productDoc.deliveryCharge) || 0;
       if (productDoc.codAvailable === false) codEligible = false;
+      productIds.push(productDoc._id);
+      categoryIds.push(...(productDoc.category || []));
     }
 
     finalItems.push({
@@ -109,9 +113,33 @@ const computeOrderPricing = async (orderItems) => {
   }
 
   gstAmount = Math.round(gstAmount * 100) / 100;
-  const totalAmount = subtotal + shippingCharge + gstAmount;
 
-  return { finalItems, subtotal, shippingCharge, gstAmount, totalAmount, codEligible };
+  let discountAmount = 0;
+  let appliedCouponCode = "";
+
+  if (couponCode) {
+    const { coupon, discountAmount: computedDiscount } = await validateCoupon({
+      code: couponCode,
+      cartAmount: subtotal,
+      productIds,
+      categoryIds,
+    });
+    discountAmount = Math.round(computedDiscount * 100) / 100;
+    appliedCouponCode = coupon.couponCode;
+  }
+
+  const totalAmount = subtotal + shippingCharge + gstAmount - discountAmount;
+
+  return {
+    finalItems,
+    subtotal,
+    shippingCharge,
+    gstAmount,
+    discountAmount,
+    couponCode: appliedCouponCode,
+    totalAmount,
+    codEligible,
+  };
 };
 
 /**
@@ -121,7 +149,7 @@ const computeOrderPricing = async (orderItems) => {
  */
 export const createRazorpayOrder = async (req, res) => {
   try {
-    const orderItems = req.body.orderItems;
+    const { orderItems, couponCode } = req.body;
 
     if (!orderItems || orderItems.length === 0) {
       return res.status(400).json({
@@ -130,7 +158,7 @@ export const createRazorpayOrder = async (req, res) => {
       });
     }
 
-    const { totalAmount } = await computeOrderPricing(orderItems);
+    const { totalAmount } = await computeOrderPricing(orderItems, couponCode);
 
     if (!totalAmount || totalAmount <= 0) {
       return res.status(400).json({
@@ -154,7 +182,7 @@ export const createRazorpayOrder = async (req, res) => {
     });
   } catch (error) {
     console.error("CREATE RAZORPAY ORDER ERROR:", error);
-    res.status(500).json({
+    res.status(error.status || 500).json({
       success: false,
       message: error.message,
     });
@@ -180,6 +208,8 @@ export const createOrder = async (req, res) => {
 
     const paymentMethod =
       req.body.paymentMethod || "cod";
+
+    const couponCode = req.body.couponCode || null;
 
     if (!customerInfo) {
       return res.status(400).json({
@@ -220,9 +250,11 @@ export const createOrder = async (req, res) => {
       subtotal,
       shippingCharge,
       gstAmount,
+      discountAmount,
+      couponCode: appliedCouponCode,
       totalAmount,
       codEligible,
-    } = await computeOrderPricing(orderItems);
+    } = await computeOrderPricing(orderItems, couponCode);
 
     if (paymentMethod === "cod" && !codEligible) {
       return res.status(400).json({
@@ -274,6 +306,10 @@ export const createOrder = async (req, res) => {
 
         gst: gstAmount,
 
+        couponCode: appliedCouponCode,
+
+        discountAmount,
+
         totalAmount,
 
         paymentMethod,
@@ -294,9 +330,18 @@ export const createOrder = async (req, res) => {
         ],
       });
 
+    await order.populate({
+      path: "orderItems.product",
+      select: "hsn referenceNo gst",
+    });
+
     const pdfPath =
       await generateOrderPdf(order);
 
+    // Revert the populated product refs back to plain ObjectIds before
+    // saving — otherwise Mongoose would persist the populated subdocuments
+    // in place of the refs.
+    order.depopulate("orderItems.product");
     order.invoicePdf = pdfPath;
 
     await order.save();
@@ -313,7 +358,7 @@ export const createOrder = async (req, res) => {
       error
     );
 
-    res.status(500).json({
+    res.status(error.status || 500).json({
       success: false,
       message: error.message,
     });
@@ -510,38 +555,43 @@ export const updateOrderStatus = async (
         });
       }
 
-      // DTDC shipment gateway — disabled for now (account not yet fully
-      // activated). Re-enable by uncommenting this block + the imports above;
-      // until then, marking an order "Shipped" just changes status with no
-      // AWB/tracking booked.
-      // if (orderStatus === "shipped" && !order.trackingId) {
-      //   try {
-      //     const { awbNumber } = await createShipment(order);
-      //     order.trackingId = awbNumber;
-      //     order.trackingUrl = DTDC_TRACKING_PAGE_URL;
-      //     order.courierPartner = "DTDC";
-      //   } catch (shipErr) {
-      //     return res.status(400).json({
-      //       success: false,
-      //       message: `Could not book DTDC shipment: ${shipErr.message}`,
-      //     });
-      //   }
-      // }
-
-      order.orderStatus = orderStatus;
-
-      if (orderStatus === "delivered") {
-        order.deliveredAt = new Date();
+      // "Packed" is the last status an admin can set manually — booking the
+      // DTDC shipment and advancing straight to "shipped" happens
+      // automatically as part of the same action. Booking is attempted
+      // BEFORE any mutation so a failure leaves the order untouched (admin
+      // just retries "Mark as Packed"). From here, only the DTDC webhook or
+      // a manual sync can move the order forward — canAdminUpdate blocks
+      // shipped/out_for_delivery/delivered as manual targets.
+      let awbNumber = null;
+      if (orderStatus === "packed") {
+        try {
+          ({ awbNumber } = await createShipment(order));
+        } catch (shipErr) {
+          return res.status(400).json({
+            success: false,
+            message: `Could not book DTDC shipment: ${shipErr.message}`,
+          });
+        }
       }
 
+      order.orderStatus = orderStatus;
       order.statusHistory.push({
         status: orderStatus,
-        message:
-          orderStatus === "shipped" && order.trackingId
-            ? `Order shipped via DTDC — AWB ${order.trackingId}`
-            : `Order updated to ${STATUS_LABELS[orderStatus]}`,
+        message: `Order updated to ${STATUS_LABELS[orderStatus]}`,
         updatedBy: "Admin",
       });
+
+      if (awbNumber) {
+        order.trackingId = awbNumber;
+        order.trackingUrl = DTDC_TRACKING_PAGE_URL;
+        order.courierPartner = "DTDC";
+        order.orderStatus = "shipped";
+        order.statusHistory.push({
+          status: "shipped",
+          message: `Order shipped via DTDC — AWB ${awbNumber}`,
+          updatedBy: "System",
+        });
+      }
     }
 
     if (trackingId)
@@ -709,96 +759,136 @@ export const cancelOrder = async (
   }
 };
 
-// DTDC shipment gateway — disabled for now (account not yet fully activated).
-// Both handlers below are commented out along with their routes
-// (webhookRoutes.js / orderRoutes.js) and the dtdc.js imports above.
-// Uncomment all of it together to re-enable.
-//
-// /**
-//  * DTDC TRACKING WEBHOOK (public — called by DTDC's push-tracking system)
-//  * DTDC pushes a scan event roughly every 30 minutes whenever a booked
-//  * shipment's status changes. This is the actual "auto status update"
-//  * mechanism: no polling, the courier tells us the moment something happens.
-//  * Must respond fast — DTDC's docs require a millisecond-scale response.
-//  */
-// export const dtdcTrackingWebhook = async (req, res) => {
-//   try {
-//     if (req.query.token !== process.env.DTDC_WEBHOOK_SECRET) {
-//       return res.status(401).json({ received: false, message: "Invalid webhook token" });
-//     }
-//
-//     const awb = req.body?.shipment?.strShipmentNo;
-//     const events = req.body?.shipmentStatus;
-//
-//     if (!awb || !Array.isArray(events) || events.length === 0) {
-//       return res.status(200).json({ received: true, matched: false });
-//     }
-//
-//     const order = await Order.findOne({ trackingId: awb });
-//     if (!order) {
-//       return res.status(200).json({ received: true, matched: false });
-//     }
-//
-//     for (const event of events) {
-//       const mappedStatus = DTDC_SCAN_TO_ORDER_STATUS[event.strAction];
-//
-//       if (
-//         mappedStatus &&
-//         mappedStatus !== order.orderStatus &&
-//         canCourierAdvanceTo(order.orderStatus, mappedStatus)
-//       ) {
-//         order.orderStatus = mappedStatus;
-//
-//         if (mappedStatus === "delivered") {
-//           order.deliveredAt = new Date();
-//         }
-//
-//         order.statusHistory.push({
-//           status: mappedStatus,
-//           message: event.strActionDesc || event.strAction,
-//           updatedBy: "DTDC",
-//         });
-//       }
-//     }
-//
-//     await order.save();
-//
-//     res.status(200).json({ received: true, matched: true });
-//   } catch (error) {
-//     console.error("DTDC WEBHOOK ERROR:", error);
-//     // Still 200 — a 4xx/5xx here just makes DTDC retry a request that will
-//     // fail identically every time (a bug on our end, not a transient one).
-//     res.status(200).json({ received: true, error: error.message });
-//   }
-// };
-//
-// /**
-//  * SYNC ORDER TRACKING (ADMIN, manual) — a pull-based fallback/"check now"
-//  * button alongside the automatic webhook, for whenever an admin wants to
-//  * confirm the latest status without waiting for the next push.
-//  */
-// export const syncOrderTracking = async (req, res) => {
-//   try {
-//     const order = await Order.findById(req.params.id);
-//
-//     if (!order) {
-//       return res.status(404).json({ success: false, message: "Order not found" });
-//     }
-//
-//     if (!order.trackingId) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "This order doesn't have a DTDC shipment booked yet.",
-//       });
-//     }
-//
-//     const tracking = await pullTrackShipment(order.trackingId);
-//
-//     res.status(200).json({ success: true, tracking });
-//   } catch (error) {
-//     res.status(502).json({
-//       success: false,
-//       message: `Could not fetch tracking from DTDC: ${error.message}`,
-//     });
-//   }
-// };
+// Applies a list of DTDC scan events (same shape from both the push webhook
+// and the pull tracking API) to an order — shared so the webhook and the
+// admin "Sync Tracking Now" button can never disagree about how a scan
+// event maps to orderStatus. Mutates `order` in place; returns whether
+// anything actually changed so the caller knows whether a save is needed.
+const applyDtdcScanEvents = (order, events, updatedBy = "DTDC") => {
+  let changed = false;
+
+  for (const event of events) {
+    const action = event.strAction || event.strActionCode || event.strCode;
+    const mappedStatus = DTDC_SCAN_TO_ORDER_STATUS[action];
+
+    if (
+      mappedStatus &&
+      mappedStatus !== order.orderStatus &&
+      canCourierAdvanceTo(order.orderStatus, mappedStatus)
+    ) {
+      order.orderStatus = mappedStatus;
+      changed = true;
+
+      if (mappedStatus === "delivered") {
+        order.deliveredAt = new Date();
+      }
+
+      order.statusHistory.push({
+        status: mappedStatus,
+        message: event.strActionDesc || event.strAction || action,
+        updatedBy,
+      });
+    }
+  }
+
+  return changed;
+};
+
+/**
+ * DTDC TRACKING WEBHOOK (public — called by DTDC's push-tracking system)
+ * DTDC pushes a scan event roughly every 30 minutes whenever a booked
+ * shipment's status changes. This is the actual "auto status update"
+ * mechanism: no polling, the courier tells us the moment something happens.
+ * Must respond fast — DTDC's docs require a millisecond-scale response.
+ */
+export const dtdcTrackingWebhook = async (req, res) => {
+  try {
+    if (req.query.token !== process.env.DTDC_WEBHOOK_SECRET) {
+      return res.status(401).json({ received: false, message: "Invalid webhook token" });
+    }
+
+    const awb = req.body?.shipment?.strShipmentNo;
+    const events = req.body?.shipmentStatus;
+
+    if (!awb || !Array.isArray(events) || events.length === 0) {
+      return res.status(200).json({ received: true, matched: false });
+    }
+
+    const order = await Order.findOne({ trackingId: awb });
+    if (!order) {
+      return res.status(200).json({ received: true, matched: false });
+    }
+
+    applyDtdcScanEvents(order, events, "DTDC");
+    await order.save();
+
+    res.status(200).json({ received: true, matched: true });
+  } catch (error) {
+    console.error("DTDC WEBHOOK ERROR:", error);
+    // Still 200 — a 4xx/5xx here just makes DTDC retry a request that will
+    // fail identically every time (a bug on our end, not a transient one).
+    res.status(200).json({ received: true, error: error.message });
+  }
+};
+
+/**
+ * SYNC ORDER TRACKING (ADMIN, manual) — a pull-based fallback/"check now"
+ * button alongside the automatic webhook, for whenever an admin wants to
+ * confirm the latest status without waiting for the next push. Previously
+ * this only forwarded DTDC's raw response to the frontend without ever
+ * updating the order — fixed to run the pulled scan history through the
+ * same mapping the webhook uses and actually persist any status change.
+ */
+export const syncOrderTracking = async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id);
+
+    if (!order) {
+      return res.status(404).json({ success: false, message: "Order not found" });
+    }
+
+    if (!order.trackingId) {
+      return res.status(400).json({
+        success: false,
+        message: "This order doesn't have a DTDC shipment booked yet.",
+      });
+    }
+
+    const tracking = await pullTrackShipment(order.trackingId);
+
+    // DTDC's pull API has been seen nesting the scan history under different
+    // keys depending on account/product config — check the likely ones. If
+    // none match, `events` is empty and we just surface the raw response
+    // (visible via the existing console.log in the admin UI) without
+    // touching orderStatus, instead of guessing wrong.
+    const events =
+      tracking?.trackDetails ||
+      tracking?.trackingDetails ||
+      tracking?.[0]?.trackDetails ||
+      tracking?.shipmentStatus ||
+      [];
+
+    const previousStatus = order.orderStatus;
+    const statusChanged =
+      Array.isArray(events) && events.length > 0
+        ? applyDtdcScanEvents(order, events, "DTDC")
+        : false;
+
+    if (statusChanged) {
+      await order.save();
+    }
+
+    res.status(200).json({
+      success: true,
+      tracking,
+      order,
+      statusChanged,
+      previousStatus,
+    });
+  } catch (error) {
+    res.status(502).json({
+      success: false,
+      message: `Could not fetch tracking from DTDC: ${error.message}`,
+    });
+  }
+};

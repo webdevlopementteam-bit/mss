@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import User from "../models/userModel.js";
+import PendingRegistration from "../models/pendingRegistrationModel.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import response from "../utils/response.js";
 import { generateOtp, getOtpExpiry, isOtpValid } from "../utils/otp.js";
@@ -13,20 +14,19 @@ import {
   REFRESH_COOKIE_NAME,
   ADMIN_REFRESH_COOKIE_NAME,
 } from "../utils/generateTokens.js";
-import {
-  sendVerificationOtpEmail,
-  sendResendOtpEmail,
-  sendForgotPasswordOtpEmail,
-} from "../utils/sendEmail.js";
+import { sendOtpSms } from "../utils/fast2sms.js";
+import { isValidMobile, isValidEmail, isValidPassword } from "../utils/validators.js";
 import { verifyGoogleToken } from "../utils/googleAuth.js";
+
+const OTP_EXPIRY_MINUTES = 5;
+const RESEND_COOLDOWN_SECONDS = 30;
+const MAX_OTP_ATTEMPTS = 5;
 
 const sanitize = (user) => {
   const obj = user.toObject ? user.toObject() : { ...user };
   delete obj.password;
-  delete obj.emailVerificationOTP;
-  delete obj.emailVerificationOTPExpiry;
-  delete obj.resetPasswordOTP;
-  delete obj.resetPasswordOTPExpiry;
+  delete obj.mobileOTPHash;
+  delete obj.resetPasswordOTPHash;
   delete obj.__v;
   return obj;
 };
@@ -43,7 +43,7 @@ const issueTokens = (res, user) => {
 
 // Flat response shape (not the generic response.success envelope) — the admin panel's
 // pre-existing login page reads res.data.token/res.data.user directly, so every endpoint
-// that logs a user in (google/verify-email-otp/login) must keep returning this exact shape.
+// that logs a user in (google/register-verify-otp/login) must keep returning this exact shape.
 const sendAuthResponse = (res, user, token, message = "Login successful") => {
   return res.status(200).json({
     success: true,
@@ -52,6 +52,12 @@ const sendAuthResponse = (res, user, token, message = "Login successful") => {
     expiresIn: ACCESS_TOKEN_EXPIRY_SECONDS,
     user: sanitize(user),
   });
+};
+
+const cooldownRemainingSeconds = (lastSentAt) => {
+  if (!lastSentAt) return 0;
+  const elapsed = (Date.now() - new Date(lastSentAt).getTime()) / 1000;
+  return Math.max(0, Math.ceil(RESEND_COOLDOWN_SECONDS - elapsed));
 };
 
 /* ==========================================
@@ -90,8 +96,8 @@ export const googleAuth = asyncHandler(async (req, res) => {
       name,
       authProvider: "google",
       emailVerified: true,
-      profileImage: picture,
       profileCompleted: false,
+      profileImage: picture,
       role: "user",
     });
   }
@@ -102,139 +108,186 @@ export const googleAuth = asyncHandler(async (req, res) => {
 });
 
 /* ==========================================
-   EMAIL + PASSWORD SIGNUP
+   REGISTRATION — STEP 1: validate + send mobile OTP
+   Does NOT create a User yet; data is staged in PendingRegistration.
 ========================================== */
-export const signup = asyncHandler(async (req, res) => {
-  const { name, email, password } = req.body;
+export const initiateRegistration = asyncHandler(async (req, res) => {
+  const { name, mobile, email, password, confirmPassword } = req.body;
 
-  const existing = await User.findOne({ email });
-
-  if (existing && existing.password) {
-    return response.error(res, "Email already registered", 409);
+  if (!name?.trim()) {
+    return response.error(res, "Name is required", 400);
   }
-  if (existing && existing.authProvider === "google" && !existing.password) {
+  if (!isValidMobile(mobile)) {
+    return response.error(res, "Enter a valid 10-digit Indian mobile number", 400);
+  }
+  if (!isValidEmail(email)) {
+    return response.error(res, "Enter a valid email address", 400);
+  }
+  if (!isValidPassword(password)) {
     return response.error(
       res,
-      "This email is registered with Google. Please use Continue with Google.",
-      409
+      "Password must be at least 8 characters and include uppercase, lowercase, a number and a special character",
+      400
     );
   }
+  if (password !== confirmPassword) {
+    return response.error(res, "Passwords do not match", 400);
+  }
 
-  const hashedPassword = await bcrypt.hash(password, 10);
+  const normalizedEmail = email.trim().toLowerCase();
+
+  const existingUser = await User.findOne({ $or: [{ email: normalizedEmail }, { mobile }] });
+  if (existingUser) {
+    if (existingUser.email === normalizedEmail) {
+      return response.error(res, "Email already registered", 409);
+    }
+    return response.error(res, "Mobile number already registered", 409);
+  }
+
+  const passwordHash = await bcrypt.hash(password, 10);
   const otp = generateOtp();
-  const otpExpiry = getOtpExpiry(10);
+  const otpHash = await bcrypt.hash(otp, 10);
 
-  const user = await User.create({
-    name,
-    email,
-    password: hashedPassword,
-    authProvider: "email",
-    emailVerified: false,
-    emailVerificationOTP: otp,
-    emailVerificationOTPExpiry: otpExpiry,
-    role: "user",
-  });
-
-  await sendVerificationOtpEmail(user.email, otp);
-
-  return response.success(
-    res,
-    { email: user.email },
-    "OTP sent to your email",
-    201
+  await PendingRegistration.findOneAndUpdate(
+    { mobile },
+    {
+      name: name.trim(),
+      email: normalizedEmail,
+      mobile,
+      passwordHash,
+      otpHash,
+      otpExpiry: getOtpExpiry(OTP_EXPIRY_MINUTES),
+      otpAttempts: 0,
+      otpLastSentAt: new Date(),
+      createdAt: new Date(),
+    },
+    { upsert: true, returnDocument: "after", setDefaultsOnInsert: true }
   );
+
+  const sms = await sendOtpSms(mobile, otp);
+  if (!sms.success) {
+    return response.error(res, "Failed to send OTP. Please try again.", 502);
+  }
+
+  return response.success(res, { mobile }, "OTP sent to your mobile number", 201);
 });
 
 /* ==========================================
-   VERIFY EMAIL OTP (completes signup, logs in)
+   REGISTRATION — STEP 2: verify OTP, create user, auto-login
 ========================================== */
-export const verifyEmailOtp = asyncHandler(async (req, res) => {
-  const { email, otp } = req.body;
+export const verifyRegistrationOtp = asyncHandler(async (req, res) => {
+  const { mobile, otp } = req.body;
 
-  const user = await User.findOne({ email });
+  const pending = await PendingRegistration.findOne({ mobile }).select("+otpHash +passwordHash");
 
-  if (!user) {
-    return response.error(res, "User not found", 404);
+  if (!pending) {
+    return response.error(res, "No pending registration found for this mobile number. Please register again.", 404);
   }
 
-  if (
-    !isOtpValid(user.emailVerificationOTP, user.emailVerificationOTPExpiry, otp)
-  ) {
-    return response.error(res, "Invalid or expired OTP", 400);
+  if (pending.otpAttempts >= MAX_OTP_ATTEMPTS) {
+    return response.error(res, "Too many incorrect attempts. Please request a new OTP.", 429);
   }
 
-  user.emailVerified = true;
-  user.emailVerificationOTP = undefined;
-  user.emailVerificationOTPExpiry = undefined;
-  await user.save();
+  if (new Date(pending.otpExpiry).getTime() < Date.now()) {
+    return response.error(res, "OTP expired. Please request a new one.", 400);
+  }
+
+  const isMatch = await bcrypt.compare(otp || "", pending.otpHash);
+  if (!isMatch) {
+    pending.otpAttempts += 1;
+    await pending.save();
+    return response.error(res, "Incorrect OTP", 400);
+  }
+
+  // Re-check uniqueness to close the race if someone else registered the
+  // same email/mobile while this OTP was pending.
+  const existingUser = await User.findOne({ $or: [{ email: pending.email }, { mobile: pending.mobile }] });
+  if (existingUser) {
+    await pending.deleteOne();
+    return response.error(res, "This email or mobile number was just registered. Please log in instead.", 409);
+  }
+
+  let user;
+  try {
+    user = await User.create({
+      name: pending.name,
+      email: pending.email,
+      mobile: pending.mobile,
+      password: pending.passwordHash,
+      authProvider: "email",
+      emailVerified: true,
+      mobileVerified: true,
+      profileCompleted: false,
+      role: "user",
+    });
+  } catch (err) {
+    if (err.code === 11000) {
+      return response.error(res, "This email or mobile number was just registered. Please log in instead.", 409);
+    }
+    throw err;
+  }
+
+  await pending.deleteOne();
 
   const token = issueTokens(res, user);
 
-  return sendAuthResponse(res, user, token, "Email verified successfully");
+  return sendAuthResponse(res, user, token, "Mobile verified successfully");
 });
 
 /* ==========================================
-   RESEND OTP (verify or reset)
+   REGISTRATION — RESEND OTP
 ========================================== */
-export const resendOtp = asyncHandler(async (req, res) => {
-  const { email, purpose } = req.body;
+export const resendRegistrationOtp = asyncHandler(async (req, res) => {
+  const { mobile } = req.body;
 
-  if (!["verify", "reset"].includes(purpose)) {
-    return response.error(res, "Invalid purpose", 400);
+  const pending = await PendingRegistration.findOne({ mobile });
+  if (!pending) {
+    return response.error(res, "No pending registration found for this mobile number. Please register again.", 404);
   }
 
-  const user = await User.findOne({ email });
-
-  if (purpose === "verify") {
-    if (!user) {
-      return response.error(res, "User not found", 404);
-    }
-    if (user.emailVerified) {
-      return response.error(res, "Email already verified", 400);
-    }
-    const otp = generateOtp();
-    user.emailVerificationOTP = otp;
-    user.emailVerificationOTPExpiry = getOtpExpiry(10);
-    await user.save();
-    await sendResendOtpEmail(user.email, otp);
-    return response.success(res, {}, "OTP resent to your email");
+  const remaining = cooldownRemainingSeconds(pending.otpLastSentAt);
+  if (remaining > 0) {
+    return response.error(res, `Please wait ${remaining}s before requesting another OTP`, 429);
   }
 
-  // purpose === "reset" — always respond generically to avoid user enumeration
-  if (user && user.authProvider === "email") {
-    const otp = generateOtp();
-    user.resetPasswordOTP = otp;
-    user.resetPasswordOTPExpiry = getOtpExpiry(10);
-    await user.save();
-    await sendResendOtpEmail(user.email, otp);
+  const otp = generateOtp();
+  pending.otpHash = await bcrypt.hash(otp, 10);
+  pending.otpExpiry = getOtpExpiry(OTP_EXPIRY_MINUTES);
+  pending.otpAttempts = 0;
+  pending.otpLastSentAt = new Date();
+  await pending.save();
+
+  const sms = await sendOtpSms(mobile, otp);
+  if (!sms.success) {
+    return response.error(res, "Failed to send OTP. Please try again.", 502);
   }
-  return response.success(res, {}, "If that email exists, a new code has been sent");
+
+  return response.success(res, {}, "OTP resent to your mobile number");
 });
 
 /* ==========================================
-   EMAIL + PASSWORD LOGIN
+   LOGIN — identifier (email or mobile) + password
 ========================================== */
 export const login = asyncHandler(async (req, res) => {
-  const { email, password } = req.body;
+  const { identifier, password } = req.body;
 
-  const user = await User.findOne({ email }).select("+password");
+  const query = isValidEmail(identifier)
+    ? { email: identifier.trim().toLowerCase() }
+    : { mobile: identifier?.trim() };
+
+  const user = await User.findOne(query).select("+password");
 
   if (!user || !user.password) {
-    return response.error(res, "Invalid email or password", 401);
+    return response.error(res, "Invalid credentials", 401);
   }
 
   if (!user.isActive) {
     return response.error(res, "Account disabled", 403);
   }
 
-  if (user.authProvider === "email" && !user.emailVerified) {
-    return response.error(res, "Please verify your email first", 403);
-  }
-
-  const isMatch = await bcrypt.compare(password, user.password);
-
+  const isMatch = await bcrypt.compare(password || "", user.password);
   if (!isMatch) {
-    return response.error(res, "Invalid email or password", 401);
+    return response.error(res, "Invalid credentials", 401);
   }
 
   const token = issueTokens(res, user);
@@ -243,42 +296,84 @@ export const login = asyncHandler(async (req, res) => {
 });
 
 /* ==========================================
-   FORGOT PASSWORD — send reset OTP
+   FORGOT PASSWORD — send reset OTP to mobile
 ========================================== */
 export const forgotPassword = asyncHandler(async (req, res) => {
-  const { email } = req.body;
+  const { mobile } = req.body;
 
-  const user = await User.findOne({ email });
+  const user = await User.findOne({ mobile });
 
-  if (user && user.authProvider === "email") {
-    const otp = generateOtp();
-    user.resetPasswordOTP = otp;
-    user.resetPasswordOTPExpiry = getOtpExpiry(10);
-    await user.save();
-    await sendForgotPasswordOtpEmail(user.email, otp);
+  // Always respond generically to avoid user enumeration.
+  if (user) {
+    const remaining = cooldownRemainingSeconds(user.resetPasswordOTPLastSentAt);
+    if (remaining <= 0) {
+      const otp = generateOtp();
+      user.resetPasswordOTPHash = await bcrypt.hash(otp, 10);
+      user.resetPasswordOTPExpiry = getOtpExpiry(OTP_EXPIRY_MINUTES);
+      user.resetPasswordOTPAttempts = 0;
+      user.resetPasswordOTPLastSentAt = new Date();
+      await user.save();
+      await sendOtpSms(mobile, otp);
+    }
   }
 
-  return response.success(
-    res,
-    {},
-    "If that email exists, a reset code has been sent"
-  );
+  return response.success(res, {}, "If that mobile number is registered, a reset code has been sent");
+});
+
+/* ==========================================
+   FORGOT PASSWORD — resend OTP
+========================================== */
+export const resendPasswordResetOtp = asyncHandler(async (req, res) => {
+  const { mobile } = req.body;
+
+  const user = await User.findOne({ mobile });
+  if (user) {
+    const remaining = cooldownRemainingSeconds(user.resetPasswordOTPLastSentAt);
+    if (remaining > 0) {
+      return response.error(res, `Please wait ${remaining}s before requesting another OTP`, 429);
+    }
+    const otp = generateOtp();
+    user.resetPasswordOTPHash = await bcrypt.hash(otp, 10);
+    user.resetPasswordOTPExpiry = getOtpExpiry(OTP_EXPIRY_MINUTES);
+    user.resetPasswordOTPAttempts = 0;
+    user.resetPasswordOTPLastSentAt = new Date();
+    await user.save();
+    await sendOtpSms(mobile, otp);
+  }
+
+  return response.success(res, {}, "If that mobile number is registered, a new code has been sent");
 });
 
 /* ==========================================
    VERIFY RESET OTP — issues a short-lived reset token
 ========================================== */
 export const verifyResetOtp = asyncHandler(async (req, res) => {
-  const { email, otp } = req.body;
+  const { mobile, otp } = req.body;
 
-  const user = await User.findOne({ email });
+  const user = await User.findOne({ mobile }).select("+resetPasswordOTPHash");
 
-  if (!user || !isOtpValid(user.resetPasswordOTP, user.resetPasswordOTPExpiry, otp)) {
+  if (!user || !user.resetPasswordOTPHash || !user.resetPasswordOTPExpiry) {
     return response.error(res, "Invalid or expired OTP", 400);
   }
 
-  user.resetPasswordOTP = undefined;
+  if (user.resetPasswordOTPAttempts >= MAX_OTP_ATTEMPTS) {
+    return response.error(res, "Too many incorrect attempts. Please request a new OTP.", 429);
+  }
+
+  if (new Date(user.resetPasswordOTPExpiry).getTime() < Date.now()) {
+    return response.error(res, "OTP expired. Please request a new one.", 400);
+  }
+
+  const isMatch = await bcrypt.compare(otp || "", user.resetPasswordOTPHash);
+  if (!isMatch) {
+    user.resetPasswordOTPAttempts += 1;
+    await user.save();
+    return response.error(res, "Incorrect OTP", 400);
+  }
+
+  user.resetPasswordOTPHash = undefined;
   user.resetPasswordOTPExpiry = undefined;
+  user.resetPasswordOTPAttempts = 0;
   await user.save();
 
   const resetToken = jwt.sign(
@@ -295,6 +390,14 @@ export const verifyResetOtp = asyncHandler(async (req, res) => {
 ========================================== */
 export const resetPassword = asyncHandler(async (req, res) => {
   const { resetToken, newPassword } = req.body;
+
+  if (!isValidPassword(newPassword)) {
+    return response.error(
+      res,
+      "Password must be at least 8 characters and include uppercase, lowercase, a number and a special character",
+      400
+    );
+  }
 
   let payload;
   try {
@@ -466,6 +569,7 @@ export const getAllUsers = asyncHandler(async (req, res) => {
     filter.$or = [
       { name: { $regex: search, $options: "i" } },
       { email: { $regex: search, $options: "i" } },
+      { mobile: { $regex: search, $options: "i" } },
     ];
   }
   if (authProvider) filter.authProvider = authProvider;

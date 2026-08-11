@@ -169,7 +169,7 @@ export const Popularitem = () => {
                       <div className="flex items-baseline gap-2">
                         {product.hasVariants ? (
                           <span className="text-primaryColor font-bold text-sm md:text-base">
-                            From ₹{product.minPrice ?? price}
+                            From ₹{product.minSalePrice ?? product.minPrice ?? price}
                           </span>
                         ) : discount ? (
                           <>

@@ -9,6 +9,7 @@ import {
   STATUS_LABELS,
   getNextAllowedStatus,
   isFinalStatus,
+  canAdminUpdate,
 } from "../utils/orderStatus";
 
 const AdminOrderDetails = () => {
@@ -20,7 +21,7 @@ const AdminOrderDetails = () => {
   const [updating, setUpdating] =
     useState(false);
 
-  // const [syncing, setSyncing] = useState(false); // DTDC shipment gateway — disabled for now
+  const [syncing, setSyncing] = useState(false);
 
   const fetchOrder = async () => {
     try {
@@ -43,6 +44,13 @@ const AdminOrderDetails = () => {
   // there is nothing to "choose" beyond confirming that one move.
   const nextStatus = order ? getNextAllowedStatus(order.orderStatus) : null;
   const locked = order ? isFinalStatus(order.orderStatus) : false;
+  // Admin can only manually drive the order up through "packed" — marking it
+  // packed automatically books the DTDC shipment and advances to "shipped".
+  // Beyond that, only the DTDC webhook (or "Sync Tracking Now") can move the
+  // order forward, so the manual button is hidden rather than shown-disabled.
+  const canManuallyAdvance =
+    order && nextStatus ? canAdminUpdate(order.orderStatus, nextStatus) : false;
+  const awaitingCourier = order && !locked && !canManuallyAdvance;
 
   const updateStatus =
     async () => {
@@ -66,23 +74,27 @@ const AdminOrderDetails = () => {
       }
     };
 
-  // DTDC shipment gateway — disabled for now (account not yet fully
-  // activated). Uncomment along with the "Shipment" card JSX below and the
-  // backend route to re-enable.
-  // const syncTracking = async () => {
-  //   try {
-  //     setSyncing(true);
-  //     const res = await API.post(`/orders/admin/${id}/sync-tracking`);
-  //     if (res.data.success) {
-  //       toast.success("Fetched latest tracking from DTDC");
-  //       console.log("DTDC tracking response:", res.data.tracking);
-  //     }
-  //   } catch (error) {
-  //     toast.error(error?.response?.data?.message || "Failed to sync tracking");
-  //   } finally {
-  //     setSyncing(false);
-  //   }
-  // };
+  const syncTracking = async () => {
+    try {
+      setSyncing(true);
+      const res = await API.post(`/orders/admin/${id}/sync-tracking`);
+      if (res.data.success) {
+        if (res.data.statusChanged) {
+          setOrder(res.data.order);
+          toast.success(
+            `Status updated to ${STATUS_LABELS[res.data.order.orderStatus] || res.data.order.orderStatus}`
+          );
+        } else {
+          toast.success("Fetched latest tracking from DTDC — no status change yet");
+        }
+        console.log("DTDC tracking response:", res.data.tracking);
+      }
+    } catch (error) {
+      toast.error(error?.response?.data?.message || "Failed to sync tracking");
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   if (!order) {
     return (
@@ -341,10 +353,7 @@ const AdminOrderDetails = () => {
         </p>
       </div>
 
-      {/* Shipment / Tracking — DTDC gateway disabled for now (account not yet
-          fully activated). Uncomment this card, syncTracking above, and the
-          backend route/controller together to re-enable.
-
+      {/* Shipment / Tracking */}
       <div className="bg-white p-6 rounded-xl shadow mt-6">
         <h2 className="font-bold text-xl mb-4">
           Shipment
@@ -390,13 +399,12 @@ const AdminOrderDetails = () => {
           </div>
         ) : (
           <p className="text-gray-500">
-            {nextStatus === "shipped"
-              ? "A DTDC shipment will be booked automatically when this order is marked as Shipped."
+            {nextStatus === "packed"
+              ? "A DTDC shipment will be booked automatically when this order is marked as Packed."
               : "No shipment booked yet."}
           </p>
         )}
       </div>
-      */}
 
       {/* Status Management */}
 
@@ -417,6 +425,14 @@ const AdminOrderDetails = () => {
             {order.orderStatus === "cancelled"
               ? "This order is Cancelled — it is a final status and cannot be updated."
               : "This order has been Delivered — it is a final status and cannot be updated."}
+          </div>
+        ) : awaitingCourier ? (
+          // Past "packed" — the DTDC shipment is booked and only the courier
+          // (webhook, or a manual sync above) can advance the order further.
+          <div className="px-4 py-3 rounded-lg text-sm font-semibold bg-blue-50 text-blue-700">
+            This order is now tracked by DTDC — status updates automatically
+            as the courier scans the shipment. Use "Sync Tracking Now" above
+            to check right now instead of waiting.
           </div>
         ) : (
           <div className="flex gap-4 flex-wrap items-center">
@@ -445,6 +461,12 @@ const AdminOrderDetails = () => {
                   ? `Mark as ${STATUS_LABELS[nextStatus]}`
                   : "No further updates"}
             </button>
+            {nextStatus === "packed" && (
+              <p className="text-xs text-gray-400 basis-full">
+                Marking this order as Packed will automatically book the DTDC
+                shipment and move it to Shipped.
+              </p>
+            )}
           </div>
         )}
 

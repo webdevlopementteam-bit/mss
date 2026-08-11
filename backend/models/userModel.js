@@ -12,6 +12,29 @@ const userSchema = new mongoose.Schema(
       trim: true,
     },
 
+    mobile: {
+      type: String,
+      unique: true,
+      sparse: true,
+      trim: true,
+    },
+
+    mobileVerified: {
+      type: Boolean,
+      default: false,
+    },
+
+    mobileOTPHash: {
+      type: String,
+      select: false,
+    },
+    mobileOTPExpiry: Date,
+    mobileOTPAttempts: {
+      type: Number,
+      default: 0,
+    },
+    mobileOTPLastSentAt: Date,
+
     password: {
       type: String,
       select: false,
@@ -36,11 +59,16 @@ const userSchema = new mongoose.Schema(
       default: true,
     },
 
-    emailVerificationOTP: String,
-    emailVerificationOTPExpiry: Date,
-
-    resetPasswordOTP: String,
+    resetPasswordOTPHash: {
+      type: String,
+      select: false,
+    },
     resetPasswordOTPExpiry: Date,
+    resetPasswordOTPAttempts: {
+      type: Number,
+      default: 0,
+    },
+    resetPasswordOTPLastSentAt: Date,
 
     profileCompleted: {
       type: Boolean,

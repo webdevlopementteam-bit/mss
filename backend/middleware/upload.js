@@ -30,11 +30,15 @@ const allowedTypes = [
   "video/mkv",
   "application/pdf",
   "text/csv",
-  "application/vnd.ms-excel"
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 ];
 
 const fileFilter = (req, file, cb) => {
-  if (allowedTypes.includes(file.mimetype)) {
+  const allowedExtensions = [".csv", ".xls", ".xlsx"];
+  const ext = path.extname(file.originalname || "").toLowerCase();
+
+  if (allowedTypes.includes(file.mimetype) || allowedExtensions.includes(ext)) {
     cb(null, true);
   } else {
     cb(

@@ -1,13 +1,46 @@
 import Product from "../models/productModel.js";
 import Variant from "../models/variantModel.js";
 import Category from "../models/categoryModel.js";
+import Subcategory from "../models/subcategoryModel.js";
 import Brand from "../models/brandModel.js";
+import Company from "../models/companyModel.js";
 import Attribute from "../models/attributeModel.js";
 import fs from "fs";
 import slugify from "slugify";
 import mongoose from "mongoose";
 import { Parser } from "json2csv";
 import csv from "csv-parser";
+import XLSX from "xlsx";
+
+// Resolves the final URL slug for a product: a non-empty admin-provided
+// custom slug wins (sanitized via slugify so invalid characters can never
+// reach the database); otherwise falls back to auto-generating one from the
+// title, exactly like the pre-existing behavior. Shared by createProduct and
+// updateProduct so both enforce the same uniqueness/validation rules.
+const resolveProductSlug = async ({ rawSlug, title, excludeId }) => {
+  const trimmed = typeof rawSlug === "string" ? rawSlug.trim() : "";
+  const base = trimmed || title;
+
+  if (!base) {
+    throw new Error("A product title or custom slug is required to generate a URL slug.");
+  }
+
+  const candidate = slugify(base, { lower: true, strict: true, trim: true });
+
+  if (!candidate) {
+    throw new Error("The custom slug contains no valid characters.");
+  }
+
+  const query = { slug: candidate };
+  if (excludeId) query._id = { $ne: excludeId };
+
+  const clash = await Product.findOne(query).select("_id");
+  if (clash) {
+    throw new Error(`The URL slug "${candidate}" is already used by another product. Please choose a different one.`);
+  }
+
+  return candidate;
+};
 
 // ── Variant helpers (shared by createProduct / updateProduct / createVariants) ──
 const normalizeCombination = (attrs) => {
@@ -65,9 +98,7 @@ const buildVariantDocs = (productId, rawVariants) => {
           : undefined,
       quantity: Number(v.quantity),
       isActive: v.isActive === undefined ? true : Boolean(v.isActive),
-      // Only include sku when it has a real value — writing "" would defeat
-      // the sparse unique index and re-introduce the duplicate-key bug.
-      // ...(sku ? { sku } : {}),
+      sku: v.sku || combination,
     };
   });
 };
@@ -107,8 +138,10 @@ export const createProduct = async (req, res) => {
       gst,
       quantity,
       category,
-      client,
+      subcategory,
+      company,
       brand,
+      fsn,
       hsn,
       deliveryCharge,
       referenceNo,
@@ -119,7 +152,8 @@ export const createProduct = async (req, res) => {
       hasVariants,
       isPublished,
       homeSections,
-      variants
+      variants,
+      slug: slugInput
     } = req.body;
 
     if (!title || !description || !gst || !category || category.length === 0) {
@@ -159,7 +193,15 @@ export const createProduct = async (req, res) => {
       });
     }
 
-    const slug = slugify(title, { lower: true });
+    let slug;
+    try {
+      slug = await resolveProductSlug({ rawSlug: slugInput, title, excludeId: null });
+    } catch (slugErr) {
+      return res.status(400).json({
+        success: false,
+        message: slugErr.message,
+      });
+    }
 
     const images = req.files.map(file =>
       file.path.replace(/\\/g, "/")
@@ -179,8 +221,10 @@ export const createProduct = async (req, res) => {
         ? JSON.parse(homeSections)
         : [],
       category,
-      client: client || undefined,
+      subcategory: subcategory || undefined,
+      company: company || undefined,
       brand: brand || undefined,
+      fsn,
       hsn,
       deliveryCharge,
       referenceNo,
@@ -246,13 +290,31 @@ export const getAllProduct = async (req, res) => {
       });
     }
 
-    // 📂 CATEGORY
+    // 📂 CATEGORY — accepts one id or a comma-separated list (shop filter
+    // sidebar sends multiple selected categories at once).
     if (req.query.category) {
-      andConditions.push({
-        category: {
-          $in: [new mongoose.Types.ObjectId(req.query.category)]
-        }
-      });
+      const categoryIds = req.query.category
+        .split(",")
+        .map((id) => id.trim())
+        .filter((id) => mongoose.Types.ObjectId.isValid(id))
+        .map((id) => new mongoose.Types.ObjectId(id));
+
+      if (categoryIds.length > 0) {
+        andConditions.push({ category: { $in: categoryIds } });
+      }
+    }
+
+    // 🏷️ BRAND — same comma-separated-list pattern as category.
+    if (req.query.brand) {
+      const brandIds = req.query.brand
+        .split(",")
+        .map((id) => id.trim())
+        .filter((id) => mongoose.Types.ObjectId.isValid(id))
+        .map((id) => new mongoose.Types.ObjectId(id));
+
+      if (brandIds.length > 0) {
+        andConditions.push({ brand: { $in: brandIds } });
+      }
     }
 
     // 📢 STATUS (published/unpublished only here)
@@ -269,21 +331,34 @@ export const getAllProduct = async (req, res) => {
       query = { $and: andConditions };
     }
 
-    const total = await Product.countDocuments(query);
-
-    // 💰 SORT (SAFE)
+    // 💰 SORT (SAFE) — sorts on sortPrice (computed below: lowest variant
+    // price for variable products, else the base price) rather than the raw
+    // `price` field, which is always 0 on variable products and would
+    // otherwise make low/high sorting meaningless for them.
     let sortOption = {};
 
     if (req.query.sort === "low") {
-      sortOption = { price: 1 };
+      sortOption = { sortPrice: 1 };
     } else if (req.query.sort === "high") {
-      sortOption = { price: -1 };
+      sortOption = { sortPrice: -1 };
     } else {
       sortOption = { createdAt: -1 }; // default
     }
 
-    // 🔥 MAIN AGGREGATION
-    const products = await Product.aggregate([
+    // 💵 PRICE RANGE (shop filter sidebar) — applied against sortPrice so it
+    // works the same way for both simple and variable products.
+    const minPriceFilter = req.query.minPrice !== undefined ? Number(req.query.minPrice) : null;
+    const maxPriceFilter = req.query.maxPrice !== undefined ? Number(req.query.maxPrice) : null;
+    const priceMatch = {};
+    if (minPriceFilter !== null && !isNaN(minPriceFilter)) {
+      priceMatch.$gte = minPriceFilter;
+    }
+    if (maxPriceFilter !== null && !isNaN(maxPriceFilter)) {
+      priceMatch.$lte = maxPriceFilter;
+    }
+
+    // 🔥 MAIN AGGREGATION (shared pipeline before pagination/count fork below)
+    const basePipeline = [
 
       { $match: query },
 
@@ -342,18 +417,42 @@ export const getAllProduct = async (req, res) => {
               else: "$price"
             }
           },
+          // Effective (customer-facing) price per variant: its salePrice when
+          // one is actually set, else its regular price — a raw $min/$max
+          // over variants.salePrice would wrongly treat an unset/0 salePrice
+          // as cheaper than every real price.
           minSalePrice: {
             $cond: {
               if: { $gt: [{ $size: "$variants" }, 0] },
-              then: { $min: "$variants.salePrice" },
-              else: "$salePrice"
+              then: {
+                $min: {
+                  $map: {
+                    input: "$variants",
+                    as: "v",
+                    in: {
+                      $cond: [{ $gt: ["$$v.salePrice", 0] }, "$$v.salePrice", "$$v.price"]
+                    }
+                  }
+                }
+              },
+              else: { $cond: [{ $gt: ["$salePrice", 0] }, "$salePrice", "$price"] }
             }
           },
           maxSalePrice: {
             $cond: {
               if: { $gt: [{ $size: "$variants" }, 0] },
-              then: { $max: "$variants.salePrice" },
-              else: "$salePrice"
+              then: {
+                $max: {
+                  $map: {
+                    input: "$variants",
+                    as: "v",
+                    in: {
+                      $cond: [{ $gt: ["$$v.salePrice", 0] }, "$$v.salePrice", "$$v.price"]
+                    }
+                  }
+                }
+              },
+              else: { $cond: [{ $gt: ["$salePrice", 0] }, "$salePrice", "$price"] }
             }
           }
         }
@@ -369,15 +468,32 @@ export const getAllProduct = async (req, res) => {
         ? [{ $match: { totalStock: { $gt: 0 } } }]
         : []),
 
-      // ✅ SAFE SORT
-      ...(Object.keys(sortOption).length > 0
-        ? [{ $sort: sortOption }]
+      // 💵 PRICE RANGE FILTER
+      ...(Object.keys(priceMatch).length > 0
+        ? [{ $match: { sortPrice: priceMatch } }]
         : []),
+    ];
 
-      // 📄 PAGINATION
-      { $skip: (page - 1) * limit },
-      { $limit: limit }
+    // $facet runs the paginated-data branch and a count branch off the SAME
+    // filtered pipeline, so totalPages/totalProduct stay accurate even though
+    // stock/price filters are only knowable after the variants lookup above
+    // (a plain Product.countDocuments(query) can't see those).
+    const [result] = await Product.aggregate([
+      ...basePipeline,
+      {
+        $facet: {
+          data: [
+            ...(Object.keys(sortOption).length > 0 ? [{ $sort: sortOption }] : []),
+            { $skip: (page - 1) * limit },
+            { $limit: limit },
+          ],
+          totalCount: [{ $count: "count" }],
+        },
+      },
     ]);
+
+    const products = result.data;
+    const total = result.totalCount[0]?.count || 0;
 
     res.json({
       success: true,
@@ -402,8 +518,8 @@ export const getAllProduct = async (req, res) => {
 export const getOneProduct = async (req, res) => {
   try {
     const product = mongoose.Types.ObjectId.isValid(req.params.id)
-      ? await Product.findById(req.params.id).populate("brand category client")
-      : await Product.findOne({ slug: req.params.id }).populate("brand category client");
+      ? await Product.findById(req.params.id).populate("brand category subcategory company")
+      : await Product.findOne({ slug: req.params.id }).populate("brand category subcategory company");
 
     if (!product) {
       return res.status(404).json({
@@ -455,8 +571,10 @@ export const updateProduct = async (req, res) => {
       gst,
       quantity,
       category,
-      client,
+      subcategory,
+      company,
       brand,
+      fsn,
       hsn,
       deliveryCharge,
       referenceNo,
@@ -468,7 +586,8 @@ export const updateProduct = async (req, res) => {
       isPublished,
       existingImages,
       homeSections,
-      variants
+      variants,
+      slug: slugInput
     } = req.body;
 
     // ================= IMAGE FIX =================
@@ -491,7 +610,26 @@ export const updateProduct = async (req, res) => {
     // ================= DATA UPDATE =================
     if (title) {
       product.title = title;
-      product.slug = slugify(title, { lower: true });
+    }
+
+    // Custom slug (optional): a non-empty admin-provided value wins
+    // (validated + sanitized); left blank -> auto-generate from the
+    // (possibly just-updated) title. Only touched when the field is present
+    // in this request at all, so callers that don't send it (e.g. bulk CSV
+    // import) leave the existing slug untouched, same as before this field existed.
+    if (slugInput !== undefined) {
+      try {
+        product.slug = await resolveProductSlug({
+          rawSlug: slugInput,
+          title: title || product.title,
+          excludeId: product._id,
+        });
+      } catch (slugErr) {
+        return res.status(400).json({
+          success: false,
+          message: slugErr.message,
+        });
+      }
     }
 
     if (description) product.description = description;
@@ -528,8 +666,10 @@ export const updateProduct = async (req, res) => {
     }
     if (typeof gst !== "undefined") product.gst = gst;
     if (category) product.category = category;
-    if (client) product.client = client;
+    if (subcategory) product.subcategory = subcategory;
+    if (company) product.company = company;
     if (brand) product.brand = brand;
+    if (typeof fsn !== "undefined") product.fsn = fsn;
     if (hsn) product.hsn = hsn;
     if (deliveryCharge) product.deliveryCharge = deliveryCharge;
     if (referenceNo) product.referenceNo = referenceNo;
@@ -651,7 +791,7 @@ export const exportProductsCSV = async (req, res) => {
     const products = await Product.find()
       .populate("brand")
       .populate("category")
-      .populate("client")
+      .populate("company")
       .lean();
 
     const variants = await Variant.find()
@@ -673,6 +813,7 @@ export const exportProductsCSV = async (req, res) => {
         price: p.price,
         salePrice: p.salePrice,
         quantity: p.quantity,
+        fsn: p.fsn,
         hsn: p.hsn,
         gst: p.gst,
         moq: p.moq,
@@ -683,7 +824,7 @@ export const exportProductsCSV = async (req, res) => {
         isPublished: p.isPublished,
         brand: p.brand?.name || "",
         category: p.category?.map(c => c.name).join("|") || "",
-        client: p.client?.name || "",
+        company: p.company?.name || "",
         images: p.images?.join("|") || ""
       };
 
@@ -701,6 +842,7 @@ export const exportProductsCSV = async (req, res) => {
           price: v.price,
           salePrice: v.salePrice,
           quantity: v.quantity,
+          sku: v.sku || v.combination,
           attributes: v.attributes
             ?.map(a => `${a.attributeId.displayName}:${a.value}`)
             .join("|")
@@ -724,160 +866,369 @@ export const exportProductsCSV = async (req, res) => {
 };
 
 
-export const importProductsCSV = async (req, res) => {
-  try {
-    const results = [];
+const IMPORT_PLACEHOLDER_IMAGE = "uploads/products/import-placeholder.png";
 
-    fs.createReadStream(req.file.path)
+const getCell = (row, keys, fallback = "") => {
+  for (const key of keys) {
+    if (row[key] !== undefined && row[key] !== null && String(row[key]).trim() !== "") {
+      return row[key];
+    }
+  }
+  return fallback;
+};
+
+const cleanText = (value) => String(value ?? "").trim();
+
+const toNumber = (value, fallback = 0) => {
+  if (value === "" || value === undefined || value === null) return fallback;
+  const normalized = typeof value === "string"
+    ? value
+        .split(/,\s+/)[0]
+        .replace(/[₹%,\s]/g, "")
+    : value;
+  const num = Number(normalized);
+  return Number.isFinite(num) ? num : fallback;
+};
+
+const toBoolean = (value, fallback = false) => {
+  if (value === undefined || value === null || value === "") return fallback;
+  if (typeof value === "boolean") return value;
+  return ["true", "1", "yes", "show"].includes(String(value).trim().toLowerCase());
+};
+
+const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+const splitList = (value, pattern = /[|,]/) =>
+  cleanText(value)
+    .split(pattern)
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+const splitSkuVariants = (value) => {
+  const values = [];
+
+  for (const item of splitList(value, /,/)) {
+    if (item.includes("/") && !/\d/.test(item)) {
+      values.push(...splitList(item, /\//));
+    } else {
+      values.push(item);
+    }
+  }
+
+  return [...new Set(values)];
+};
+
+const splitNumberValues = (value) => {
+  const raw = cleanText(value);
+  if (!raw) return [];
+
+  return raw
+    .split(/,\s+/)
+    .map((item) => toNumber(item, null))
+    .filter((item) => item !== null);
+};
+
+const getIndexedValue = (values, index, fallback) =>
+  values[index] !== undefined ? values[index] : fallback;
+
+const uniqueSlug = async (Model, baseText, excludeId = null) => {
+  const base = slugify(baseText || "item", { lower: true, strict: true, trim: true }) || "item";
+  let slug = base;
+  let suffix = 1;
+
+  while (true) {
+    const query = { slug };
+    if (excludeId) query._id = { $ne: excludeId };
+    const existing = await Model.findOne(query).select("_id");
+    if (!existing) return slug;
+    slug = `${base}-${suffix++}`;
+  }
+};
+
+const findByName = (Model, name) =>
+  Model.findOne({ name: { $regex: `^${escapeRegex(name)}$`, $options: "i" } });
+
+const ensureCategory = async (name) => {
+  const cleanName = cleanText(name) || "Uncategorized";
+  const existing = await findByName(Category, cleanName);
+  if (existing) return existing;
+
+  return Category.create({
+    name: cleanName,
+    slug: await uniqueSlug(Category, cleanName),
+    description: cleanName,
+    image: IMPORT_PLACEHOLDER_IMAGE,
+    isPublished: true,
+  });
+};
+
+const ensureSubcategory = async (name, categoryId) => {
+  const cleanName = cleanText(name);
+  if (!cleanName) return null;
+
+  const existing = await Subcategory.findOne({
+    name: { $regex: `^${escapeRegex(cleanName)}$`, $options: "i" },
+    category: categoryId,
+  });
+  if (existing) return existing;
+
+  return Subcategory.create({
+    name: cleanName,
+    slug: await uniqueSlug(Subcategory, cleanName),
+    description: cleanName,
+    image: IMPORT_PLACEHOLDER_IMAGE,
+    category: categoryId,
+    isPublished: true,
+  });
+};
+
+const ensureBrand = async (name) => {
+  const cleanName = cleanText(name);
+  if (!cleanName) return null;
+
+  const existing = await findByName(Brand, cleanName);
+  if (existing) return existing;
+
+  return Brand.create({
+    name: cleanName,
+    description: cleanName,
+    image: IMPORT_PLACEHOLDER_IMAGE,
+    isPublished: true,
+  });
+};
+
+const ensureCompany = async (name) => {
+  const cleanName = cleanText(name);
+  if (!cleanName) return null;
+
+  const existing = await findByName(Company, cleanName);
+  if (existing) return existing;
+
+  return Company.create({
+    name: cleanName,
+    image: IMPORT_PLACEHOLDER_IMAGE,
+  });
+};
+
+const ensureSkuAttribute = async (values) => {
+  const uniqueValues = [...new Set(values.map(cleanText).filter(Boolean))];
+  let attribute = await Attribute.findOne({ title: "sku" });
+
+  if (!attribute) {
+    return Attribute.create({
+      title: "sku",
+      displayName: "SKU",
+      variants: uniqueValues.length ? uniqueValues : ["Default"],
+    });
+  }
+
+  const merged = [...new Set([...(attribute.variants || []), ...uniqueValues])];
+  if (merged.length !== attribute.variants.length) {
+    attribute.variants = merged;
+    await attribute.save();
+  }
+
+  return attribute;
+};
+
+const parseImportRows = async (filePath, originalName = "") => {
+  const ext = originalName.split(".").pop()?.toLowerCase();
+
+  if (["xlsx", "xls"].includes(ext)) {
+    const workbook = XLSX.readFile(filePath);
+    const sheetName = workbook.SheetNames.find((name) => {
+      const preview = XLSX.utils.sheet_to_json(workbook.Sheets[name], { defval: "", raw: false, range: 0, header: 1 });
+      return preview.some((row) =>
+        row.some((cell) => ["title", "product name"].includes(cleanText(cell).toLowerCase()))
+      );
+    }) || workbook.SheetNames[0];
+
+    return XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { defval: "", raw: false });
+  }
+
+  return new Promise((resolve, reject) => {
+    const results = [];
+    fs.createReadStream(filePath)
       .pipe(csv())
       .on("data", (data) => results.push(data))
-      .on("end", async () => {
+      .on("error", reject)
+      .on("end", () => resolve(results));
+  });
+};
 
-        const productMap = {}; // 🔥 grouping
+const normalizeImportRow = (row) => {
+  const rawPrice = getCell(row, ["price", "MRP"]);
+  const rawSalePrice = getCell(row, ["salePrice", "sale_price", "NEW RATE"]);
+  const skuValues = splitSkuVariants(getCell(row, ["sku", "SKU"]));
+  const title = cleanText(getCell(row, ["title", "Product Name", "productName", "name"]));
+  const hasVariants = skuValues.length > 0;
 
-        for (let row of results) {
-          try {
-            if (!row.title) continue;
+  return {
+    sourceId: cleanText(getCell(row, ["id", "_id"])),
+    title,
+    description: cleanText(getCell(row, ["description", "Description"])) || title,
+    metaTitle: cleanText(getCell(row, ["metaTitle", "metatitle"])),
+    metaDescription: cleanText(getCell(row, ["metaDescription", "metadescription"])),
+    price: toNumber(rawPrice),
+    salePrice: toNumber(rawSalePrice),
+    variantPrices: splitNumberValues(rawPrice),
+    variantSalePrices: splitNumberValues(rawSalePrice),
+    quantity: toNumber(getCell(row, ["quantity", "stock"])),
+    fsn: cleanText(getCell(row, ["fsn", "FSN"])),
+    hsn: toNumber(getCell(row, ["hsn"])),
+    gst: toNumber(getCell(row, ["gst"])),
+    moq: toNumber(getCell(row, ["moq"]), 1),
+    packing: cleanText(getCell(row, ["packing"])),
+    deliveryCharge: toNumber(getCell(row, ["deliveryCharge", "DeliveryCharge"])),
+    referenceNo: cleanText(getCell(row, ["referenceNo", "product Refrence No", "productRefrenceNo"])),
+    images: splitList(getCell(row, ["images"])),
+    category: cleanText(getCell(row, ["category"])),
+    subcategory: cleanText(getCell(row, ["subcategory", "Subcategory", "categories"])),
+    brand: cleanText(getCell(row, ["brand", "BRAND"])),
+    company: cleanText(getCell(row, ["company", "Company"])),
+    codAvailable: toBoolean(getCell(row, ["codAvailable", "isCodAvaialble"]), true),
+    isPublished: getCell(row, ["isPublished", "status"], "true") === "hide" ? false : toBoolean(getCell(row, ["isPublished", "status"], true), true),
+    hasVariants,
+    skuValues,
+  };
+};
 
-            let product = productMap[row.title];
+const importProductRows = async (rows) => {
+  const stats = {
+    total: rows.length,
+    imported: 0,
+    created: 0,
+    updated: 0,
+    skipped: 0,
+    variantsCreated: 0,
+    errors: [],
+  };
 
-            // ================= PRODUCT CREATE / GET =================
-            if (!product) {
+  for (const rawRow of rows) {
+    const row = normalizeImportRow(rawRow);
+    if (!row.title) {
+      stats.skipped += 1;
+      continue;
+    }
 
-              const categoryDoc = await Category.findOne({
-                name: row.category
-              });
+    try {
+      const categoryDoc = await ensureCategory(row.category);
+      const subcategoryDoc = await ensureSubcategory(row.subcategory, categoryDoc._id);
+      const brandDoc = await ensureBrand(row.brand);
+      const companyDoc = await ensureCompany(row.company);
 
-              if (!categoryDoc) {
-                console.log("❌ Category not found:", row.category);
-                continue;
-              }
-
-              let brandDoc = null;
-              if (row.brand) {
-                brandDoc = await Brand.findOne({ name: row.brand });
-              }
-
-              const slug = slugify(row.title + "-" + Date.now(), { lower: true });
-
-              let existingProduct = await Product.findOne({ title: row.title });
-
-              if (!existingProduct) {
-                product = await Product.create({
-                  title: row.title,
-                  slug,
-                  description: row.description || "",
-                  metaTitle: row.metaTitle || "",
-                  metaDescription: row.metaDescription || "",
-
-                  price: row.hasVariants === "true" ? 0 : Number(row.price || 0),
-                  salePrice: row.hasVariants === "true" ? 0 : Number(row.salePrice || 0),
-                  quantity: row.hasVariants === "true" ? 0 : Number(row.quantity || 0),
-
-                  
-                  hsn: Number(row.hsn || 0),
-                  gst: Number(row.gst || 0),
-
-                  packing: row.packing || "",
-                  deliveryCharge: Number(row.deliveryCharge || 0),
-                  referenceNo: row.referenceNo || "",
-
-                  // 🔥 IMAGE FIX (IMPORTANT)
-                  images: row.images
-                    ? row.images.split("|").filter(Boolean)
-                    : [],
-
-                  category: [categoryDoc._id],
-                  brand: brandDoc?._id || null,
-
-                  hasVariants: row.hasVariants === "true",
-                  isPublished: row.isPublished !== "false"
-                });
-
-              } else {
-                product = existingProduct;
-
-                // 🔥 IMAGE FIX (variant वाले case के लिए)
-                if (row.images) {
-                  const csvImages = row.images.split("|").filter(Boolean);
-
-                  if (!product.images || product.images.length === 0) {
-                    product.images = csvImages;
-                  } else if (!product.images[0]) {
-                    product.images = csvImages;
-                  }
-
-                  await product.save();
-                }
-              }
-
-              // 🔥 ALWAYS MAP (IMPORTANT)
-              productMap[row.title] = product;
-            }
-
-            // ================= VARIANTS =================
-            if (row.hasVariants === "true" && row.attributes) {
-
-              const values = row.attributes.split("|");
-
-              const attrs = [];
-
-              for (let val of values) {
-                const [attrName, attrValue] = val.split(":");
-
-                const attrDoc = await Attribute.findOne({
-                  displayName: attrName
-                });
-
-                if (!attrDoc) {
-                  console.log("❌ Attribute not found:", attrName);
-                  continue;
-                }
-
-                attrs.push({
-                  attributeId: attrDoc._id,
-                  value: attrValue
-                });
-              }
-
-              // 🔹 combination (only values)
-              const cleanValues = values.map(v => {
-                const parts = v.split(":");
-                return parts[1] || parts[0];
-              });
-
-              const combination = cleanValues.join("-");
-
-              // 🔥 avoid duplicate variants
-              const existingVariant = await Variant.findOne({
-                productId: product._id,
-                combination
-              });
-
-              if (!existingVariant) {
-                await Variant.create({
-                  productId: product._id,
-                  combination,
-                  attributes: attrs,
-                  price: Number(row.price || 0),
-                  salePrice: Number(row.salePrice || 0),
-                  quantity: Number(row.quantity || 0),
-                  // sku: row.sku || ""
-                });
-              }
-            }
-
-          } catch (err) {
-            console.log("❌ IMPORT ERROR:", err.message);
-          }
-        }
-
-        res.json({
-          success: true,
-          message: "Import completed successfully"
+      let existingProduct = null;
+      if (row.sourceId && mongoose.Types.ObjectId.isValid(row.sourceId)) {
+        existingProduct = await Product.findById(row.sourceId);
+      } else if (row.referenceNo) {
+        existingProduct = await Product.findOne({ referenceNo: row.referenceNo });
+      } else {
+        existingProduct = await Product.findOne({
+          title: row.title,
+          description: row.description,
+          price: row.price,
         });
-      });
+      }
 
+      const productData = {
+        title: row.title,
+        description: row.description,
+        metaTitle: row.metaTitle,
+        metaDescription: row.metaDescription,
+        price: row.price,
+        salePrice: row.salePrice,
+        quantity: row.quantity,
+        fsn: row.fsn,
+        hsn: row.hsn,
+        gst: row.gst,
+        moq: row.moq,
+        packing: row.packing,
+        deliveryCharge: row.deliveryCharge,
+        referenceNo: row.referenceNo,
+        category: [categoryDoc._id],
+        subcategory: subcategoryDoc?._id,
+        brand: brandDoc?._id,
+        company: companyDoc?._id,
+        codAvailable: row.codAvailable,
+        isPublished: row.isPublished,
+        hasVariants: row.hasVariants,
+      };
+
+      let product;
+      if (existingProduct) {
+        product = existingProduct;
+        Object.entries(productData).forEach(([key, value]) => {
+          if (value !== undefined && value !== "") product[key] = value;
+        });
+        if (row.images.length > 0) product.images = row.images;
+        await product.save();
+        stats.updated += 1;
+      } else {
+        product = await Product.create({
+          ...productData,
+          ...(row.sourceId && mongoose.Types.ObjectId.isValid(row.sourceId) ? { _id: row.sourceId } : {}),
+          slug: await uniqueSlug(Product, `${row.title}-${row.referenceNo || row.sourceId || Date.now()}`),
+          images: row.images,
+        });
+        stats.created += 1;
+      }
+
+      if (row.hasVariants) {
+        const skuAttribute = await ensureSkuAttribute(row.skuValues);
+        await Variant.deleteMany({ productId: product._id });
+
+        const variantDocs = row.skuValues.map((value, index) => {
+          const variantPrice = getIndexedValue(row.variantPrices, index, row.price);
+          const variantSalePrice = getIndexedValue(row.variantSalePrices, index, row.salePrice);
+
+          return {
+            productId: product._id,
+            combination: value,
+            attributes: [{ attributeId: skuAttribute._id, value }],
+            price: variantPrice,
+            salePrice: variantSalePrice,
+            quantity: row.quantity,
+            sku: value,
+            isActive: true,
+          };
+        });
+
+        if (variantDocs.length > 0) {
+          const inserted = await Variant.insertMany(variantDocs);
+          stats.variantsCreated += inserted.length;
+        }
+      } else {
+        await Variant.deleteMany({ productId: product._id });
+      }
+
+      stats.imported += 1;
+    } catch (err) {
+      stats.errors.push({ title: row.title, message: err.message });
+    }
+  }
+
+  return stats;
+};
+
+export const importProductsCSV = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: "Import file is required",
+      });
+    }
+
+    const rows = await parseImportRows(req.file.path, req.file.originalname);
+    const limit = Number(req.query.limit || 0);
+    const selectedRows = limit > 0 ? rows.slice(0, limit) : rows;
+    const stats = await importProductRows(selectedRows);
+
+    res.json({
+      success: stats.errors.length === 0,
+      message: "Import completed",
+      data: stats,
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({
@@ -989,13 +1340,27 @@ export const getProductsBySection = async (req, res) => {
     const data = products.map((p) => {
       const variants = variantsByProduct[p._id.toString()] || [];
       if (!p.hasVariants || variants.length === 0) {
-        return { ...p, minPrice: p.price, maxPrice: p.price, totalStock: p.quantity };
+        const effective = p.salePrice > 0 ? p.salePrice : p.price;
+        return {
+          ...p,
+          minPrice: p.price,
+          maxPrice: p.price,
+          minSalePrice: effective,
+          maxSalePrice: effective,
+          totalStock: p.quantity,
+        };
       }
       const prices = variants.map((v) => v.price);
+      // Effective (customer-facing) price per variant: its salePrice when
+      // actually set, else its regular price — avoids an unset/0 salePrice
+      // being wrongly treated as cheaper than every real price.
+      const effectivePrices = variants.map((v) => (v.salePrice > 0 ? v.salePrice : v.price));
       return {
         ...p,
         minPrice: Math.min(...prices),
         maxPrice: Math.max(...prices),
+        minSalePrice: Math.min(...effectivePrices),
+        maxSalePrice: Math.max(...effectivePrices),
         totalStock: variants.reduce((sum, v) => sum + (v.quantity || 0), 0),
       };
     });
