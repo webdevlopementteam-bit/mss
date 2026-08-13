@@ -87,7 +87,7 @@ app.use("/api/webhooks", webhookRoutes);
 // Mounted under /api (not at the bare root) because the production Apache
 // config only proxies /api/* through to this Node process — see
 // backend/.htaccess. robots.txt's Sitemap: line points here directly.
-app.use("/api", sitemapRoutes);
+app.use("/", sitemapRoutes);
 
 // 404 handler 
 app.use((req, res) => {
