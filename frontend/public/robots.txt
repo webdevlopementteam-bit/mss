@@ -1,0 +1,17 @@
+User-agent: *
+Allow: /
+
+# Personalized / private pages — no SEO value, shouldn't be crawled
+Disallow: /cart
+Disallow: /wishlist
+Disallow: /checkout
+Disallow: /login
+Disallow: /signup
+Disallow: /verify-mobile-otp
+Disallow: /forgot-password
+Disallow: /reset-password
+Disallow: /order-success/
+Disallow: /user-dashboard
+Disallow: /recently-viewed
+
+Sitemap: https://medicalsurgicalsolutions.com/api/sitemap.xml

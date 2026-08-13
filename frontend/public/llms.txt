@@ -1,0 +1,29 @@
+# Medical & Surgical Solutions
+
+> Medical & Surgical Solutions (MSS) delivers trusted, high-quality medical and
+> surgical equipment to healthcare professionals, hospitals, and institutions
+> in India. Products span medical devices, surgical supplies, and healthcare
+> equipment, with cash-on-delivery and online payment options.
+
+## Site
+
+- [Home](https://medicalsurgicalsolutions.com/): Storefront homepage — featured, trending, and on-sale products.
+- [Shop](https://medicalsurgicalsolutions.com/shop): Full product catalog with category, brand, and price filters.
+- [About Us](https://medicalsurgicalsolutions.com/about): Company background and mission.
+- [Blog](https://medicalsurgicalsolutions.com/blog): Articles on medical equipment and healthcare topics.
+- [Awards](https://medicalsurgicalsolutions.com/award): Recognitions and certifications.
+- [Contact](https://medicalsurgicalsolutions.com/contact): Store contact details and support.
+- [FAQ](https://medicalsurgicalsolutions.com/faq): Common questions about ordering, shipping, and returns.
+
+## Policies
+
+- [Privacy Policy](https://medicalsurgicalsolutions.com/privacy-policy)
+- [Terms & Conditions](https://medicalsurgicalsolutions.com/terms-conditions)
+- [Return Policy](https://medicalsurgicalsolutions.com/return-policy)
+
+## Notes
+
+- The full, current list of products and blog posts is published in the
+  sitemap: https://medicalsurgicalsolutions.com/api/sitemap.xml
+- Orders require a valid prescription upload where applicable; shipping is
+  handled via DTDC courier across India.

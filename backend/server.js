@@ -22,6 +22,7 @@ import homeCmsRoutes from "./routes/homeCmsRoutes.js";
 import uploadRoutes from "./routes/uploadRoute.js";
 import orderRoutes from "./routes/orderRoutes.js";
 import webhookRoutes from "./routes/webhookRoutes.js";
+import sitemapRoutes from "./routes/sitemapRoute.js";
 import path from "path";
 import cors from "cors";
 import cookieParser from "cookie-parser";
@@ -83,6 +84,10 @@ app.use("/api/cms", homeCmsRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/webhooks", webhookRoutes);
+// Mounted under /api (not at the bare root) because the production Apache
+// config only proxies /api/* through to this Node process — see
+// backend/.htaccess. robots.txt's Sitemap: line points here directly.
+app.use("/api", sitemapRoutes);
 
 // 404 handler 
 app.use((req, res) => {
