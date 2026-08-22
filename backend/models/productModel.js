@@ -12,9 +12,27 @@ const productSchema = new mongoose.Schema({
     ref: "Brand"
   },
 
+  // Short description — shown near the price on the product detail page.
   description: {
     type: String,
     required: true
+  },
+
+  // Full rich-text (HTML from the Tiptap editor) description — shown in the
+  // Description section below the specifications table. Only used when
+  // hasVariants is false (variants don't carry their own long description).
+  longDescription: {
+    type: String,
+    default: ""
+  },
+
+  // Free-form spec sheet: an array of rows, each row an array of cell
+  // strings (e.g. [["Brand", "Sound Boss"], ["Type", "Audio & Video"]]).
+  // Only used when hasVariants is false — variable products keep this on
+  // each Variant document instead, since specs differ per variant.
+  specifications: {
+    type: [[String]],
+    default: []
   },
 
   metaTitle: String,

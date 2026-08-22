@@ -117,7 +117,6 @@ const ProductDetails = () => {
   const [notFound, setNotFound] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [selectedValues, setSelectedValues] = useState({});
-  const [activeTab, setActiveTab] = useState("description");
 
   useEffect(() => {
     let cancelled = false;
@@ -229,59 +228,21 @@ const ProductDetails = () => {
   const onSale = salePrice > 0 && salePrice < price;
   const discountPct = onSale ? Math.round(((price - salePrice) / price) * 100) : 0;
 
-  // ================= FULL SPEC TABLE =================
-  const categoryNames = Array.isArray(product.category)
-    ? product.category.map((c) => c.name).filter(Boolean).join(", ")
-    : "";
+  // Admin-authored free-form spec sheet — per-variant for variable products,
+  // per-product otherwise (see backend/models/{productModel,variantModel}.js).
+  // This is the ONLY specifications source shown on the page — nothing here
+  // is auto-derived from other product fields, so the section (and its
+  // heading) simply doesn't render for a product the admin never filled in.
+  const customSpecRows = (isVariable ? selectedVariant?.specifications : product.specifications) || [];
+  const filledSpecRows = customSpecRows.filter((row) => row.some((cell) => cell && cell.trim() !== ""));
 
-  const totalStock = isVariable
-    ? variants.reduce((sum, v) => sum + (Number(v.quantity) || 0), 0)
-    : Number(product.quantity || 0);
+  const hasSpecs = filledSpecRows.length > 0;
 
-  const rangeLabel = (values) => {
-    if (!values.length) return "—";
-    const min = Math.min(...values);
-    const max = Math.max(...values);
-    return min === max ? `₹${min}` : `₹${min} - ₹${max}`;
-  };
-
-  const priceDisplay = isVariable
-    ? rangeLabel(variants.map((v) => v.price).filter((p) => p != null))
-    : `₹${product.price}`;
-
-  const salePriceDisplay = isVariable
-    ? rangeLabel(variants.map((v) => v.salePrice).filter((p) => p > 0))
-    : product.salePrice
-    ? `₹${product.salePrice}`
-    : "—";
-
-  const specRows = [
-    ["Brand", product.brand?.name],
-    ["Company", product.company?.name],
-    ["Category", categoryNames],
-    ["Subcategory", product.subcategory?.name],
-    ["Packing", product.packing],
-    ["Reference No.", product.referenceNo],
-    ["HSN Code", product.hsn],
-    ["FSN", product.fsn],
-    ["Price", priceDisplay],
-    ["Sale Price", salePriceDisplay],
-    ["Stock", `${totalStock} unit${totalStock === 1 ? "" : "s"}`],
-  ].filter(([, value]) => value !== undefined && value !== null && value !== "");
-
-  const specIcons = {
-    Brand: "fa-copyright",
-    Company: "fa-building",
-    Category: "fa-layer-group",
-    Subcategory: "fa-tag",
-    Packing: "fa-box",
-    "Reference No.": "fa-hashtag",
-    "HSN Code": "fa-barcode",
-    FSN: "fa-fingerprint",
-    Price: "fa-indian-rupee-sign",
-    "Sale Price": "fa-tags",
-    Stock: "fa-warehouse",
-  };
+  // Long-form rich text (Tiptap HTML) description; older products created
+  // before this field existed fall back to the short description so the
+  // Description section isn't blank just because it predates this feature.
+  const longDescriptionHtml = product.longDescription?.trim() || `<p>${product.description || ""}</p>`;
+  const hasDescription = longDescriptionHtml.replace(/<[^>]*>/g, "").trim().length > 0;
 
   const handleAddToCart = () => {
     if (isVariable && !selectedVariant) {
@@ -472,59 +433,57 @@ const ProductDetails = () => {
           </div>
         </div>
 
-        {/* Description + Specifications */}
-        <div className="mt-14 bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
-          {/* Tab header */}
-          <div className="flex border-b border-gray-100 px-6 md:px-8">
-            {[
-              ["description", "Description"],
-              ["specifications", "Specifications"],
-            ].map(([key, label]) =>
-              key === "specifications" && specRows.length === 0 ? null : (
-                <button
-                  key={key}
-                  onClick={() => setActiveTab(key)}
-                  className={`relative py-5 mr-8 text-sm md:text-base font-semibold transition ${
-                    activeTab === key ? "text-primaryColor" : "text-gray-400 hover:text-gray-600"
-                  }`}
-                >
-                  {label}
-                  {activeTab === key && (
-                    <span className="absolute left-0 right-0 -bottom-px h-0.5 bg-primaryColor rounded-full" />
-                  )}
-                </button>
-              )
-            )}
-          </div>
+        {/* Technical Specifications — admin-authored spec sheet only; shown
+            first, then Description below it. Hidden entirely (heading
+            included) when the admin hasn't added any rows for this
+            product/variant. */}
+        {hasSpecs && (
+          <div className="mt-14 bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="flex items-center gap-3 px-6 md:px-8 pt-6 md:pt-8 pb-1">
+              <span className="w-9 h-9 rounded-xl bg-primaryColor/10 flex items-center justify-center shrink-0">
+                <i className="fa-solid fa-clipboard-list text-primaryColor text-sm"></i>
+              </span>
+              <h2 className="text-xl md:text-2xl font-bold text-gray-900">
+                Technical Specifications
+              </h2>
+            </div>
 
-          {/* Tab content */}
-          <div className="p-6 md:p-8">
-            {activeTab === "description" && (
-              <p className="text-gray-600 leading-8 whitespace-pre-line">
-                {product.description}
-              </p>
-            )}
-
-            {activeTab === "specifications" && specRows.length > 0 && (
-              <dl className="grid sm:grid-cols-2 gap-3">
-                {specRows.map(([label, value]) => (
-                  <div
-                    key={label}
-                    className="flex items-center gap-3.5 bg-gray-50 rounded-xl px-4 py-3.5"
-                  >
-                    <span className="w-9 h-9 rounded-lg bg-white border border-gray-100 flex items-center justify-center shrink-0">
-                      <i className={`fa-solid ${specIcons[label] || "fa-circle-info"} text-primaryColor text-sm`}></i>
-                    </span>
-                    <div className="min-w-0">
-                      <dt className="text-xs text-gray-400">{label}</dt>
-                      <dd className="font-semibold text-gray-800 truncate">{value}</dd>
-                    </div>
-                  </div>
-                ))}
-              </dl>
-            )}
+            <div className="px-6 md:px-8 pb-6 md:pb-8 pt-4">
+              <div className="border border-gray-100 overflow-x-auto">
+                <table className="w-full text-sm md:text-[15px] border-collapse">
+                  <tbody className="divide-y divide-gray-100">
+                    {filledSpecRows.map((row, i) => (
+                      <tr key={i} className="hover:bg-gray-100/70 transition-colors">
+                        <td className="w-2/5 sm:w-1/3 px-5 py-2 align-top text-gray-500 font-medium whitespace-nowrap bg-gray-100">
+                          {row[0] || "—"}
+                        </td>
+                        <td className="px-5 py-2 align-top text-gray-900 font-semibold">
+                          {row
+                            .slice(1)
+                            .filter((cell) => cell && cell.trim() !== "")
+                            .join(" · ") || "—"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
-        </div>
+        )}
+
+        {/* Description — full rich-text content, below specifications */}
+        {hasDescription && (
+          <div className={`${hasSpecs ? "mt-8" : "mt-14"} bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden`}>
+            <h2 className="text-xl md:text-2xl font-bold text-gray-900 px-6 md:px-8 pt-6 md:pt-8">
+              Description
+            </h2>
+            <div
+              className="prose-description p-6 md:p-8 pt-5 text-gray-600 leading-8"
+              dangerouslySetInnerHTML={{ __html: longDescriptionHtml }}
+            />
+          </div>
+        )}
 
       </div>
     </section>

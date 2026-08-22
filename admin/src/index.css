@@ -128,3 +128,65 @@
   font-size: 13px;
   color: rgba(255,255,255,0.7);
 }
+
+/* Toolbar icons render as bare <svg> (no Tailwind text-* class of their
+   own), so they're also directly hit by the global `*` reset above — same
+   fix as the editor content: give them an explicit rule with enough
+   specificity to win, so they pick up the button's own (correct) color
+   instead of #023350. */
+.rte-toolbar svg {
+  color: inherit;
+}
+
+/* Tiptap rich text editor (product long description)
+   The global `* { color: #023350 }` reset above applies directly to every
+   element (not just via inheritance), so it wins over a color set only on
+   `.ProseMirror` itself for any child (p, strong, li, ...). Targeting every
+   descendant directly is what actually makes the typed text (and pasted/
+   loaded content) render white instead of that dark navy. */
+.ProseMirror,
+.ProseMirror * {
+  color: #fff;
+  outline: none;
+}
+
+.ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  color: rgba(255, 255, 255, 0.3);
+  pointer-events: none;
+}
+
+.ProseMirror ul {
+  list-style: disc;
+  padding-left: 1.25rem;
+}
+
+.ProseMirror ol {
+  list-style: decimal;
+  padding-left: 1.25rem;
+}
+
+.ProseMirror blockquote {
+  border-left: 3px solid rgba(255, 255, 255, 0.2);
+  padding-left: 1rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.ProseMirror h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0.5rem 0;
+}
+
+.ProseMirror h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0.5rem 0;
+}
+
+.ProseMirror a {
+  color: #60a5fa;
+  text-decoration: underline;
+}

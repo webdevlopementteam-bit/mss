@@ -52,6 +52,13 @@ const variantSchema = new mongoose.Schema({
 
   image: {
     type: String
+  },
+
+  // Free-form spec sheet for this specific variant — same shape as
+  // Product.specifications (array of [label, value, ...] rows).
+  specifications: {
+    type: [[String]],
+    default: []
   }
 
 }, { timestamps: true });

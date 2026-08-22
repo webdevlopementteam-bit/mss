@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import API from "../api/axios";
-import { Plus, Pencil, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus, Pencil, Trash2, ChevronLeft, ChevronRight, ListTree } from "lucide-react";
 import toast from "react-hot-toast";
+import RichTextEditor from "../components/RichTextEditor";
+import SpecTable from "../components/SpecTable";
 const IMG_URL = import.meta.env.VITE_IMAGE_BASE_URL;
 const Toggle = ({ value, onChange }) => (
   <button
@@ -31,6 +33,7 @@ export default function Products() {
   const [deleteId, setDeleteId] = useState(null);
   const [currentVariant, setCurrentVariant] = useState([]);
   const [confirmVariantDelete, setConfirmVariantDelete] = useState(false);
+  const [specVariantIndex, setSpecVariantIndex] = useState(null);
   const [companies, setCompanies] = useState([]);
   const [backupBasic, setBackupBasic] = useState({
     price: "",
@@ -53,6 +56,8 @@ export default function Products() {
   const [form, setForm] = useState({
     title: "",
     description: "",
+    longDescription: "",
+    specifications: [["", ""]],
     brand: "",
     category: [],
     subcategory: "",
@@ -84,6 +89,8 @@ export default function Products() {
     setForm({
       title: "",
       description: "",
+      longDescription: "",
+      specifications: [["", ""]],
       brand: "",
       category: [],
       subcategory: "",
@@ -113,6 +120,7 @@ export default function Products() {
     setVariants([]);
     setCurrentVariant([]);
     setEditId(null);
+    setSpecVariantIndex(null);
   };
 
   const fetchAttributes = async () => {
@@ -271,6 +279,7 @@ setSubcategories(sc.data.data || []);
             "deliveryCharge",
             "hasVariants",
             "homeSections", // ✅ ADD THIS
+            "specifications",
           ].includes(k)
         ) {
           return;
@@ -289,6 +298,9 @@ setSubcategories(sc.data.data || []);
           fd.append("salePrice", Number(form.salePrice));
         }
         fd.append("quantity", Number(form.quantity || 0));
+        // Specs live per-variant (inside the "variants" JSON below) for
+        // variable products — only relevant at the product level otherwise.
+        fd.append("specifications", JSON.stringify(form.specifications || []));
       }
       fd.append("gst", Number(form.gst || 0));
       fd.append("moq", Number(form.moq || 0));
@@ -384,6 +396,13 @@ setSubcategories(sc.data.data || []);
 
   const handleEdit = async (p) => {
     setEditId(p._id);
+    setSpecVariantIndex(null);
+    // Without this, editing product A right after viewing product B's
+    // Variants tab left activeTab stuck on "variant" — if A doesn't have
+    // variants, NEITHER tab's content condition matched, so the whole Basic
+    // tab (title, descriptions, specifications, everything) silently
+    // rendered blank instead of just falling back to Basic.
+    setActiveTab("basic");
 
     const res = await API.get(`/product/${p._id}`);
 
@@ -410,6 +429,11 @@ setSubcategories(sc.data.data || []);
       hsn: product.hsn?.toString() || "",
       slug: product.slug || "",
       homeSections: product.homeSections || [],
+      longDescription: product.longDescription || "",
+      specifications:
+        product.specifications && product.specifications.length > 0
+          ? product.specifications
+          : [["", ""]],
       existingImages: product.images || [],
       preview: product.images?.map((img) => `${IMG_URL}/${img}`) || [],
     });
@@ -420,6 +444,7 @@ setSubcategories(sc.data.data || []);
     const formatted = variantData.map((v) => ({
       ...v,
       isActive: v.isActive !== false,
+      specifications: v.specifications && v.specifications.length > 0 ? v.specifications : [["", ""]],
       attributes: v.attributes.map((a) => ({
         attributeId: a.attributeId?._id || a.attributeId,
         value: a.value,
@@ -1034,18 +1059,49 @@ setSubcategories(sc.data.data || []);
                     }
                   />
                 </div>
-                {/* DESCRIPTION */}
+                {/* SHORT DESCRIPTION */}
                 <div className="col-span-2">
-                  <label className="label">Description</label>
+                  <label className="label">Short Description</label>
                   <textarea
                     className="input"
-                    rows={4}
+                    rows={3}
+                    placeholder="One or two lines — shown right under the price on the product page"
                     value={form.description}
                     onChange={(e) =>
                       setForm({ ...form, description: e.target.value })
                     }
                   />
+                  <p className="text-white/40 text-xs mt-1">
+                    Shown near the price on the product page. Keep it short.
+                  </p>
                 </div>
+
+                {/* FULL DESCRIPTION (RICH TEXT) */}
+                <div className="col-span-2">
+                  <label className="label">Description</label>
+                  <div className="mt-1.5">
+                    <RichTextEditor
+                      value={form.longDescription}
+                      onChange={(html) =>
+                        setForm((prev) => ({ ...prev, longDescription: html }))
+                      }
+                      placeholder="Full product description shown below the specifications..."
+                    />
+                  </div>
+                </div>
+
+                {/* SPECIFICATIONS (non-variant products only — variable
+                    products edit specs per-variant, in the Variants tab) */}
+                {!form.hasVariants && (
+                  <div className="col-span-2">
+                    <SpecTable
+                      rows={form.specifications}
+                      onChange={(rows) =>
+                        setForm((prev) => ({ ...prev, specifications: rows }))
+                      }
+                    />
+                  </div>
+                )}
 
                 {/* SEO SECTION */}
                 <div className="col-span-2 mt-4 border-t border-white/10 pt-4">
@@ -1711,6 +1767,7 @@ setSubcategories(sc.data.data || []);
                             salePrice: "",
                             quantity: "",
                             isActive: true,
+                            specifications: [["", ""]],
                           });
                         }
 
@@ -1868,16 +1925,30 @@ setSubcategories(sc.data.data || []);
                               </td>
 
                               <td className="p-3 text-right">
-                                <button
-                                  onClick={() => {
-                                    setVariants((prev) =>
-                                      prev.filter((_, idx) => idx !== i),
-                                    );
-                                  }}
-                                  className="bg-red-600 p-2 rounded"
-                                >
-                                  <Trash2 size={14} className="text-white" />
-                                </button>
+                                <div className="flex gap-2 justify-end">
+                                  <button
+                                    onClick={() => setSpecVariantIndex(i)}
+                                    className={`p-2 rounded ${
+                                      v.specifications?.some((r) => r.some((c) => c?.trim()))
+                                        ? "bg-emerald-600"
+                                        : "bg-gray-600"
+                                    }`}
+                                    title="Edit specifications for this variant"
+                                  >
+                                    <ListTree size={14} className="text-white" />
+                                  </button>
+
+                                  <button
+                                    onClick={() => {
+                                      setVariants((prev) =>
+                                        prev.filter((_, idx) => idx !== i),
+                                      );
+                                    }}
+                                    className="bg-red-600 p-2 rounded"
+                                  >
+                                    <Trash2 size={14} className="text-white" />
+                                  </button>
+                                </div>
                               </td>
                             </tr>
                           ))}
@@ -1886,6 +1957,49 @@ setSubcategories(sc.data.data || []);
                     </div>
                   )}
                 </div>
+
+                {/* PER-VARIANT SPECIFICATIONS MODAL */}
+                {specVariantIndex !== null && variants[specVariantIndex] && (
+                  <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+                    <div className="bg-[#0f131c] border border-white/10 rounded-2xl p-6 w-full max-w-2xl max-h-[85vh] overflow-y-auto custom-scroll">
+                      <div className="flex justify-between items-center mb-4">
+                        <h2 className="text-lg font-semibold text-white">
+                          Technical Specifications —{" "}
+                          <span className="text-white/50 font-normal">
+                            {variants[specVariantIndex].combination}
+                          </span>
+                        </h2>
+                        <button
+                          onClick={() => setSpecVariantIndex(null)}
+                          className="text-white/60 hover:text-white hover:bg-white/10 transition w-8 h-8 flex items-center justify-center rounded-lg"
+                        >
+                          ✕
+                        </button>
+                      </div>
+
+                      <SpecTable
+                        rows={variants[specVariantIndex].specifications}
+                        onChange={(rows) => {
+                          const copy = [...variants];
+                          copy[specVariantIndex] = {
+                            ...copy[specVariantIndex],
+                            specifications: rows,
+                          };
+                          setVariants(copy);
+                        }}
+                      />
+
+                      <div className="flex justify-end mt-6">
+                        <button
+                          onClick={() => setSpecVariantIndex(null)}
+                          className="px-5 py-2.5 rounded-lg bg-gradient-to-br from-[var(--primary)] to-[var(--primary-container)] text-white font-medium"
+                        >
+                          Done
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 

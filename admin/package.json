@@ -11,12 +11,17 @@
     "start": "node server.js"
   },
   "dependencies": {
+    "@tiptap/extension-link": "^3.30.2",
+    "@tiptap/extension-placeholder": "^3.30.2",
+    "@tiptap/pm": "^3.30.2",
+    "@tiptap/react": "^3.30.2",
+    "@tiptap/starter-kit": "^3.30.2",
     "axios": "^1.14.0",
     "lucide-react": "^1.7.0",
     "nodemon": "^3.1.10",
     "primeicons": "^7.0.0",
     "primereact": "^10.9.7",
-    "quill": "^2.0.3",
+    "quill": "^2.0.2",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-hot-toast": "^2.6.0",

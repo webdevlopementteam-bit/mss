@@ -91,6 +91,7 @@ const buildVariantDocs = (productId, rawVariants) => {
       productId,
       combination,
       attributes,
+      specifications: Array.isArray(v.specifications) ? v.specifications : [],
       price: Number(v.price),
       salePrice:
         v.salePrice !== "" && v.salePrice !== undefined && v.salePrice !== null
@@ -131,6 +132,8 @@ export const createProduct = async (req, res) => {
     const {
       title,
       description,
+      longDescription,
+      specifications,
       metaTitle,
       metaDescription,
       price,
@@ -210,6 +213,8 @@ export const createProduct = async (req, res) => {
     const product = await Product.create({
       title,
       description,
+      longDescription: longDescription || "",
+      specifications: specifications ? JSON.parse(specifications) : [],
       metaTitle,
       metaDescription,
       price: finalHasVariants ? 0 : price,
@@ -564,6 +569,8 @@ export const updateProduct = async (req, res) => {
     const {
       title,
       description,
+      longDescription,
+      specifications,
       metaTitle,
       metaDescription,
       price,
@@ -633,6 +640,8 @@ export const updateProduct = async (req, res) => {
     }
 
     if (description) product.description = description;
+    if (typeof longDescription !== "undefined") product.longDescription = longDescription;
+    if (specifications !== undefined) product.specifications = JSON.parse(specifications);
     if (metaTitle) product.metaTitle = metaTitle;
     if (metaDescription) product.metaDescription = metaDescription;
 
