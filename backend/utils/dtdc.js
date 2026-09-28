@@ -23,66 +23,133 @@ const consignmentHeaders = () => ({
   "Content-Type": "application/json",
 });
 
+// ---- Helpers ---------------------------------------------------------------
+
+// Strips everything except digits ("110 041" -> "110041").
+const onlyDigits = (v) => String(v || "").replace(/\D/g, "");
+
+// DTDC wants a plain 10-digit mobile number — drops +91, leading 0, spaces, dashes.
+const cleanPhone = (v) => onlyDigits(v).slice(-10);
+
+// Collapses extra whitespace/newlines that customers paste into address fields.
+const cleanText = (v, max = 200) =>
+  String(v || "").replace(/\s+/g, " ").trim().slice(0, max);
+
+// Fails fast with a clear message instead of sending a payload DTDC will
+// reject with a vague WRONG_INPUT.
+const validatePayload = (c) => {
+  const problems = [];
+
+  const required = {
+    customer_code: c.customer_code,
+    service_type_id: c.service_type_id,
+    "origin name": c.origin_details.name,
+    "origin address": c.origin_details.address_line_1,
+    "origin city": c.origin_details.city,
+    "origin state": c.origin_details.state,
+    "destination address": c.destination_details.address_line_1,
+    "destination city": c.destination_details.city,
+    "destination state": c.destination_details.state,
+  };
+  for (const [field, value] of Object.entries(required)) {
+    if (!value) problems.push(`${field} missing`);
+  }
+
+  if (c.origin_details.phone.length !== 10) problems.push("origin phone must be 10 digits (check DTDC_ORIGIN_PHONE)");
+  if (c.origin_details.pincode.length !== 6) problems.push("origin pincode must be 6 digits (check DTDC_ORIGIN_PINCODE)");
+  if (c.destination_details.phone.length !== 10) problems.push("customer phone must be 10 digits");
+  if (c.destination_details.pincode.length !== 6) problems.push("customer pincode must be 6 digits");
+
+  if (problems.length) {
+    throw new Error(`Invalid shipment data: ${problems.join(", ")}`);
+  }
+};
+
+// ---- Booking ---------------------------------------------------------------
+
 // Books a single-piece forward shipment for an order and returns the AWB
 // (reference_number) DTDC assigns. Weight/dimensions use env-configured
 // defaults since individual products don't carry real weight/size data yet.
 export const createShipment = async (order) => {
   const { consignment } = getUrls();
+  const isCod = order.paymentMethod === "cod";
+  const customerPhone = cleanPhone(order.customerInfo?.phone);
 
-  const payload = {
-    consignments: [
-      {
-        customer_code: process.env.DTDC_CUSTOMER_CODE,
-        service_type_id: process.env.DTDC_SERVICE_TYPE_ID,
-        load_type: "NON-DOCUMENT",
-        consignment_type: "Forward",
-        dimension_unit: "cm",
-        length: "20.0",
-        width: "20.0",
-        height: "10.0",
-        weight_unit: "kg",
-        weight: String(process.env.DTDC_DEFAULT_WEIGHT_KG || "1.0"),
-        declared_value: String(order.totalAmount || 0),
-        num_pieces: "1",
-        origin_details: {
-          name: process.env.DTDC_ORIGIN_NAME,
-          phone: process.env.DTDC_ORIGIN_PHONE,
-          alternate_phone: process.env.DTDC_ORIGIN_PHONE,
-          address_line_1: process.env.DTDC_ORIGIN_ADDRESS_1,
-          address_line_2: process.env.DTDC_ORIGIN_ADDRESS_2 || "",
-          pincode: process.env.DTDC_ORIGIN_PINCODE,
-          city: process.env.DTDC_ORIGIN_CITY,
-          state: process.env.DTDC_ORIGIN_STATE,
-        },
-        destination_details: {
-          name: order.customerInfo?.fullName || "Customer",
-          phone: order.customerInfo?.phone || "",
-          alternate_phone: "",
-          address_line_1: order.shippingAddress?.address || "",
-          address_line_2: order.shippingAddress?.landmark || "",
-          pincode: order.shippingAddress?.pincode || "",
-          city: order.shippingAddress?.city || "",
-          state: order.shippingAddress?.state || "",
-        },
-        customer_reference_number: order._id.toString(),
-        cod_collection_mode: order.paymentMethod === "cod" ? "CASH" : "",
-        cod_amount: order.paymentMethod === "cod" ? String(order.totalAmount || 0) : "",
-        commodity_id: process.env.DTDC_COMMODITY_ID || "7", // defaults to OTHERS if unset
-        description: (order.orderItems || []).map((i) => i.name).join(", ").slice(0, 250),
-        reference_number: "",
-      },
-    ],
+  const consignmentData = {
+    customer_code: process.env.DTDC_CUSTOMER_CODE,
+    service_type_id: process.env.DTDC_SERVICE_TYPE_ID,
+    load_type: "NON-DOCUMENT",
+    consignment_type: "Forward",
+    dimension_unit: "cm",
+    length: "20.0",
+    width: "20.0",
+    height: "10.0",
+    weight_unit: "kg",
+    weight: String(process.env.DTDC_DEFAULT_WEIGHT_KG || "1.0"),
+    declared_value: String(Math.round(order.totalAmount || 0)),
+    num_pieces: "1",
+    origin_details: {
+      name: cleanText(process.env.DTDC_ORIGIN_NAME, 100),
+      phone: cleanPhone(process.env.DTDC_ORIGIN_PHONE),
+      alternate_phone: cleanPhone(process.env.DTDC_ORIGIN_PHONE),
+      address_line_1: cleanText(process.env.DTDC_ORIGIN_ADDRESS_1),
+      address_line_2: cleanText(process.env.DTDC_ORIGIN_ADDRESS_2),
+      pincode: onlyDigits(process.env.DTDC_ORIGIN_PINCODE),
+      city: cleanText(process.env.DTDC_ORIGIN_CITY, 50),
+      state: cleanText(process.env.DTDC_ORIGIN_STATE, 50),
+    },
+    destination_details: {
+      name: cleanText(order.customerInfo?.fullName, 100) || "Customer",
+      phone: customerPhone,
+      alternate_phone: customerPhone,
+      address_line_1: cleanText(order.shippingAddress?.address),
+      address_line_2: cleanText(order.shippingAddress?.landmark),
+      pincode: onlyDigits(order.shippingAddress?.pincode),
+      city: cleanText(order.shippingAddress?.city, 50),
+      state: cleanText(order.shippingAddress?.state, 50),
+    },
+    customer_reference_number: order._id.toString(),
+    commodity_id: process.env.DTDC_COMMODITY_ID || "7", // defaults to OTHERS if unset
+    description:
+      cleanText((order.orderItems || []).map((i) => i.name).join(", "), 250) ||
+      "Medical supplies",
   };
 
-  const { data } = await axios.post(`${consignment}/softdata`, payload, {
-    headers: consignmentHeaders(),
-    timeout: 15000,
-  });
+  // COD fields only for COD orders — sending empty strings on a prepaid
+  // order is a common cause of WRONG_INPUT.
+  if (isCod) {
+    consignmentData.cod_collection_mode = "CASH";
+    consignmentData.cod_amount = String(Math.round(order.totalAmount || 0));
+  }
+
+  validatePayload(consignmentData);
+
+  const payload = { consignments: [consignmentData] };
+  console.log("DTDC ENV:", process.env.DTDC_ENV === "production" ? "production" : "staging");
+  console.log("DTDC PAYLOAD:", JSON.stringify(payload, null, 2));
+
+  let data;
+  try {
+    ({ data } = await axios.post(`${consignment}/softdata`, payload, {
+      headers: consignmentHeaders(),
+      timeout: 15000,
+    }));
+  } catch (err) {
+    console.error("DTDC HTTP ERROR:", JSON.stringify(err.response?.data || err.message, null, 2));
+    const apiMsg = err.response?.data?.message || err.response?.data?.error?.message;
+    throw new Error(apiMsg || err.message);
+  }
+
+  console.log("DTDC RESPONSE:", JSON.stringify(data, null, 2));
 
   const result = data?.data?.[0];
   if (!result?.success) {
-    const reason = result?.remarks || result?.reason || data?.message || "DTDC booking failed";
-    throw new Error(reason);
+    // DTDC puts the short code in `reason` (e.g. WRONG_INPUT) and the real
+    // explanation in `message` — show both.
+    const reason = [result?.reason, result?.message, result?.remarks, data?.message]
+      .filter(Boolean)
+      .join(" - ");
+    throw new Error(reason || "DTDC booking failed");
   }
 
   return {
