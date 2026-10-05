@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import API from "../api/axios";
+import { useViewportWidth } from "../hooks/useViewportWidth";
 
 import Slider from "react-slick";
 import "slick-carousel/slick/slick.css";
@@ -24,18 +25,8 @@ const BrandArrow = ({ direction, onClick }) => (
 export const Popularbrands = () => {
   const [brands, setBrands] = useState([]);
 
-  // Tracks mobile-width viewport so slidesToShow can be forced directly,
-  // instead of relying only on react-slick's own breakpoint matching
-  // (which was not reliably kicking in on similar sliders elsewhere).
-  const [isMobile, setIsMobile] = useState(
-    typeof window !== "undefined" ? window.innerWidth < 640 : false,
-  );
-
-  useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth < 640);
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
+  const vw = useViewportWidth();
+  const isMobile = vw < 640;
 
   useEffect(() => {
     const fetchBrands = async () => {
@@ -58,34 +49,22 @@ export const Popularbrands = () => {
       : `${import.meta.env.VITE_IMAGE_BASE_URL}/${img}`;
   };
 
-  const mobileSlidesToShow = Math.min(2, brands.length || 1);
+  // Fractional counts leave the next logo peeking in, hinting it scrolls.
+  const perView = isMobile ? 2.3 : vw < 1024 ? 3.3 : vw < 1280 ? 4.3 : 6.3;
 
   const settings = {
     dots: false,
-    infinite: isMobile ? brands.length > 2 : brands.length > 6,
+    infinite: brands.length > Math.ceil(perView),
     speed: 700,
     autoplay: true,
     autoplaySpeed: 2800,
     pauseOnHover: true,
-    slidesToShow: isMobile ? mobileSlidesToShow : 6.3,
-    slidesToScroll: isMobile ? 2 : 1,
-    swipeToSlide: !isMobile,
-    arrows: !isMobile,
+    slidesToShow: perView,
+    slidesToScroll: 1,
+    swipeToSlide: true,
+    arrows: vw >= 1024,
     nextArrow: <BrandArrow direction="next" />,
     prevArrow: <BrandArrow direction="prev" />,
-    responsive: [
-      { breakpoint: 1280, settings: { slidesToShow: 4.3 } },
-      { breakpoint: 1024, settings: { slidesToShow: 3.3, arrows: false } },
-      {
-        breakpoint: 640,
-        settings: {
-          // exactly 2 brands visible on mobile
-          slidesToShow: mobileSlidesToShow,
-          slidesToScroll: 2,
-          arrows: false,
-        },
-      },
-    ],
   };
 
   return (
@@ -103,15 +82,15 @@ export const Popularbrands = () => {
 
       {/* Slider */}
       <div className="relative px-3 sm:px-4 md:px-10 lg:px-16 overflow-hidden h-[168px] sm:h-[178px] md:h-[208px]">
-        <Slider key={isMobile ? "mobile" : "desktop"} {...settings}>
+        <Slider key={perView} {...settings}>
           {brands.map((brand) => (
             <div key={brand._id} className="px-1.5 sm:px-2.5">
               <div className="group relative bg-white rounded-2xl md:rounded-[22px] py-4 sm:py-5 md:py-6 px-3 sm:px-4 flex flex-col items-center justify-center h-[150px] sm:h-[160px] md:h-[190px] border border-[#EFE6DF] shadow-[0_4px_16px_rgba(43,36,32,0.04)] hover:border-[#E3D2B5] hover:shadow-[0_16px_34px_rgba(43,36,32,0.1)] transition-all duration-400 ease-out hover:-translate-y-1.5 cursor-pointer">
-                <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-xl md:rounded-2xl bg-[#FAF7F3] flex items-center justify-center overflow-hidden">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 flex items-center justify-center">
                   <img
                     src={getImage(brand.image)}
                     alt={brand.name}
-                    className="w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-xl md:rounded-2xl object-contain transition-transform duration-400 ease-out group-hover:scale-110"
+                    className="w-full h-full object-contain transition-transform duration-400 ease-out group-hover:scale-110"
                   />
                 </div>
 

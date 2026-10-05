@@ -1,116 +1,75 @@
-import { Link } from "react-router-dom";
-import { useEffect, useState } from "react";
-import blogbanner from "../assets/blog banner.png";
+import { useEffect, useMemo, useState } from "react";
 import { getBlogs } from "../api/services";
+import { PageHeader } from "../components/ui/PageHeader";
+import { BlogCard, BlogCardSkeleton } from "../components/ui/BlogCard";
+import { stripHtml } from "../components/ui/blogUtils";
 
 const Blog = () => {
   const [blogs, setBlogs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState("");
 
   useEffect(() => {
-    const fetchBlogs = async () => {
-      try {
-        const res = await getBlogs();
-        const data = (res.data.data || []).filter(b => b.isPublished);
-        setBlogs(data);
-      } catch (err) {
-        console.log(err);
-      }
-    };
-
-    fetchBlogs();
+    getBlogs()
+      .then((res) => setBlogs((res.data.data || []).filter((b) => b.isPublished)))
+      .catch((err) => console.log(err))
+      .finally(() => setLoading(false));
   }, []);
 
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return blogs;
+    return blogs.filter((b) => `${b.name} ${stripHtml(b.description)}`.toLowerCase().includes(q));
+  }, [blogs, query]);
+
+  const searching = query.trim() !== "";
+  const [lead, ...rest] = filtered;
+
   return (
-    <>
-      {/* banner section */}
-      <div
-        className="p-5 relative overflow-hidden py-28"
-        style={{
-          backgroundImage: `url(${blogbanner})`,
-          backgroundPosition: "center center",
-          backgroundSize: "cover",
-        }}
-      >
-        <div className="relative z-10 flex flex-col justify-center items-center px-side">
-          <h2 className="text-3xl font-semibold text-white">Blog</h2>
-          <p className="text-white mt-3">
-            <span className="text-white hover:text-primaryColor transition-all duration-500 group">
-              <Link to="/">
-                <i className="fa-regular fa-house text-white group-hover:text-primaryColor transition-all duration-500"></i>{" "}
-                Home
-              </Link>
-            </span>{" "}
-            <i className="fa-solid fa-angles-right text-white"></i> Blog
-          </p>
+    <div className="bg-[#F6F7F9] pb-14 md:pb-20">
+      <PageHeader title="Our Blog" crumb="Blog" icon="fa-newspaper" subtitle="Product guides, healthcare tips and updates from Medical & Surgical Solutions.">
+        <div className="relative w-full sm:w-72">
+          <i className="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-sm !text-white/50"></i>
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search articles…"
+            className="w-full h-11 pl-10 pr-4 rounded-xl bg-white/10 border border-white/20 text-sm !text-white placeholder:text-white/50 outline-none focus:bg-white/15 focus:border-white/40 transition"
+          />
         </div>
-        <div className="absolute inset-0 bg-black/40"></div>
-      </div>
+      </PageHeader>
 
-      {/* blog section */}
-      <div className="pt-16 pb-20 px-side text-center bg-[#F5F7FA]">
-        <p className="text-sm uppercase text-primaryColor font-bold tracking-[0.2em]">
-          Our Blog
-        </p>
-        <h3 className="mt-3 text-3xl md:text-4xl font-bold">
-          Our Latest News & <span className="text-primaryColor">Blog</span>
-        </h3>
-
-        <div className="gap-5 justify-center items-center grid grid-cols-3 mt-10">
-          {blogs.map((blogitem) => (
-            <div key={blogitem._id}>
-              <div className="border-[1px] rounded-2xl p-5 group">
-                <div className="relative overflow-hidden rounded-2xl">
-                  <img
-                    src={`${import.meta.env.VITE_IMAGE_BASE_URL}/${blogitem.image}`}
-                    alt={blogitem.name}
-                    className="rounded-2xl transition-all duration-500 group-hover:scale-110"
-                  />
-                  <p className="absolute bottom-8 right-0 py-1 px-4 rounded-l-3xl text-white bg-primaryColor">
-                    <i className="fa-solid fa-calendar-days text-white"></i>{" "}
-                    {new Date(blogitem.createdAt).toLocaleDateString("en-IN", {
-                      day: "numeric",
-                      month: "long",
-                      year: "numeric",
-                    })}
-                  </p>
-                </div>
-
-                <div className="flex gap-7 py-3 border-b-[1px] justify-start items-center">
-                  <div>
-                    <i className="fa-regular fa-circle-user text-primaryColor"></i>{" "}
-                    MSS
-                  </div>
-                  <div>
-                    <i className="fa-regular fa-comments text-primaryColor"></i>{" "}
-                    0 Comments
-                  </div>
-                </div>
-
-                <p className="mt-2 text-xl font-semibold">{blogitem.name}</p>
-
-                <p
-                  className="mt-2 text-black/50 line-clamp-2"
-                  dangerouslySetInnerHTML={{
-                    __html: blogitem.description,
-                  }}
-                ></p>
-
-                <Link
-                  to={`/blog/${blogitem.slug}`}
-                  className="mt-7 inline-block relative py-3 px-6 bg-primaryColor text-white rounded-2xl group/btn overflow-hidden"
-                >
-                  <span className="text-white relative z-10">
-                    Read More{" "}
-                    <i className="fa-solid fa-arrow-right text-white"></i>
-                  </span>
-                  <div className="absolute inset-0 scale-0 opacity-0 transition-all duration-500 origin-center group-hover/btn:opacity-100 group-hover/btn:scale-100 rounded-2xl bg-secondaryColor"></div>
-                </Link>
+      <div className="px-4 md:px-6 lg:px-side pt-8 md:pt-10">
+        {loading ? (
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <BlogCardSkeleton key={i} />
+            ))}
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="text-center py-20 bg-white rounded-2xl border border-gray-200/80">
+            <i className="fa-regular fa-newspaper text-3xl !text-gray-300"></i>
+            <p className="mt-3 font-semibold !text-gray-700">{searching ? "No articles match your search." : "No articles published yet."}</p>
+          </div>
+        ) : (
+          <>
+            {/* Lead story (hidden while searching so results read as one list) */}
+            {!searching && (
+              <div className="mb-6 md:mb-8">
+                <BlogCard blog={lead} featured />
               </div>
+            )}
+
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+              {(searching ? filtered : rest).map((b) => (
+                <BlogCard key={b._id} blog={b} />
+              ))}
             </div>
-          ))}
-        </div>
+          </>
+        )}
       </div>
-    </>
+    </div>
   );
 };
 

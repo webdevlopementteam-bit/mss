@@ -1,9 +1,12 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { getProductById } from "../api/services";
+import API from "../api/axios";
 import { useShop, getProductId } from "../context/ShopContext";
 import { toast } from "react-toastify";
 import { setPageMeta, resetPageMeta } from "../utils/pageMeta";
+import { ProductRail } from "../components/ui/ProductRail";
+import { formatINR } from "../components/ui/productUtils";
 
 const IMG_URL = import.meta.env.VITE_IMAGE_BASE_URL;
 
@@ -45,71 +48,149 @@ const findMatchingVariant = (variants, selectedValues, attributeGroups) => {
   );
 };
 
-// ---- Image gallery: main image + thumbnail rail. Renders every image the
-// admin uploaded (product.images is an array), not just the first one. ----
-const ImageGallery = ({ images = [], title }) => {
+// ---- Image gallery: thumbnail rail + main image with hover zoom. Renders
+// every image the admin uploaded (product.images is an array). ----
+const ImageGallery = ({ images = [], title, discount }) => {
   const [activeIndex, setActiveIndex] = useState(0);
+  const [zoom, setZoom] = useState(null);
   const gallery = images.length > 0 ? images : [""];
+  const multiple = gallery.length > 1;
 
   useEffect(() => {
     setActiveIndex(0);
   }, [images]);
 
+  const go = (delta) => setActiveIndex((i) => (i + delta + gallery.length) % gallery.length);
+
+  const handleMove = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    setZoom({
+      x: ((e.clientX - rect.left) / rect.width) * 100,
+      y: ((e.clientY - rect.top) / rect.height) * 100,
+    });
+  };
+
   return (
-    <div className="flex flex-col-reverse gap-4 md:flex-row">
-      {/* Thumbnails */}
-      {gallery.length > 1 && (
-        <div className="flex md:flex-col gap-3 overflow-x-auto md:overflow-visible md:w-20 shrink-0">
+    <div className="flex flex-col-reverse md:flex-row gap-3 md:gap-4">
+      {multiple && (
+        <div className="flex md:flex-col gap-2.5 overflow-x-auto md:overflow-y-auto md:max-h-[560px] md:w-[84px] shrink-0 pb-1 md:pb-0 md:pr-1">
           {gallery.map((img, i) => (
             <button
               key={i}
               type="button"
               onClick={() => setActiveIndex(i)}
+              onMouseEnter={() => setActiveIndex(i)}
               aria-label={`View image ${i + 1}`}
-              className={`relative shrink-0 w-16 h-16 md:w-20 md:h-20 rounded-xl overflow-hidden border-2 transition ${
-                activeIndex === i
-                  ? "border-primaryColor"
-                  : "border-transparent opacity-70 hover:opacity-100"
+              className={`shrink-0 w-16 h-16 md:w-[80px] md:h-[80px] rounded-xl overflow-hidden bg-[#F6F7F9] border-2 transition-all ${
+                activeIndex === i ? "border-primaryColor" : "border-transparent hover:border-gray-300"
               }`}
             >
               <img
                 src={resolveImage(img)}
                 alt={`${title} thumbnail ${i + 1}`}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-contain p-1.5 mix-blend-multiply"
               />
             </button>
           ))}
         </div>
       )}
 
-      {/* Main image */}
-      <div className="relative flex-1 bg-primaryColor/5 rounded-3xl overflow-hidden aspect-square">
+      <div
+        className="group relative flex-1 bg-[#F6F7F9] rounded-2xl md:rounded-3xl overflow-hidden aspect-square cursor-zoom-in border border-gray-100"
+        onMouseMove={handleMove}
+        onMouseLeave={() => setZoom(null)}
+      >
         <img
           src={resolveImage(gallery[activeIndex])}
           alt={title}
-          className="w-full h-full object-contain p-6 md:p-10 transition-opacity duration-200"
+          style={zoom ? { transformOrigin: `${zoom.x}% ${zoom.y}%`, transform: "scale(1.9)" } : undefined}
+          className="w-full h-full object-contain p-8 md:p-12 mix-blend-multiply transition-transform duration-200 ease-out"
         />
 
-        {gallery.length > 1 && (
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5">
-            {gallery.map((_, i) => (
-              <span
-                key={i}
-                className={`h-1.5 rounded-full transition-all ${
-                  activeIndex === i ? "w-5 bg-primaryColor" : "w-1.5 bg-primaryColor/30"
-                }`}
-              />
+        {discount > 0 && (
+          <span className="absolute left-4 top-4 bg-primaryColor !text-white text-xs font-bold px-2.5 py-1.5 rounded-lg shadow-sm">
+            {discount}% OFF
+          </span>
+        )}
+
+        {multiple && (
+          <>
+            {["prev", "next"].map((dir) => (
+              <button
+                key={dir}
+                type="button"
+                onClick={() => go(dir === "next" ? 1 : -1)}
+                aria-label={dir === "next" ? "Next image" : "Previous image"}
+                className={`absolute top-1/2 -translate-y-1/2 ${
+                  dir === "next" ? "right-3" : "left-3"
+                } w-10 h-10 rounded-full bg-white shadow-md flex items-center justify-center md:opacity-0 md:group-hover:opacity-100 transition-opacity`}
+              >
+                <i className={`fa-solid ${dir === "next" ? "fa-chevron-right" : "fa-chevron-left"} text-xs !text-[#023350]`}></i>
+              </button>
             ))}
-          </div>
+            <span className="absolute right-4 bottom-4 bg-white/90 backdrop-blur rounded-full px-3 py-1 text-xs font-semibold !text-gray-700 shadow-sm">
+              {activeIndex + 1} / {gallery.length}
+            </span>
+          </>
         )}
       </div>
     </div>
   );
 };
 
+// Splits the rich-text description so only the first two paragraphs are
+// shown up front. Headings/lists that sit before the 2nd paragraph stay in
+// the preview so it never starts or ends mid-thought.
+const PREVIEW_PARAGRAPHS = 2;
+const splitDescription = (html) => {
+  if (typeof DOMParser === "undefined") return { preview: html, hasMore: false };
+  const doc = new DOMParser().parseFromString(`<div>${html}</div>`, "text/html");
+  const nodes = Array.from(doc.body.firstChild.childNodes).filter(
+    (n) => n.nodeType === 1 || n.textContent.trim() !== ""
+  );
+  let paragraphs = 0;
+  let cut = nodes.length;
+  for (let i = 0; i < nodes.length; i++) {
+    if (nodes[i].nodeName === "P" && nodes[i].textContent.trim() !== "") paragraphs++;
+    if (paragraphs === PREVIEW_PARAGRAPHS) {
+      cut = i + 1;
+      break;
+    }
+  }
+  const toHtml = (n) => (n.nodeType === 1 ? n.outerHTML : n.textContent);
+  return { preview: nodes.slice(0, cut).map(toHtml).join(""), hasMore: cut < nodes.length };
+};
+
+const PageSkeleton = () => (
+  <section className="px-4 md:px-6 lg:px-side py-8 md:py-12">
+    <div className="h-4 w-64 bg-gray-100 rounded animate-pulse mb-8" />
+    <div className="grid lg:grid-cols-2 gap-10 lg:gap-14">
+      <div className="aspect-square rounded-3xl bg-gray-100 animate-pulse" />
+      <div className="space-y-4">
+        <div className="h-4 w-32 bg-gray-100 rounded animate-pulse" />
+        <div className="h-8 w-4/5 bg-gray-100 rounded animate-pulse" />
+        <div className="h-8 w-3/5 bg-gray-100 rounded animate-pulse" />
+        <div className="h-28 bg-gray-100 rounded-2xl animate-pulse mt-6" />
+        <div className="h-4 bg-gray-100 rounded animate-pulse" />
+        <div className="h-4 w-5/6 bg-gray-100 rounded animate-pulse" />
+        <div className="h-12 bg-gray-100 rounded-xl animate-pulse mt-6" />
+      </div>
+    </div>
+  </section>
+);
+
+const TRUST_BADGES = [
+  ["fa-shield-heart", "100% Genuine", "Sourced from authorised brands"],
+  ["fa-truck-fast", "Fast Delivery", "Shipping across India"],
+  ["fa-lock", "Secure Payment", "Encrypted checkout"],
+  ["fa-headset", "Expert Support", "We're here to help"],
+];
+
 const ProductDetails = () => {
   const { id } = useParams();
-  const { addToCart, addToWishlist } = useShop();
+  const navigate = useNavigate();
+  const { addToCart, addToWishlist, wishlist } = useShop();
+  const tabsRef = useRef(null);
 
   const [product, setProduct] = useState(null);
   const [variants, setVariants] = useState([]);
@@ -117,11 +198,17 @@ const ProductDetails = () => {
   const [notFound, setNotFound] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [selectedValues, setSelectedValues] = useState({});
+  const [descExpanded, setDescExpanded] = useState(false);
+  const [related, setRelated] = useState([]);
+  const [relatedLoading, setRelatedLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
     setNotFound(false);
+    setQuantity(1);
+    setSelectedValues({});
+    setDescExpanded(false);
 
     getProductById(id)
       .then(({ data }) => {
@@ -179,6 +266,38 @@ const ProductDetails = () => {
     localStorage.setItem("recentlyViewed", JSON.stringify(updated.slice(0, 20)));
   }, [product]);
 
+  // Related products: same primary category, excluding the current product.
+  useEffect(() => {
+    if (!product) return;
+    const pid = getProductId(product);
+    const categoryId =
+      product.defaultCategory?._id ||
+      (Array.isArray(product.category) ? product.category[0]?._id || product.category[0] : null);
+
+    if (!categoryId) {
+      setRelated([]);
+      setRelatedLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setRelatedLoading(true);
+    API.get(`/product?status=published&limit=12&category=${categoryId}`)
+      .then((res) => {
+        if (!cancelled) setRelated((res.data?.data || []).filter((p) => getProductId(p) !== pid));
+      })
+      .catch(() => {
+        if (!cancelled) setRelated([]);
+      })
+      .finally(() => {
+        if (!cancelled) setRelatedLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [product]);
+
   const attributeGroups = useMemo(() => buildAttributeGroups(variants), [variants]);
 
   const selectedVariant = useMemo(
@@ -189,24 +308,22 @@ const ProductDetails = () => {
     [product, variants, selectedValues, attributeGroups]
   );
 
-  if (loading) {
-    return (
-      <div className="py-32 text-center">
-        <div className="inline-block w-8 h-8 border-2 border-primaryColor border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
+  if (loading) return <PageSkeleton />;
 
   if (notFound || !product) {
     return (
-      <div className="py-32 text-center">
-        <h2 className="text-2xl font-semibold text-gray-700">Product not found</h2>
-        <p className="text-gray-400 mt-2">It may have been removed or the link is incorrect.</p>
+      <div className="py-28 px-4 text-center">
+        <div className="w-20 h-20 mx-auto rounded-full bg-gray-100 flex items-center justify-center mb-5">
+          <i className="fa-solid fa-box-open text-3xl !text-gray-400"></i>
+        </div>
+        <h2 className="text-2xl font-bold !text-gray-800">Product not found</h2>
+        <p className="!text-gray-500 mt-2">It may have been removed or the link is incorrect.</p>
         <Link
           to="/shop"
-          className="inline-block mt-6 bg-primaryColor text-white px-6 py-3 rounded-xl font-medium"
+          className="inline-flex items-center gap-2 mt-6 bg-primaryColor px-6 py-3 rounded-xl font-semibold !text-white hover:bg-primaryColor/90 transition"
         >
-          Back to Shop
+          <i className="fa-solid fa-arrow-left text-sm !text-white"></i>
+          <span className="!text-white">Back to Shop</span>
         </Link>
       </div>
     );
@@ -227,115 +344,195 @@ const ProductDetails = () => {
   const canAddToCart = isVariable ? !!selectedVariant && variantActive && stock > 0 : stock > 0;
   const onSale = salePrice > 0 && salePrice < price;
   const discountPct = onSale ? Math.round(((price - salePrice) / price) * 100) : 0;
+  const finalPrice = onSale ? salePrice : price;
+  const isWishlisted = wishlist.some((item) => getProductId(item) === getProductId(product));
+  const gstPct = Number(product.gst) || 0;
+  const deliveryCharge = Number(product.deliveryCharge) || 0;
 
   // Admin-authored free-form spec sheet — per-variant for variable products,
   // per-product otherwise (see backend/models/{productModel,variantModel}.js).
   // This is the ONLY specifications source shown on the page — nothing here
-  // is auto-derived from other product fields, so the section (and its
-  // heading) simply doesn't render for a product the admin never filled in.
+  // is auto-derived from other product fields, so the card simply doesn't
+  // render for a product the admin never filled in.
   const customSpecRows = (isVariable ? selectedVariant?.specifications : product.specifications) || [];
   const filledSpecRows = customSpecRows.filter((row) => row.some((cell) => cell && cell.trim() !== ""));
-
   const hasSpecs = filledSpecRows.length > 0;
 
   // Long-form rich text (Tiptap HTML) description; older products created
   // before this field existed fall back to the short description so the
-  // Description section isn't blank just because it predates this feature.
+  // Description card isn't blank just because it predates this feature.
   const longDescriptionHtml = product.longDescription?.trim() || `<p>${product.description || ""}</p>`;
   const hasDescription = longDescriptionHtml.replace(/<[^>]*>/g, "").trim().length > 0;
+
+  const { preview: descriptionPreview, hasMore: descriptionHasMore } = splitDescription(longDescriptionHtml);
+  const hasDetails = hasDescription || hasSpecs;
+
+  const keyInfo = [
+    product.brand?.name && ["fa-certificate", "Brand", product.brand.name],
+    product.packing && ["fa-box", "Packing", product.packing],
+    Number(product.moq) > 1 && ["fa-layer-group", "Min. order", `${product.moq} units`],
+    ["fa-money-bill-wave", "Cash on Delivery", product.codAvailable === false ? "Not available" : "Available"],
+  ].filter(Boolean);
+
+  const stockBadge = (() => {
+    if (isVariable && !selectedVariant) return null;
+    if (!variantActive) return { cls: "bg-gray-100 !text-gray-600", dot: "bg-gray-400", text: "Currently unavailable" };
+    if (!inStock) return { cls: "bg-red-50 !text-red-600", dot: "bg-red-500", text: "Out of stock" };
+    if (stock <= 10) return { cls: "bg-amber-50 !text-amber-700", dot: "bg-amber-500", text: `Only ${stock} left` };
+    return { cls: "bg-green-50 !text-green-700", dot: "bg-green-500", text: "In stock" };
+  })();
 
   const handleAddToCart = () => {
     if (isVariable && !selectedVariant) {
       toast.error("Please select all options");
-      return;
+      return false;
     }
     if (!canAddToCart) {
       toast.error("This item is out of stock");
-      return;
+      return false;
     }
-    for (let i = 0; i < quantity; i++) {
-      addToCart(product, isVariable ? selectedVariant : undefined);
+    addToCart(product, isVariable ? selectedVariant : undefined, quantity);
+    return true;
+  };
+
+  const handleBuyNow = () => {
+    if (handleAddToCart()) navigate("/checkout");
+  };
+
+  const handleShare = async () => {
+    const url = window.location.href;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: product.title, url });
+      } else {
+        await navigator.clipboard.writeText(url);
+        toast.success("Link copied to clipboard");
+      }
+    } catch {
+      /* user dismissed the share sheet */
     }
   };
 
+  const scrollToTabs = () => tabsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+
   return (
-    <section className="py-8 md:py-12">
-      <div className="px-4 md:px-6 lg:px-side">
-        {/* Breadcrumb */}
-        <nav className="text-sm text-gray-400 mb-6 flex items-center gap-2 flex-wrap">
-          <Link to="/" className="hover:text-primaryColor transition">Home</Link>
-          <span>/</span>
-          <Link to="/shop" className="hover:text-primaryColor transition">Shop</Link>
+    <>
+      {/* Breadcrumb bar */}
+      <div className="bg-[#F6F7F9] border-b border-gray-100">
+        <nav className="px-4 md:px-6 lg:px-side py-3 text-[13px] flex items-center gap-2 flex-wrap">
+          <Link to="/" className="!text-gray-500 hover:!text-primaryColor transition">
+            <i className="fa-solid fa-house text-[11px] !text-inherit"></i>
+          </Link>
+          <i className="fa-solid fa-chevron-right text-[9px] !text-gray-400"></i>
+          <Link to="/shop" className="!text-gray-500 hover:!text-primaryColor transition">Shop</Link>
           {categoryLabel && (
             <>
-              <span>/</span>
-              <span className="text-gray-500">{categoryLabel}</span>
+              <i className="fa-solid fa-chevron-right text-[9px] !text-gray-400"></i>
+              <span className="!text-gray-500">{categoryLabel}</span>
             </>
           )}
-          <span>/</span>
-          <span className="text-gray-700 font-medium truncate max-w-[200px]">{product.title}</span>
+          <i className="fa-solid fa-chevron-right text-[9px] !text-gray-400"></i>
+          <span className="!text-gray-800 font-medium truncate max-w-[220px] md:max-w-sm">{product.title}</span>
         </nav>
+      </div>
 
-        <div className="grid lg:grid-cols-2 gap-10 lg:gap-14">
-          {/* Image gallery */}
-          <ImageGallery images={product.images} title={product.title} />
+      <section className="px-4 md:px-6 lg:px-side pt-6 md:pt-10">
+        <div className="grid lg:grid-cols-2 gap-8 lg:gap-14 items-start">
+          {/* Gallery */}
+          <div className="lg:sticky lg:top-6">
+            <ImageGallery images={product.images} title={product.title} discount={isVariable && !selectedVariant ? 0 : discountPct} />
+          </div>
 
-          {/* Product info */}
-          <div>
+          {/* Info */}
+          <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               {categoryLabel && (
-                <span className="bg-primaryColor text-white px-4 py-1 rounded-full text-xs font-semibold uppercase tracking-wide">
+                <span className="text-[11px] font-bold uppercase tracking-wider !text-secondaryColor bg-secondaryColor/10 px-2.5 py-1 rounded-md">
                   {categoryLabel}
                 </span>
               )}
               {product.brand?.name && (
-                <span className="border border-gray-200 text-gray-500 px-4 py-1 rounded-full text-xs font-medium">
+                <span className="text-[11px] font-semibold uppercase tracking-wider !text-gray-600 bg-gray-100 px-2.5 py-1 rounded-md">
                   {product.brand.name}
                 </span>
               )}
             </div>
 
-            <h1 className="text-2xl md:text-4xl font-bold mt-4 text-gray-900 leading-snug">
+            <h1 className="text-[22px] md:text-[30px] font-bold mt-3 !text-gray-900 leading-tight">
               {product.title}
             </h1>
 
-            <div className="flex items-center gap-2 mt-3">
-              <div className="flex gap-0.5">
-                {[...Array(4)].map((_, i) => (
-                  <i key={i} className="fa-solid fa-star text-yellow-400 text-sm"></i>
-                ))}
-                <i className="fa-regular fa-star text-yellow-400 text-sm"></i>
-              </div>
-              {sku && <span className="text-xs text-gray-400 ml-2">SKU: {sku}</span>}
+            <div className="flex items-center gap-3 mt-3 flex-wrap text-[13px]">
+              {stockBadge && (
+                <span className={`inline-flex items-center gap-1.5 font-semibold px-2.5 py-1 rounded-full ${stockBadge.cls}`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${stockBadge.dot}`}></span>
+                  {stockBadge.text}
+                </span>
+              )}
+              {sku && (
+                <span className="!text-gray-500">
+                  SKU: <span className="font-medium !text-gray-700">{sku}</span>
+                </span>
+              )}
             </div>
 
-            {isVariable && !selectedVariant ? (
-              <h2 className="text-xl font-semibold text-gray-400 mt-6">
-                Select options to see price
-              </h2>
-            ) : (
-              <div className="flex items-center gap-3 mt-6 flex-wrap">
-                <h2 className="text-3xl md:text-4xl font-bold text-primaryColor">
-                  ₹{onSale ? salePrice : price}
-                </h2>
-                {onSale && (
-                  <>
-                    <span className="text-lg text-gray-400 line-through">₹{price}</span>
-                    <span className="bg-green-100 text-green-700 text-xs font-semibold px-2.5 py-1 rounded-full">
-                      {discountPct}% off
+            {/* Price card */}
+            <div className="mt-6 rounded-2xl border border-gray-200 bg-gradient-to-br from-white to-[#F6F7F9] p-5">
+              {isVariable && !selectedVariant ? (
+                <p className="text-lg font-semibold !text-gray-500">Select options to see price</p>
+              ) : (
+                <>
+                  <div className="flex items-end gap-3 flex-wrap">
+                    <span className="text-3xl md:text-[38px] font-extrabold !text-gray-900 leading-none">
+                      ₹{formatINR(finalPrice)}
                     </span>
-                  </>
+                    {onSale && (
+                      <>
+                        <span className="text-base md:text-lg !text-gray-400 line-through leading-none pb-0.5">
+                          MRP ₹{formatINR(price)}
+                        </span>
+                        <span className="bg-green-600 !text-white text-xs font-bold px-2 py-1 rounded-md leading-none">
+                          {discountPct}% OFF
+                        </span>
+                      </>
+                    )}
+                  </div>
+                  {onSale && (
+                    <p className="mt-2 text-sm font-semibold !text-green-700">
+                      You save ₹{formatINR(price - salePrice)}
+                    </p>
+                  )}
+                  <p className="mt-2 text-xs !text-gray-500">
+                    {gstPct > 0 ? `+ ${gstPct}% GST applicable at checkout` : "Price inclusive of all taxes"}
+                    {deliveryCharge > 0 && ` · Delivery charge ₹${formatINR(deliveryCharge)}`}
+                  </p>
+                </>
+              )}
+            </div>
+
+            {product.description && (
+              <div className="mt-5">
+                <p className="!text-gray-600 text-[15px] leading-7 line-clamp-3">{product.description}</p>
+                {hasDetails && (
+                  <button
+                    type="button"
+                    onClick={scrollToTabs}
+                    className="mt-1 text-sm font-semibold !text-primaryColor hover:underline"
+                  >
+                    View full details
+                  </button>
                 )}
               </div>
             )}
 
             {/* Variant selector */}
             {isVariable && attributeGroups.length > 0 && (
-              <div className="mt-7 space-y-5">
+              <div className="mt-6 space-y-5">
                 {attributeGroups.map((group) => (
                   <div key={group.attributeId}>
-                    <p className="text-sm font-semibold text-gray-700 mb-2 capitalize">
-                      {group.displayName}
+                    <p className="text-sm !text-gray-600 mb-2.5">
+                      <span className="font-semibold !text-gray-900 capitalize">{group.displayName}:</span>{" "}
+                      {selectedValues[group.attributeId] || "Select"}
                     </p>
                     <div className="flex flex-wrap gap-2">
                       {group.values.map((value) => {
@@ -343,16 +540,17 @@ const ProductDetails = () => {
                         return (
                           <button
                             key={value}
+                            type="button"
                             onClick={() =>
                               setSelectedValues((prev) => ({
                                 ...prev,
                                 [group.attributeId]: value,
                               }))
                             }
-                            className={`px-4 py-2 rounded-xl border text-sm font-medium transition ${
+                            className={`min-w-[52px] px-4 py-2.5 rounded-xl border-2 text-sm font-semibold transition-all ${
                               active
-                                ? "bg-primaryColor text-white border-primaryColor"
-                                : "border-gray-300 text-gray-700 hover:border-primaryColor"
+                                ? "border-primaryColor bg-primaryColor/5 !text-primaryColor"
+                                : "border-gray-200 !text-gray-700 hover:border-gray-400"
                             }`}
                           >
                             {value}
@@ -362,131 +560,193 @@ const ProductDetails = () => {
                     </div>
                   </div>
                 ))}
-
-                {selectedVariant && !inStock && (
-                  <p className="text-red-500 font-medium text-sm">Out of stock</p>
-                )}
-                {selectedVariant && variantActive === false && (
-                  <p className="text-red-500 font-medium text-sm">Currently unavailable</p>
+                {isVariable && !selectedVariant && (
+                  <p className="text-sm font-medium !text-amber-700">This combination is not available.</p>
                 )}
               </div>
             )}
 
-            <p className="text-gray-600 mt-7 leading-7 line-clamp-4">
-              {product.description}
-            </p>
-
             {/* Quantity + actions */}
-            <div className="flex flex-wrap items-center gap-4 mt-8">
-              <div className="flex items-center border border-gray-200 rounded-xl">
+            <div className="mt-7">
+              <p className="text-sm font-semibold !text-gray-900 mb-2.5">Quantity</p>
+              <div className="flex flex-wrap items-stretch gap-3">
+                <div className="flex items-center border-2 border-gray-200 rounded-xl h-[52px]">
+                  <button
+                    type="button"
+                    onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                    className="w-11 h-full flex items-center justify-center hover:bg-gray-50 rounded-l-xl transition"
+                    aria-label="Decrease quantity"
+                  >
+                    <i className="fa-solid fa-minus text-xs !text-gray-600"></i>
+                  </button>
+                  <span className="w-10 text-center font-bold !text-gray-900">{quantity}</span>
+                  <button
+                    type="button"
+                    onClick={() => setQuantity((q) => q + 1)}
+                    className="w-11 h-full flex items-center justify-center hover:bg-gray-50 rounded-r-xl transition"
+                    aria-label="Increase quantity"
+                  >
+                    <i className="fa-solid fa-plus text-xs !text-gray-600"></i>
+                  </button>
+                </div>
+
                 <button
-                  onClick={() => setQuantity(quantity > 1 ? quantity - 1 : 1)}
-                  className="w-11 h-11 text-gray-600 hover:text-primaryColor transition"
-                  aria-label="Decrease quantity"
+                  type="button"
+                  onClick={() => addToWishlist(isVariable ? { ...product, variants } : product)}
+                  aria-label="Add to wishlist"
+                  className={`w-[52px] h-[52px] flex items-center justify-center border-2 rounded-xl transition ${
+                    isWishlisted ? "border-primaryColor bg-primaryColor/5" : "border-gray-200 hover:border-primaryColor"
+                  }`}
                 >
-                  −
+                  <i className={`${isWishlisted ? "fa-solid" : "fa-regular"} fa-heart !text-primaryColor`}></i>
                 </button>
-                <span className="w-10 text-center font-semibold">{quantity}</span>
+
                 <button
-                  onClick={() => setQuantity(quantity + 1)}
-                  className="w-11 h-11 text-gray-600 hover:text-primaryColor transition"
-                  aria-label="Increase quantity"
+                  type="button"
+                  onClick={handleShare}
+                  aria-label="Share product"
+                  className="w-[52px] h-[52px] flex items-center justify-center border-2 border-gray-200 rounded-xl hover:border-gray-400 transition"
                 >
-                  +
+                  <i className="fa-solid fa-share-nodes !text-gray-600"></i>
                 </button>
               </div>
 
-              <button
-                onClick={handleAddToCart}
-                disabled={!canAddToCart}
-                className="flex-1 min-w-[160px] bg-primaryColor text-white px-8 py-3.5 rounded-xl font-semibold transition hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                {isVariable && !selectedVariant ? "Select Options" : "Add To Cart"}
-              </button>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
+                <button
+                  type="button"
+                  onClick={handleAddToCart}
+                  disabled={!canAddToCart}
+                  className="h-[52px] rounded-xl border-2 border-primaryColor bg-white font-bold !text-primaryColor flex items-center justify-center gap-2 hover:bg-primaryColor/5 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  <i className="fa-solid fa-cart-plus !text-primaryColor"></i>
+                  <span className="!text-primaryColor">
+                    {isVariable && !selectedVariant ? "Select Options" : "Add to Cart"}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleBuyNow}
+                  disabled={!canAddToCart}
+                  className="h-[52px] rounded-xl bg-primaryColor font-bold flex items-center justify-center gap-2 shadow-[0_10px_25px_-10px_rgba(181,35,39,0.7)] hover:bg-[#9e1d21] transition disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none"
+                >
+                  <i className="fa-solid fa-bolt !text-white"></i>
+                  <span className="!text-white">Buy Now</span>
+                </button>
+              </div>
+            </div>
 
-              <button
-                onClick={() => addToWishlist(isVariable ? { ...product, variants } : product)}
-                aria-label="Add to wishlist"
-                className="w-12 h-12 flex items-center justify-center border border-gray-200 rounded-xl text-gray-500 hover:text-primaryColor hover:border-primaryColor transition"
-              >
-                <i className="fa-regular fa-heart"></i>
-              </button>
+            {/* Key info */}
+            <div className="mt-7 grid grid-cols-2 gap-px bg-gray-200 rounded-2xl overflow-hidden border border-gray-200">
+              {keyInfo.map(([icon, label, value]) => (
+                <div key={label} className="bg-white px-4 py-3 flex items-center gap-3">
+                  <i className={`fa-solid ${icon} text-sm !text-secondaryColor w-4 text-center`}></i>
+                  <div className="min-w-0">
+                    <p className="text-[11px] uppercase tracking-wide !text-gray-400">{label}</p>
+                    <p className="text-sm font-semibold !text-gray-800 truncate">{value}</p>
+                  </div>
+                </div>
+              ))}
             </div>
 
             {/* Trust badges */}
-            <div className="grid grid-cols-2 gap-3 mt-8">
-              {[
-                ["fa-shield-heart", "Genuine Medical Products"],
-                ["fa-truck-fast", "Fast Delivery Across India"],
-                ["fa-lock", "Secure Checkout"],
-                ["fa-headset", "Customer Support Available"],
-              ].map(([icon, text]) => (
-                <div
-                  key={text}
-                  className="flex items-center gap-2.5 bg-green-50 border border-green-100 rounded-xl px-3.5 py-3"
-                >
-                  <i className={`fa-solid ${icon} text-green-600 text-sm shrink-0`}></i>
-                  <span className="text-xs text-gray-700 font-medium leading-tight">{text}</span>
+            <div className="mt-5 grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {TRUST_BADGES.map(([icon, title, sub]) => (
+                <div key={title} className="flex flex-col items-center text-center gap-1.5 rounded-xl bg-[#F6F7F9] px-2 py-3.5">
+                  <span className="w-9 h-9 rounded-full bg-white shadow-sm flex items-center justify-center">
+                    <i className={`fa-solid ${icon} text-sm !text-primaryColor`}></i>
+                  </span>
+                  <p className="text-xs font-bold !text-gray-800 leading-tight">{title}</p>
+                  <p className="text-[10.5px] !text-gray-500 leading-tight">{sub}</p>
                 </div>
               ))}
             </div>
           </div>
         </div>
 
-        {/* Technical Specifications — admin-authored spec sheet only; shown
-            first, then Description below it. Hidden entirely (heading
-            included) when the admin hasn't added any rows for this
-            product/variant. */}
-        {hasSpecs && (
-          <div className="mt-14 bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
-            <div className="flex items-center gap-3 px-6 md:px-8 pt-6 md:pt-8 pb-1">
-              <span className="w-9 h-9 rounded-xl bg-primaryColor/10 flex items-center justify-center shrink-0">
-                <i className="fa-solid fa-clipboard-list text-primaryColor text-sm"></i>
-              </span>
-              <h2 className="text-xl md:text-2xl font-bold text-gray-900">
-                Technical Specifications
-              </h2>
-            </div>
-
-            <div className="px-6 md:px-8 pb-6 md:pb-8 pt-4">
-              <div className="border border-gray-100 overflow-x-auto">
-                <table className="w-full text-sm md:text-[15px] border-collapse">
-                  <tbody className="divide-y divide-gray-100">
-                    {filledSpecRows.map((row, i) => (
-                      <tr key={i} className="hover:bg-gray-100/70 transition-colors">
-                        <td className="w-2/5 sm:w-1/3 px-5 py-2 align-top text-gray-500 font-medium whitespace-nowrap bg-gray-100">
-                          {row[0] || "—"}
-                        </td>
-                        <td className="px-5 py-2 align-top text-gray-900 font-semibold">
-                          {row
-                            .slice(1)
-                            .filter((cell) => cell && cell.trim() !== "")
-                            .join(" · ") || "—"}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+        {/* Specifications + Description — side by side (50/50) on desktop;
+            on mobile specs come first, description below. If only one has
+            content it spans the full width. */}
+        {hasDetails && (
+          <div
+            ref={tabsRef}
+            className={`mt-12 md:mt-16 scroll-mt-6 grid gap-5 lg:gap-6 items-start ${
+              hasSpecs && hasDescription ? "lg:grid-cols-2" : ""
+            }`}
+          >
+            {hasDescription && (
+              <div className="order-2 lg:order-1 min-w-0 bg-white rounded-2xl border border-gray-200 overflow-hidden">
+                <div className="flex items-center gap-3 px-5 md:px-7 py-4 border-b border-gray-100 bg-[#FAFBFC]">
+                  <span className="w-9 h-9 rounded-xl bg-primaryColor/10 flex items-center justify-center shrink-0">
+                    <i className="fa-solid fa-align-left text-sm !text-primaryColor"></i>
+                  </span>
+                  <h2 className="text-lg md:text-xl font-bold !text-gray-900">Description</h2>
+                </div>
+                <div className="p-5 md:p-7">
+                  <div
+                    className="prose-description !text-gray-600 leading-8"
+                    dangerouslySetInnerHTML={{
+                      __html: descExpanded ? longDescriptionHtml : descriptionPreview,
+                    }}
+                  />
+                  {descriptionHasMore && (
+                    <button
+                      type="button"
+                      onClick={() => setDescExpanded((v) => !v)}
+                      className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-primaryColor/30 text-sm font-semibold !text-primaryColor hover:bg-primaryColor/5 transition"
+                    >
+                      <span className="!text-inherit">{descExpanded ? "View less" : "View more"}</span>
+                      <i className={`fa-solid ${descExpanded ? "fa-chevron-up" : "fa-chevron-down"} text-[10px] !text-inherit`}></i>
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
+
+            {hasSpecs && (
+              <div className="order-1 lg:order-2 min-w-0 bg-white rounded-2xl border border-gray-200 overflow-hidden">
+                <div className="flex items-center gap-3 px-5 md:px-7 py-4 border-b border-gray-100 bg-[#FAFBFC]">
+                  <span className="w-9 h-9 rounded-xl bg-secondaryColor/10 flex items-center justify-center shrink-0">
+                    <i className="fa-solid fa-clipboard-list text-sm !text-secondaryColor"></i>
+                  </span>
+                  <h2 className="text-lg md:text-xl font-bold !text-gray-900">Specifications</h2>
+                </div>
+                <div className="p-5 md:p-7">
+                  <div className="rounded-xl border border-gray-200 overflow-hidden">
+                    <table className="w-full text-sm md:text-[15px] border-collapse">
+                      <tbody>
+                        {filledSpecRows.map((row, i) => (
+                          <tr key={i} className="border-b border-gray-100 last:border-0 even:bg-[#FAFBFC]">
+                            <td className="w-2/5 px-4 md:px-5 py-3 align-top font-medium !text-gray-500 border-r border-gray-100">
+                              {row[0] || "—"}
+                            </td>
+                            <td className="px-4 md:px-5 py-3 align-top font-semibold !text-gray-900 break-words">
+                              {row
+                                .slice(1)
+                                .filter((cell) => cell && cell.trim() !== "")
+                                .join(" · ") || "—"}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
+      </section>
 
-        {/* Description — full rich-text content, below specifications */}
-        {hasDescription && (
-          <div className={`${hasSpecs ? "mt-8" : "mt-14"} bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden`}>
-            <h2 className="text-xl md:text-2xl font-bold text-gray-900 px-6 md:px-8 pt-6 md:pt-8">
-              Description
-            </h2>
-            <div
-              className="prose-description p-6 md:p-8 pt-5 text-gray-600 leading-8"
-              dangerouslySetInnerHTML={{ __html: longDescriptionHtml }}
-            />
-          </div>
-        )}
-
+      <div className="pb-14 md:pb-20">
+        <ProductRail
+          eyebrow="You may also like"
+          title="Related Products"
+          viewAllTo="/shop"
+          products={related}
+          loading={relatedLoading}
+        />
       </div>
-    </section>
+    </>
   );
 };
 

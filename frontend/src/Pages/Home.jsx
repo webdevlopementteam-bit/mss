@@ -27,9 +27,7 @@ import { Category } from "../sections/Category";
 import { Hero } from "../sections/Hero";
 import { Productbanner } from "../sections/Productbanner";
 import { TrendingItems } from "../sections/TrendingItems";
-import { Policies } from "../sections/Policies";
 import { Popularitem } from "../sections/Popularitem";
-import { Singlebanner } from "../sections/Singlebanner";
 import { Popularbrands } from "../sections/Popularbrands";
 import { FeaturedItem } from "../sections/FeaturedItem";
 import { Catalogtype } from "../sections/Catalogtype";
@@ -108,11 +106,9 @@ const Home = () => {
       <Productbanner />
       <TrendingItems />
       
-      <Policies />
 
       <Popularitem />
 
-      <Singlebanner />
 
       <Popularbrands />
       {/*   <div className="flex justify-between items-center mx-side mt-16">

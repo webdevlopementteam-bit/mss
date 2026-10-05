@@ -47,20 +47,21 @@ export const ShopProvider = ({ children }) => {
 
   // `variant` is optional — omitted (or undefined) for simple products, which
   // keeps every existing call site (product grids, etc.) working unchanged.
-  const addToCart = (product, variant) => {
+  // `qty` lets the product page add several units in one call.
+  const addToCart = (product, variant, qty = 1) => {
     const lineId = getCartLineId(product, variant);
     const exists = cart.find((item) => getCartLineId(item, item.variant) === lineId);
     if (exists) {
       setCart(
         cart.map((item) =>
           getCartLineId(item, item.variant) === lineId
-            ? { ...item, quantity: item.quantity + 1 }
+            ? { ...item, quantity: item.quantity + qty }
             : item
         )
       );
       toast.success(`${product.title ?? product.name} quantity updated 🛒`);
     } else {
-      setCart([...cart, { ...product, variant, quantity: 1 }]);
+      setCart([...cart, { ...product, variant, quantity: qty }]);
       toast.success(`${product.title ?? product.name} added to cart 🛒`);
     }
   };

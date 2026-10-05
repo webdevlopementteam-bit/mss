@@ -1,16 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import API from "../api/axios";
-import { useShop } from "../context/ShopContext";
-import { toast } from "react-toastify";
+import { ProductCard, ProductCardSkeleton } from "../components/ui/ProductCard";
 
-const IMG_URL = import.meta.env.VITE_IMAGE_BASE_URL;
 const PAGE_SIZE = 12;
-
-const resolveImage = (img) => {
-  if (!img) return "/no-image.png";
-  return img.startsWith("http") ? img : `${IMG_URL.replace(/\/$/, "")}/${img}`;
-};
 
 // Reads a comma-separated id list out of the URL (e.g. ?category=a,b) into
 // an array — the single source of truth for "which checkboxes are checked".
@@ -94,152 +87,6 @@ const ScrollbarStyles = () => (
   `}</style>
 );
 
-// ---------------- Product card ----------------
-const ProductCard = ({ product, addToCart, addToWishlist }) => {
-  const image = resolveImage(product.images?.[0]);
-  const hasSecondImage = !!product.images?.[1];
-  const onSale =
-    !product.hasVariants && product.salePrice > 0 && product.salePrice < product.price;
-  const discountPct = onSale
-    ? Math.round(((product.price - product.salePrice) / product.price) * 100)
-    : 0;
-  const outOfStock = !product.hasVariants && Number(product.quantity) <= 0;
-
-  const handleQuickAdd = (e) => {
-    // Variant products should just navigate to the product page (the "View
-    // Options" label), so let the Link's default click-through happen.
-    if (product.hasVariants) return;
-
-    e.preventDefault();
-    e.stopPropagation();
-    if (outOfStock) {
-      toast.error("This item is out of stock");
-      return;
-    }
-    addToCart(product);
-  };
-
-  const handleWishlist = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    addToWishlist(product);
-  };
-
-  return (
-    <Link
-      to={`/product/${product.slug}`}
-      className="group flex flex-col bg-white rounded-2xl border border-slate-100 hover:border-slate-200 hover:shadow-lg hover:shadow-slate-200/60 transition-all duration-300 overflow-hidden"
-    >
-      {/* Image */}
-      <div className="relative bg-slate-50/70 aspect-[4/5] overflow-hidden">
-        <div className="absolute top-3 left-3 z-10 flex flex-col gap-1.5 items-start">
-          {onSale && (
-            <span className="bg-rose-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-sm">
-              {discountPct}% OFF
-            </span>
-          )}
-          {outOfStock && (
-            <span className="bg-slate-900/90 text-white text-[10px] font-semibold px-2.5 py-1 rounded-full">
-              Out of Stock
-            </span>
-          )}
-        </div>
-
-        <button
-          onClick={handleWishlist}
-          aria-label="Add to wishlist"
-          className="group/wish absolute top-3 right-3 z-10 w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm hover:scale-110 transition"
-        >
-          <i className="fa-regular fa-heart text-xs !text-slate-400 group-hover/wish:!text-rose-500 transition-colors"></i>
-        </button>
-
-        <img
-          src={image}
-          alt={product.title}
-          className={`w-full h-full object-contain p-6 transition-all duration-500 ${
-            hasSecondImage ? "group-hover:opacity-0" : "group-hover:scale-[1.04]"
-          }`}
-          onError={(e) => {
-            e.target.src = "/no-image.png";
-          }}
-        />
-        {hasSecondImage && (
-          <img
-            src={resolveImage(product.images[1])}
-            alt=""
-            aria-hidden="true"
-            className="absolute inset-0 w-full h-full object-contain p-6 opacity-0 group-hover:opacity-100 transition-all duration-500"
-          />
-        )}
-
-        {/* Slide-up add-to-cart bar */}
-        <button
-          onClick={handleQuickAdd}
-          disabled={outOfStock}
-          className="absolute left-0 right-0 bottom-0 translate-y-full group-hover:translate-y-0 bg-slate-900 text-white text-xs font-semibold py-2.5 flex items-center justify-center gap-2 transition-transform duration-300 disabled:bg-slate-400"
-        >
-          <i
-            className={`fa-solid ${product.hasVariants ? "fa-arrow-right" : "fa-cart-plus"} text-[11px]`}
-            style={{ color: "#ffffff" }}
-          ></i>
-          {product.hasVariants ? "View Options" : outOfStock ? "Unavailable" : "Add to Cart"}
-        </button>
-      </div>
-
-      {/* Content */}
-      <div className="p-4 flex flex-col flex-1">
-        {product.category?.length > 0 && (
-          <span className="text-[10px] font-semibold tracking-wider uppercase text-primaryColor/80 mb-1.5">
-            {product.category[0]?.name}
-          </span>
-        )}
-
-        <h3 className="font-semibold text-slate-800 text-sm leading-5 h-10 overflow-hidden">
-          {product.title}
-        </h3>
-
-        <div className="flex items-center gap-1.5 mt-2">
-          <span className="flex items-center gap-1 bg-emerald-50 text-emerald-700 text-[11px] font-bold px-1.5 py-0.5 rounded">
-            4.5 <i className="fa-solid fa-star !text-emerald-700 text-[9px]"></i>
-          </span>
-          <span className="text-[11px] text-slate-400">24 ratings</span>
-        </div>
-
-        <div className="mt-auto pt-3 flex items-baseline gap-2 flex-wrap">
-          {product.hasVariants ? (
-            <>
-              <span className="text-[11px] text-slate-400">From</span>
-              <span className="text-primaryColor font-bold text-base">
-                ₹{product.minSalePrice ?? product.minPrice ?? product.price}
-              </span>
-            </>
-          ) : onSale ? (
-            <>
-              <span className="text-primaryColor font-bold text-base">₹{product.salePrice}</span>
-              <span className="text-slate-400 text-xs line-through">₹{product.price}</span>
-              <span className="text-emerald-600 text-[11px] font-semibold">{discountPct}% off</span>
-            </>
-          ) : (
-            <span className="text-primaryColor font-bold text-base">₹{product.price}</span>
-          )}
-        </div>
-      </div>
-    </Link>
-  );
-};
-
-// ---------------- Skeleton card ----------------
-const SkeletonCard = () => (
-  <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden animate-pulse">
-    <div className="aspect-[4/5] bg-slate-100" />
-    <div className="p-4 space-y-2.5">
-      <div className="h-3 w-14 bg-slate-100 rounded-full" />
-      <div className="h-3.5 w-full bg-slate-100 rounded" />
-      <div className="h-3.5 w-2/3 bg-slate-100 rounded" />
-      <div className="h-4 w-16 bg-slate-100 rounded mt-1" />
-    </div>
-  </div>
-);
 
 // ---------------- Pagination with numbered pages ----------------
 const Pagination = ({ page, totalPages, onChange }) => {
@@ -305,7 +152,6 @@ const Pagination = ({ page, totalPages, onChange }) => {
 
 const Shop = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const { addToCart, addToWishlist } = useShop();
 
   const [products, setProducts] = useState([]);
   const [totalPages, setTotalPages] = useState(1);
@@ -425,7 +271,7 @@ const Shop = () => {
   const brandName = (id) => brands.find((b) => b._id === id)?.name || "Brand";
 
   const sidebarContent = (
-    <div className="bg-white rounded-3xl border border-slate-100 p-5">
+    <div className="bg-white rounded-2xl border border-gray-200/80 p-5">
       <div className="flex items-center justify-between mb-1">
         <h2 className="font-bold text-lg text-slate-800 flex items-center gap-2">
           <i className="fa-solid fa-sliders !text-primaryColor text-sm"></i>
@@ -495,25 +341,72 @@ const Shop = () => {
   );
 
   return (
-    <section className="bg-[#FAFBFC]">
+    <section className="bg-[#F6F7F9] pb-12">
       <ScrollbarStyles />
-      {/* Page banner */}
-      <div className="bg-gradient-to-r from-primaryColor/[0.06] to-transparent border-b border-slate-100">
-        <div className="container mx-auto px-4 md:px-8 lg:px-36 py-8">
-          <nav className="text-xs text-slate-400 mb-2 flex items-center gap-2">
-            <Link to="/" className="hover:text-primaryColor transition">Home</Link>
-            <span>/</span>
-            <span className="text-slate-600 font-medium">Shop</span>
+      {/* Page header */}
+      <div className="relative overflow-hidden bg-[#023350]">
+        <div className="pointer-events-none absolute -top-24 -right-16 w-80 h-80 rounded-full bg-secondaryColor/25 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-24 left-10 w-72 h-72 rounded-full bg-primaryColor/20 blur-3xl" />
+        <div className="pointer-events-none absolute inset-0 opacity-[0.08] [background-image:radial-gradient(white_1px,transparent_1px)] [background-size:18px_18px]" />
+
+        <div className="relative px-4 md:px-6 lg:px-side pt-8 md:pt-10 pb-6 md:pb-8">
+          <nav className="text-xs mb-3 flex items-center gap-2">
+            <Link to="/" className="!text-white/60 hover:!text-white transition">Home</Link>
+            <i className="fa-solid fa-chevron-right text-[8px] !text-white/40"></i>
+            <span className="!text-white font-medium">Shop</span>
           </nav>
-          <h1 className="text-2xl md:text-3xl font-bold text-slate-800">
-            {search ? `Search results for "${search}"` : "All Products"}
-          </h1>
+          <div className="flex items-end justify-between gap-4 flex-wrap">
+            <h1 className="text-2xl md:text-[34px] font-bold !text-white leading-tight">
+              {search
+                ? `Results for "${search}"`
+                : selectedCategories.length === 1
+                ? categoryName(selectedCategories[0])
+                : "All Products"}
+            </h1>
+            {!loading && (
+              <span className="text-sm !text-white/70">
+                <span className="font-bold !text-white">{totalProduct}</span> products
+              </span>
+            )}
+          </div>
+
+          {/* Quick category chips */}
+          {categories.length > 0 && (
+            <div className="mt-6 -mx-4 px-4 md:mx-0 md:px-0 flex gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <button
+                type="button"
+                onClick={() => updateFilters({ category: "" })}
+                className={`shrink-0 px-4 py-2 rounded-full text-[13px] font-semibold border transition ${
+                  selectedCategories.length === 0
+                    ? "bg-white border-white !text-[#023350]"
+                    : "border-white/20 !text-white/80 hover:bg-white/10"
+                }`}
+              >
+                All
+              </button>
+              {categories.slice(0, 14).map((c) => {
+                const on = selectedCategories.includes(c._id);
+                return (
+                  <button
+                    key={c._id}
+                    type="button"
+                    onClick={() => toggleCategory(c._id)}
+                    className={`shrink-0 px-4 py-2 rounded-full text-[13px] font-semibold border transition ${
+                      on ? "bg-primaryColor border-primaryColor !text-white" : "border-white/20 !text-white/80 hover:bg-white/10"
+                    }`}
+                  >
+                    {c.name}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
 
-      <div className="container mx-auto px-4 md:px-8 lg:px-36 py-8">
+      <div className="px-4 md:px-6 lg:px-side py-8">
         {/* Toolbar */}
-        <div className="flex items-center justify-between gap-4 mb-5 flex-wrap">
+        <div className="flex items-center justify-between gap-4 mb-5 flex-wrap bg-white border border-gray-200/80 rounded-2xl px-4 py-3">
           <p className="text-sm text-slate-500">
             {loading ? "Searching…" : (
               <>
@@ -572,7 +465,7 @@ const Shop = () => {
           </div>
         )}
 
-        <div className="grid lg:grid-cols-[260px_1fr] gap-8 items-start">
+        <div className="grid lg:grid-cols-[250px_1fr] gap-6 xl:gap-8 items-start">
           {/* Sidebar — desktop */}
           <aside className="filter-scroll hidden lg:block lg:sticky lg:top-6 lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto">
             {sidebarContent}
@@ -609,9 +502,9 @@ const Shop = () => {
           {/* Product grid */}
           <div>
             {loading ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
-                {Array.from({ length: 6 }).map((_, i) => (
-                  <SkeletonCard key={i} />
+              <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-5">
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <ProductCardSkeleton key={i} />
                 ))}
               </div>
             ) : products.length === 0 ? (
@@ -634,13 +527,11 @@ const Shop = () => {
               </div>
             ) : (
               <>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
+                <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-5">
                   {products.map((product) => (
                     <ProductCard
                       key={product._id}
                       product={product}
-                      addToCart={addToCart}
-                      addToWishlist={addToWishlist}
                     />
                   ))}
                 </div>

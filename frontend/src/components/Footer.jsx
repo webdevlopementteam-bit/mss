@@ -1,259 +1,201 @@
 import { Link } from "react-router-dom";
-import footerbanner from "../assets/home/footerbanner.jpg";
 import logo from "../assets/home/logo.png";
 import razorpay from "../assets/razorpay.png";
-import { categories } from "../data";
+
+const FEATURES = [
+  ["fa-shield-heart", "Genuine Products", "Sourced from authorised brands"],
+  ["fa-truck-fast", "Pan-India Delivery", "Fast & tracked shipping"],
+  ["fa-lock", "Secure Payments", "Razorpay protected checkout"],
+  ["fa-headset", "Expert Support", "Call us anytime"],
+];
+
+const QUICK_LINKS = [
+  ["Home", "/"],
+  ["About", "/about"],
+  ["Shop", "/shop"],
+  ["Blog", "/blog"],
+  ["Award", "/award"],
+  ["Contact", "/contact"],
+  ["Account", "/login"],
+];
+
+const SUPPORT_LINKS = [
+  ["FAQ's", "/faq"],
+  ["Privacy Policy", "/privacy-policy"],
+  ["Terms & Conditions", "/terms-conditions"],
+  ["Return Policy", "/return-policy"],
+  ["Track Your Order", "https://www.dtdc.com/track-your-shipment/"],
+  ["Dashboard", "/user-dashboard"],
+  ["Recently Viewed", "/recently-viewed"],
+];
+
+const SOCIALS = [
+  ["fa-facebook-f", "Facebook", "https://www.facebook.com/people/Medical-and-Surgical-Solutions/61571157007880/"],
+  ["fa-youtube", "YouTube", "https://www.youtube.com/@MEDICALANDSURGICALSOLUTIONS"],
+  ["fa-instagram", "Instagram", "https://www.instagram.com/mssofficial2011/"],
+  ["fa-linkedin-in", "LinkedIn", "https://www.linkedin.com/company/medical-surgical-solutions/"],
+];
+
+const CONTACTS = [
+  ["fa-phone", "Call us", "+91 9643344588", "tel:9643344588"],
+  ["fa-envelope", "Email", "care@medicalsurgical.org", "mailto:care@medicalsurgical.org"],
+  ["fa-location-dot", "Visit", "402, Ground Floor, Near Bagga Link, Patparganj Industrial Area, Delhi-110092"],
+  ["fa-clock", "Hours", "Monday to Saturday · Available 24/7"],
+];
+
+const ColumnTitle = ({ children }) => (
+  <h4 className="text-[15px] font-bold !text-white mb-5 flex items-center gap-2">
+    <span className="w-1.5 h-4 rounded-full bg-primaryColor"></span>
+    {children}
+  </h4>
+);
+
+const FooterLink = ({ label, to }) => {
+  const cls =
+    "group inline-flex items-center gap-2 text-sm !text-white/65 hover:!text-white transition-colors";
+  const inner = (
+    <>
+      <i className="fa-solid fa-chevron-right text-[8px] !text-primaryColor -ml-3 opacity-0 group-hover:ml-0 group-hover:opacity-100 transition-all duration-300"></i>
+      <span className="!text-inherit">{label}</span>
+    </>
+  );
+  return to.startsWith("http") ? (
+    <a href={to} target="_blank" rel="noopener noreferrer" className={cls}>
+      {inner}
+    </a>
+  ) : (
+    <Link to={to} className={cls}>
+      {inner}
+    </Link>
+  );
+};
 
 const Footer = () => {
   return (
-    <>
-      <div
-        className="bg-primaryColor/60 px-4 md:px-6 lg:px-side py-10 relative overflow-hidden before:content-[' '] before:absolute before:w-96 before:h-96 before:bg-primaryColor/10 before:rounded-full before:-top-40 after:content-[' '] after:absolute after:w-96 after:h-96 after:bg-primaryColor/10 after:rounded-full after:-bottom-40 after:right-10"
-        // style={{
-        //   backgroundImage: `url(${footerbanner})`,
-        //   backgroundPosition: "center center",
-        //   backgroundSize: "cover",
-        // }}
-      >
-        <div className="relative z-10">
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-6 gap-8 lg:gap-10 pb-10 border-b-[1px] border-gray-500">
-            <div className="xl:col-span-2">
-              <img src={logo} alt="logo" className="w-28" />
-              <p className="text-white mt-3">
-                Medical & Surgical Solutions, we take pride in being a trusted
-                partner for healthcare professionals, hospitals, and
-                institutions.
-              </p>
-              <img src={razorpay} alt="rupay" className="mt-2 w-[50%]" />
+    <footer className="relative bg-[#023350] overflow-hidden pb-20 lg:pb-0">
+      {/* Decorative glows + top accent line */}
+      <div className="pointer-events-none absolute -top-32 -left-32 w-96 h-96 rounded-full bg-secondaryColor/20 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-40 right-0 w-[28rem] h-[28rem] rounded-full bg-primaryColor/15 blur-3xl" />
+      <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primaryColor via-secondaryColor to-primaryColor" />
+
+      <div className="relative px-4 md:px-6 lg:px-side">
+        {/* Feature strip */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-px bg-white/10 rounded-b-2xl overflow-hidden">
+          {FEATURES.map(([icon, title, sub]) => (
+            <div key={title} className="bg-[#023350] flex items-center gap-3 md:gap-4 px-3 md:px-6 py-5 md:py-6">
+              <span className="shrink-0 w-10 h-10 md:w-12 md:h-12 rounded-xl bg-white/[0.07] border border-white/10 flex items-center justify-center">
+                <i className={`fa-solid ${icon} text-sm md:text-base !text-[#7fd1c3]`}></i>
+              </span>
+              <div className="min-w-0">
+                <p className="text-[13px] md:text-[15px] font-bold !text-white leading-tight">{title}</p>
+                <p className="text-[11px] md:text-xs !text-white/55 mt-0.5 leading-snug">{sub}</p>
+              </div>
             </div>
-            <div className="mt-7">
-              <p className="text-white text-lg relative pb-4 before:content-[' '] before:absolute before:w-4 before:h-[2px] before:bg-primaryColor before:bottom-0 before:left-0 after:content-[' '] after:absolute after:w-10 after:h-[2px] after:bg-gray-700 after:bottom-0 after:left-5">
-                Quick Links
-              </p>
-              <ul className="mt-4 flex flex-col justify-center items-start gap-1">
-                <Link to="/">
-                  <li className="text-white cursor-pointer translate-x-0 hover:translate-x-2 group transition-all duration-500 hover:text-primaryColor relative ">
-                    Home{" "}
-                    <span className="transition-all duration-500  absolute w-2 h-2 bg-primaryColor rounded-full top-1/3 -left-3 translate-x-0 opacity-0 group-hover:translate-x-0 group-hover:opacity-100"></span>
-                  </li>
-                </Link>
-                <Link to="/about">
-                  <li className="text-white cursor-pointer translate-x-0 hover:translate-x-2 group transition-all duration-500 hover:text-primaryColor relative ">
-                    About{" "}
-                    <span className="transition-all duration-500  absolute w-2 h-2 bg-primaryColor rounded-full top-1/3 -left-3 translate-x-0 opacity-0 group-hover:translate-x-0 group-hover:opacity-100"></span>
-                  </li>
-                </Link>
-                <Link to="/shop">
-                  <li className="text-white cursor-pointer translate-x-0 hover:translate-x-2 group transition-all duration-500 hover:text-primaryColor relative ">
-                    Shop{" "}
-                    <span className="transition-all duration-500  absolute w-2 h-2 bg-primaryColor rounded-full top-1/3 -left-3 translate-x-0 opacity-0 group-hover:translate-x-0 group-hover:opacity-100"></span>
-                  </li>
-                </Link>
-                <Link to="/blog">
-                  <li className="text-white cursor-pointer translate-x-0 hover:translate-x-2 group transition-all duration-500 hover:text-primaryColor relative ">
-                    Blog{" "}
-                    <span className="transition-all duration-500  absolute w-2 h-2 bg-primaryColor rounded-full top-1/3 -left-3 translate-x-0 opacity-0 group-hover:translate-x-0 group-hover:opacity-100"></span>
-                  </li>
-                </Link>
-                <Link to="/award">
-                  <li className="text-white cursor-pointer translate-x-0 hover:translate-x-2 group transition-all duration-500 hover:text-primaryColor relative ">
-                    Award{" "}
-                    <span className="transition-all duration-500  absolute w-2 h-2 bg-primaryColor rounded-full top-1/3 -left-3 translate-x-0 opacity-0 group-hover:translate-x-0 group-hover:opacity-100"></span>
-                  </li>
-                </Link>
-                <Link to="/contact">
-                  <li className="text-white cursor-pointer translate-x-0 hover:translate-x-2 group transition-all duration-500 hover:text-primaryColor relative ">
-                    Contact{" "}
-                    <span className="transition-all duration-500  absolute w-2 h-2 bg-primaryColor rounded-full top-1/3 -left-3 translate-x-0 opacity-0 group-hover:translate-x-0 group-hover:opacity-100"></span>
-                  </li>
-                </Link>
-                <Link to="/login">
-                  <li className="text-white cursor-pointer translate-x-0 hover:translate-x-2 group transition-all duration-500 hover:text-primaryColor relative ">
-                    Account{" "}
-                    <span className="transition-all duration-500  absolute w-2 h-2 bg-primaryColor rounded-full top-1/3 -left-3 translate-x-0 opacity-0 group-hover:translate-x-0 group-hover:opacity-100"></span>
-                  </li>
-                </Link>
-              </ul>
-            </div>
-            <div className="mt-7">
-              <p className="text-white text-lg relative pb-4 before:content-[' '] before:absolute before:w-4 before:h-[2px] before:bg-primaryColor before:bottom-0 before:left-0 after:content-[' '] after:absolute after:w-10 after:h-[2px] after:bg-gray-700 after:bottom-0 after:left-5">
-                Support Center
-              </p>
-              <ul className="mt-4 flex flex-col justify-center items-start gap-1">
-                <Link to="/faq">
-                  <li className="text-white cursor-pointer translate-x-0 hover:translate-x-2 group transition-all duration-500 hover:text-primaryColor relative ">
-                    FAQ's{" "}
-                    <span className="transition-all duration-500  absolute w-2 h-2 bg-primaryColor rounded-full top-1/3 -left-3 translate-x-0 opacity-0 group-hover:translate-x-0 group-hover:opacity-100"></span>
-                  </li>
-                </Link>
-                <Link to="/privacy-policy">
-                  {" "}
-                  <li className="text-white cursor-pointer translate-x-0 hover:translate-x-2 group transition-all duration-500 hover:text-primaryColor relative ">
-                    Privacy Policy{" "}
-                    <span className="transition-all duration-500  absolute w-2 h-2 bg-primaryColor rounded-full top-1/3 -left-3 translate-x-0 opacity-0 group-hover:translate-x-0 group-hover:opacity-100"></span>
-                  </li>
-                </Link>
-                <Link to="/terms-conditions">
-                  <li className="text-white cursor-pointer translate-x-0 hover:translate-x-2 group transition-all duration-500 hover:text-primaryColor relative ">
-                    Terms & Conditions{" "}
-                    <span className="transition-all duration-500  absolute w-2 h-2 bg-primaryColor rounded-full top-1/3 -left-3 translate-x-0 opacity-0 group-hover:translate-x-0 group-hover:opacity-100"></span>
-                  </li>
-                </Link>
-                <Link to="https://www.dtdc.com/track-your-shipment/">
-                  <li className="text-white cursor-pointer translate-x-0 hover:translate-x-2 group transition-all duration-500 hover:text-primaryColor relative ">
-                  Track Your Order{" "}
-                  <span className="transition-all duration-500  absolute w-2 h-2 bg-primaryColor rounded-full top-1/3 -left-3 translate-x-0 opacity-0 group-hover:translate-x-0 group-hover:opacity-100"></span>
-                </li>
-                </Link>
-                
-                <Link to="/return-policy">
-                  <li className="text-white cursor-pointer translate-x-0 hover:translate-x-2 group transition-all duration-500 hover:text-primaryColor relative ">
-                    Return Policy{" "}
-                    <span className="transition-all duration-500  absolute w-2 h-2 bg-primaryColor rounded-full top-1/3 -left-3 translate-x-0 opacity-0 group-hover:translate-x-0 group-hover:opacity-100"></span>
-                  </li>
-                </Link>
-                <Link to="/user-dashboard">
-                  <li className="text-white cursor-pointer translate-x-0 hover:translate-x-2 group transition-all duration-500 hover:text-primaryColor relative ">
-                  Dashboard{" "}
-                  <span className="transition-all duration-500  absolute w-2 h-2 bg-primaryColor rounded-full top-1/3 -left-3 translate-x-0 opacity-0 group-hover:translate-x-0 group-hover:opacity-100"></span>
-                </li>
-                </Link>
-                
-                <Link to="/recently-viewed">
-                  <li className="text-white cursor-pointer translate-x-0 hover:translate-x-2 group transition-all duration-500 hover:text-primaryColor relative ">
-                  Recently Viewed{" "}
-                  <span className="transition-all duration-500  absolute w-2 h-2 bg-primaryColor rounded-full top-1/3 -left-3 translate-x-0 opacity-0 group-hover:translate-x-0 group-hover:opacity-100"></span>
-                </li>
-                </Link>
-                
-              </ul>
-            </div>
-            <div className="mt-7 xl:col-span-2">
-              <p className="text-white text-lg relative pb-4 before:content-[' '] before:absolute before:w-4 before:h-[2px] before:bg-primaryColor before:bottom-0 before:left-0 after:content-[' '] after:absolute after:w-10 after:h-[2px] after:bg-gray-700 after:bottom-0 after:left-5">
-                Contact Info
-              </p>
-              <ul className="mt-4 flex flex-col justify-center items-start gap-4">
-                <li>
-                  <span className="p-2 bg-primaryColor rounded-full">
-                    <i className="fa-solid fa-phone text-white"></i>
-                  </span>{" "}
-                  <a href="tel:9643344588" className="text-white">
-                    +91 9643344588
-                  </a>
-                </li>
-                <li className="flex items-center gap-1">
-                  <span className="p-2 bg-primaryColor rounded-full">
-                    <i className="fa-solid fa-location-dot text-white"></i>
-                  </span>
-                  <p className="text-white leading-7">
-                    {" "}
-                    402, Ground Floor, Near Bagga Link, Patparganj Industrial
-                    Area, Delhi-110092
-                  </p>
-                </li>
-                <li>
-                  <span className="p-2 bg-primaryColor rounded-full">
-                    <i className="fa-regular fa-envelope text-white"></i>
-                  </span>{" "}
-                  <a
-                    href="mailto:care@medicalsurgical.org"
-                    className="text-white"
-                  >
-                    care@medicalsurgical.org
-                  </a>
-                </li>
-                <li className="text-white mt-1">
-                  <span className="p-2 bg-primaryColor rounded-full">
-                    <i className="fa-regular fa-clock text-white"></i>
-                  </span>{" "}
-                  Monday to Saturday: Available 24/7
-                </li>
-              </ul>
+          ))}
+        </div>
+
+        {/* Main columns */}
+        <div className="grid grid-cols-2 lg:grid-cols-12 gap-x-6 gap-y-10 py-12 md:py-14">
+          <div className="col-span-2 lg:col-span-4">
+            <Link to="/" className="inline-block bg-white rounded-2xl p-2.5 shadow-lg">
+              <img src={logo} alt="MSS logo" className="w-20" />
+            </Link>
+            <p className="mt-5 text-sm leading-7 !text-white/65 max-w-sm">
+              Medical & Surgical Solutions — a trusted partner for healthcare professionals,
+              hospitals and institutions, delivering genuine medical and surgical supplies across India.
+            </p>
+            <div className="mt-6 flex gap-2.5">
+              {SOCIALS.map(([icon, label, href]) => (
+                <a
+                  key={label}
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={label}
+                  className="w-10 h-10 rounded-xl bg-white/[0.07] border border-white/10 flex items-center justify-center hover:bg-primaryColor hover:border-primaryColor hover:-translate-y-0.5 transition-all duration-300"
+                >
+                  <i className={`fa-brands ${icon} text-sm !text-white`}></i>
+                </a>
+              ))}
             </div>
           </div>
-          <div className="flex justify-between items-center pt-7">
-            <div>
-              <p className="text-white">
-                © Copyright 2026{" "}
-                <span className="text-primaryColor font-semibold">MSS</span> All
-                Right Reserved | Powered by{" "}
-                <span className="text-primaryColor font-semibold">
-                  <a href="https://www.cybertricksmedia.com/" target="_blank">
-                    Cybertricksmedia Pvt Ltd
-                  </a>
-                </span>
-              </p>
-            </div>
-            <div className="hidden md:flex flex-col sm:flex-row gap-3 items-center">
-              <p className="font-semibold text-white">Follow Us: </p>
-               <div className="flex gap-2">
-              <a
-                href="https://www.facebook.com/people/Medical-and-Surgical-Solutions/61571157007880/"
-                target="_blank"
-                className="py-[7px] px-2 rounded-full bg-primaryColor/30 transition-all duration-700 hover:bg-primaryColor"
-              >
-                <i className="fa-brands fa-facebook text-white  transition-all duration-700"></i>
-              </a>
-              <a
-                href="https://www.youtube.com/@MEDICALANDSURGICALSOLUTIONS"
-                target="_blank"
-                className="py-[7px] px-2 rounded-full bg-primaryColor/30 transition-all duration-700 hover:bg-primaryColor"
-              >
-                <i className="fa-brands fa-youtube text-white  transition-all duration-700"></i>
-              </a>
-              <a
-                href="https://www.instagram.com/mssofficial2011/"
-                target="_blank"
-                className="py-[7px] px-2 rounded-full bg-primaryColor/30 transition-all duration-700 hover:bg-primaryColor"
-              >
-                <i className="fa-brands fa-instagram text-white  transition-all duration-700"></i>
-              </a>
-              <a
-                href="https://www.linkedin.com/company/medical-surgical-solutions/"
-                target="_blank"
-                className="py-[7px] px-2 rounded-full bg-primaryColor/30 transition-all duration-700 hover:bg-primaryColor"
-              >
-                <i className="fa-brands fa-linkedin text-white  transition-all duration-700"></i>
-              </a>
-            </div>
-            </div>
+
+          <div className="lg:col-span-2">
+            <ColumnTitle>Quick Links</ColumnTitle>
+            <ul className="space-y-3">
+              {QUICK_LINKS.map(([label, to]) => (
+                <li key={label}>
+                  <FooterLink label={label} to={to} />
+                </li>
+              ))}
+            </ul>
           </div>
-          <div className="md:hidden flex flex-col gap-3  items-start mt-3">
-            <p className="font-semibold text-white">Follow Us: </p>
-            <div className="flex gap-2">
-              <a
-                href="https://www.facebook.com/people/Medical-and-Surgical-Solutions/61571157007880/"
-                target="_blank"
-                className="py-[7px] px-2 rounded-full bg-primaryColor/30 transition-all duration-700 hover:bg-primaryColor"
-              >
-                <i className="fa-brands fa-facebook text-white  transition-all duration-700"></i>
-              </a>
-              <a
-                href="https://www.youtube.com/@MEDICALANDSURGICALSOLUTIONS"
-                target="_blank"
-                className="py-[7px] px-2 rounded-full bg-primaryColor/30 transition-all duration-700 hover:bg-primaryColor"
-              >
-                <i className="fa-brands fa-youtube text-white  transition-all duration-700"></i>
-              </a>
-              <a
-                href="https://www.instagram.com/mssofficial2011/"
-                target="_blank"
-                className="py-[7px] px-2 rounded-full bg-primaryColor/30 transition-all duration-700 hover:bg-primaryColor"
-              >
-                <i className="fa-brands fa-instagram text-white  transition-all duration-700"></i>
-              </a>
-              <a
-                href="https://www.linkedin.com/company/medical-surgical-solutions/"
-                target="_blank"
-                className="py-[7px] px-2 rounded-full bg-primaryColor/30 transition-all duration-700 hover:bg-primaryColor"
-              >
-                <i className="fa-brands fa-linkedin text-white  transition-all duration-700"></i>
-              </a>
-            </div>
+
+          <div className="lg:col-span-2">
+            <ColumnTitle>Support</ColumnTitle>
+            <ul className="space-y-3">
+              {SUPPORT_LINKS.map(([label, to]) => (
+                <li key={label}>
+                  <FooterLink label={label} to={to} />
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="col-span-2 lg:col-span-4">
+            <ColumnTitle>Get in Touch</ColumnTitle>
+            <ul className="space-y-4">
+              {CONTACTS.map(([icon, label, value, href]) => {
+                const body = (
+                  <>
+                    <span className="shrink-0 w-10 h-10 rounded-xl bg-primaryColor/90 flex items-center justify-center">
+                      <i className={`fa-solid ${icon} text-sm !text-white`}></i>
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block text-[11px] uppercase tracking-wider !text-white/45">{label}</span>
+                      <span className="block text-sm leading-6 !text-white/85">{value}</span>
+                    </span>
+                  </>
+                );
+                return (
+                  <li key={label}>
+                    {href ? (
+                      <a href={href} className="flex items-start gap-3 hover:opacity-90">
+                        {body}
+                      </a>
+                    ) : (
+                      <div className="flex items-start gap-3">{body}</div>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        </div>
+
+        {/* Bottom bar */}
+        <div className="border-t border-white/10 py-5 flex flex-col md:flex-row items-center justify-between gap-4">
+          <p className="text-[13px] text-center md:text-left !text-white/55">
+            © {new Date().getFullYear()} <span className="font-semibold !text-white">MSS</span>. All rights reserved ·
+            Powered by{" "}
+            <a
+              href="https://www.cybertricksmedia.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-semibold !text-white hover:!text-[#7fd1c3] transition-colors"
+            >
+              Cybertricksmedia Pvt Ltd
+            </a>
+          </p>
+          <div className="flex items-center gap-3">
+            <span className="text-xs !text-white/45">Secure payments by</span>
+            <span className="bg-white rounded-lg px-3 py-1.5">
+              <img src={razorpay} alt="Razorpay" className="h-5 w-auto" />
+            </span>
           </div>
         </div>
       </div>
-    </>
+    </footer>
   );
 };
 

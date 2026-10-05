@@ -29,9 +29,19 @@ export default {
       boxShadow: '0 0 0 0 rgba(181,35,39,0)',
     },
   },
+  marquee: {
+    '0%': { transform: 'translateX(0)' },
+    '100%': { transform: 'translateX(-100%)' },
+  },
+  marqueeReverse: {
+    '0%': { transform: 'translateX(-100%)' },
+    '100%': { transform: 'translateX(0)' },
+  },
 },
 animation: {
   ringing: 'ringing 1.2s ease-out infinite',
+  marquee: 'marquee 45s linear infinite',
+  'marquee-reverse': 'marqueeReverse 45s linear infinite',
 },
     },
   },

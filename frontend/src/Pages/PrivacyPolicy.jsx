@@ -1,36 +1,8 @@
-import { Link } from "react-router-dom";
-import privacypolicybanner from "../assets/privacypolicybanner.jpg";
+import { LegalLayout } from "../components/ui/LegalLayout";
 
 const PrivacyPolicy = () => {
   return (
-    <>
-      {/* banner section */}
-      <div
-        className="p-5 relative overflow-hidden py-28"
-        style={{
-          backgroundImage: `url(${privacypolicybanner})`,
-          backgroundPosition: "center center",
-          backgroundSize: "cover",
-        }}
-      >
-        <div className="relative z-10 flex flex-col justify-center items-center px-side">
-          <h2 className="text-3xl font-semibold text-white">Privacy Policy</h2>
-          <p className="text-white mt-3">
-            <span className="text-white hover:text-primaryColor transition-all duration-500 group">
-              <Link to="/">
-                <i className="fa-regular fa-house text-white group-hover:text-primaryColor transition-all duration-500"></i>{" "}
-                Home
-              </Link>
-            </span>{" "}
-            <i className="fa-solid fa-angles-right text-white"></i> Privacy
-            Policy
-          </p>
-        </div>
-        <div className="absolute inset-0 bg-black/30"></div>
-      </div>
-
-      {/* privacy content */}
-      <div className="px-side py-16">
+    <LegalLayout title="Privacy Policy" icon="fa-user-shield" subtitle="How we collect, use and protect your information.">
         <h3 className="text-xl font-semibold">
           Medical Surgical Solutions Privacy Policy
         </h3>
@@ -149,8 +121,7 @@ const PrivacyPolicy = () => {
           By using our website, you acknowledge that you have read, understood,
           and agree to this Privacy Policy.
         </p>
-      </div>
-    </>
+    </LegalLayout>
   );
 };
 
