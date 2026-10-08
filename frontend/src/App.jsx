@@ -1,5 +1,6 @@
 import Footer from "./components/Footer";
 import Header from "./components/Header";
+import SeoManager from "./components/SeoManager";
 import About from "./Pages/About";
 import Contact from "./Pages/Contact";
 import Home from "./Pages/Home";
@@ -40,6 +41,7 @@ const App = () => {
               content (e.g. Shop with few results) is shorter than the
               screen — instead of leaving a blank gap below the Footer. */}
           <div className="min-h-screen flex flex-col">
+            <SeoManager />
             <Header />
             <main className="flex-1 flex flex-col">
               <Routes>

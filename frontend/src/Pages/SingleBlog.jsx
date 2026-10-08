@@ -41,7 +41,7 @@ const SingleBlog = () => {
     const rawDescription = blog.metaDescription || stripHtml(blog.description || "");
     const description = rawDescription ? rawDescription.slice(0, 160) : undefined;
 
-    setPageMeta({ title, description });
+    setPageMeta({ title, description, keywords: blog.metaKeywords });
 
     return () => resetPageMeta();
   }, [blog]);

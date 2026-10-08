@@ -151,7 +151,7 @@ export const Catalogtype = () => {
                 </div>
               </div>
               <Link
-                to="/shop"
+                to={`/shop?section=${section.key}`}
                 className="shrink-0 text-xs font-semibold !text-[#023350] hover:!text-primaryColor inline-flex items-center gap-1 transition-colors"
               >
                 <span className="!text-inherit">View all</span>

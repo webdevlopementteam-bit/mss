@@ -18,7 +18,7 @@ export const TrendingItems = () => {
       eyebrow="Customer Favourites"
       title="Trending Now"
       subtitle="Most-ordered medical and surgical essentials this week."
-      viewAllTo="/shop"
+      viewAllTo="/shop?section=trending"
       products={products}
       loading={loading}
     />

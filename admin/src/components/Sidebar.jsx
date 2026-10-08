@@ -1,232 +1,150 @@
-import { useState } from "react";
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 import {
   LayoutDashboard,
-  Box,
-  Users,
+  Package,
+  FolderTree,
+  Layers,
+  Tag,
+  SlidersHorizontal,
+  Building2,
   ShoppingCart,
+  Users,
+  TicketPercent,
   Star,
-  ChevronDown,
+  MapPin,
+  Newspaper,
+  Award,
+  Palette,
+  ExternalLink,
   LogOut,
 } from "lucide-react";
+import logo from "../assets/logo.png";
+import { useAuth } from "../context/AuthContext";
 
 const STORE_URL = import.meta.env.VITE_STORE_URL || "http://localhost:5174";
+
+const SECTIONS = [
+  {
+    title: "Overview",
+    items: [{ name: "Dashboard", path: "/", icon: LayoutDashboard, end: true }],
+  },
+  {
+    title: "Catalog",
+    items: [
+      { name: "Products", path: "/products", icon: Package },
+      { name: "Categories", path: "/categories", icon: FolderTree },
+      { name: "Subcategories", path: "/subcategories", icon: Layers },
+      { name: "Brands", path: "/brands", icon: Tag },
+      { name: "Attributes", path: "/attributes", icon: SlidersHorizontal },
+      { name: "Company", path: "/company", icon: Building2 },
+    ],
+  },
+  {
+    title: "Sales",
+    items: [
+      { name: "Orders", path: "/orders", icon: ShoppingCart },
+      { name: "Customers", path: "/customers", icon: Users },
+      { name: "Coupons", path: "/coupons", icon: TicketPercent },
+      { name: "Ratings", path: "/ratings", icon: Star },
+      { name: "Pincode", path: "/pincode", icon: MapPin },
+    ],
+  },
+  {
+    title: "Content",
+    items: [
+      { name: "Blog", path: "/blog", icon: Newspaper },
+      { name: "Award", path: "/award", icon: Award },
+      { name: "Store Customization", path: "/store-customization", icon: Palette },
+    ],
+  },
+];
+
+const linkClass = ({ isActive }) =>
+  `group relative flex items-center gap-3 px-3 py-2 rounded-lg text-[13.5px] font-medium transition-colors ${
+    isActive
+      ? "bg-white/[0.09] text-[#fff]"
+      : "text-[var(--sidebar-text)] hover:bg-white/[0.05] hover:text-[#fff]"
+  }`;
+
 export default function Sidebar() {
-  const location = useLocation();
+  const { user } = useAuth();
+  const name = user?.name || user?.fullName || "Admin";
+  const sub = user?.email || user?.role || "Administrator";
 
-  const isActive = (path) => location.pathname === path;
-
-  // ✅ THIS WAS MISSING
-  const isCatalogActive = [
-    "/brands",
-    "/categories",
-    "/subcategories",
-    "/products",
-    "/attributes",
-    "/coupons",
-    "/blog",
-    "/company",
-    "/pincode",
-  ].includes(location.pathname);
-
-  const isStoreActive = ["/view-store", "/store-customization"].includes(
-    location.pathname,
-  );
-
-  const [open, setOpen] = useState(isCatalogActive);
-  const [storeOpen, setStoreOpen] = useState(isStoreActive);
   return (
-    <aside
-      className="h-screen w-64 fixed left-0 top-0 border-r border-white/5 
-    bg-[var(--surface)]/80 backdrop-blur-xl flex flex-col py-8 px-4"
-    >
-      {/* LOGO */}
-      <div className="mb-10 px-2">
-        <h1 className="text-xl font-bold text-[var(--on-surface)]">
-          MSS Admin
-        </h1>
-        <p className="text-[10px] uppercase font-semibold text-[var(--on-surface-variant)]">
-          Premium Management
-        </p>
-      </div>
-
-      {/* MENU */}
-      <nav className="flex-1 overflow-y-auto pr-2 space-y-1 custom-scroll">
-        <NavLink
-          to="/"
-          className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-[11px] font-semibold uppercase tracking-wide
-          ${
-            isActive("/")
-              ? "text-[var(--primary)] bg-[var(--primary)]/10 border-r-2 border-[var(--primary)]"
-              : "text-[var(--on-surface-variant)] hover:bg-[var(--surface-high)] hover:text-[var(--on-surface)]"
-          }`}
-        >
-          <LayoutDashboard size={18} />
-          Dashboard
-        </NavLink>
-
-        {/* Catalog */}
-        <div>
-          <div
-            onClick={() => setOpen(!open)}
-            className={`flex items-center justify-between px-3 py-2.5 rounded-lg cursor-pointer text-[11px] font-semibold uppercase tracking-wide
-  ${
-    isCatalogActive
-      ? "text-[var(--primary)] bg-[var(--primary)]/10 "
-      : "text-[var(--on-surface-variant)] hover:bg-[var(--surface-high)] hover:text-[var(--on-surface)]"
-  }`}
-          >
-            <div className="flex items-center gap-3 text-current">
-              <Box size={18} />
-              Catalog
-            </div>
-
-            <ChevronDown
-              size={16}
-              className={`text-current transition ${open ? "rotate-180" : ""}`}
-            />
-          </div>
-
-          {open && (
-            <div className="ml-6 mt-2 space-y-1">
-              {[
-                { name: "Brands", path: "/brands" },
-                { name: "Categories", path: "/categories" },
-                { name: "Subcategories", path: "/subcategories" },
-                { name: "Products", path: "/products" },
-                { name: "Attributes", path: "/attributes" },
-                { name: "Coupons", path: "/coupons" },
-                { name: "Pincode", path: "/pincode" },
-                { name: "Award", path: "/award" },
-                { name: "Blog", path: "/blog" },
-                { name: "Company", path: "/company" },
-              ].map((item) => (
-                <NavLink
-                  key={item.path}
-                  to={item.path}
-                  className={`block px-3 py-2 rounded-lg text-sm
-                  ${
-                    isActive(item.path)
-                      ? "text-[var(--primary)] bg-[var(--primary)]/10 border-r-2 border-[var(--primary)]"
-                      : "text-[var(--on-surface-variant)] hover:bg-[var(--surface-high)] hover:text-[var(--on-surface)]"
-                  }`}
-                >
-                  {item.name}
-                </NavLink>
-              ))}
-            </div>
-          )}
+    <aside className="admin-sidebar h-screen w-64 fixed left-0 top-0 z-40 flex flex-col bg-[var(--sidebar)] border-r border-black/20">
+      {/* Brand */}
+      <div className="h-16 shrink-0 flex items-center gap-3 px-5 border-b border-white/[0.06]">
+        <span className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-sm">
+          <img src={logo} alt="MSS" className="w-8 object-contain" />
+        </span>
+        <div className="leading-tight">
+          <p className="text-[15px] font-bold text-[#fff]">MSS Admin</p>
+          <p className="text-[11px] text-[var(--sidebar-muted)]">Medical & Surgical Solutions</p>
         </div>
-
-        <NavLink
-          to="/customers"
-          className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-[11px] font-semibold uppercase tracking-wide
-          ${
-            isActive("/customers")
-              ? "text-[var(--primary)] bg-[var(--primary)]/10 border-r-2 border-[var(--primary)]"
-              : "text-[var(--on-surface-variant)] hover:bg-[var(--surface-high)] hover:text-[var(--on-surface)]"
-          }`}
-        >
-          <Users size={18} /> Customers
-        </NavLink>
-
-        <NavLink
-          to="/orders"
-          className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-[11px] font-semibold uppercase tracking-wide
-          ${
-            isActive("/orders")
-              ? "text-[var(--primary)] bg-[var(--primary)]/10 border-r-2 border-[var(--primary)]"
-              : "text-[var(--on-surface-variant)] hover:bg-[var(--surface-high)] hover:text-[var(--on-surface)]"
-          }`}
-        >
-          <ShoppingCart size={18} /> Orders
-        </NavLink>
-
-        <NavLink
-          to="/ratings"
-          className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-[11px] font-semibold uppercase tracking-wide
-          ${
-            isActive("/ratings")
-              ? "text-[var(--primary)] bg-[var(--primary)]/10 border-r-2 border-[var(--primary)]"
-              : "text-[var(--on-surface-variant)] hover:bg-[var(--surface-high)] hover:text-[var(--on-surface)]"
-          }`}
-        >
-          <Star size={18} /> Ratings
-        </NavLink>
-{/* Store */}
-<div>
-  <div
-    onClick={() => setStoreOpen(!storeOpen)}
-    className={`flex items-center justify-between px-3 py-2.5 rounded-lg cursor-pointer text-[11px] font-semibold uppercase tracking-wide
-    ${
-      isStoreActive
-        ? "text-[var(--primary)] bg-[var(--primary)]/10 "
-        : "text-[var(--on-surface-variant)] hover:bg-[var(--surface-high)] hover:text-[var(--on-surface)]"
-    }`}
-  >
-    <div className="flex items-center gap-3 text-current">
-      <Box size={18} />
-      Store
-    </div>
-
-    <ChevronDown
-      size={16}
-      className={`text-current transition ${
-        storeOpen ? "rotate-180" : ""
-      }`}
-    />
-  </div>
-
-  {storeOpen && (
-    <div className="ml-6 mt-2 space-y-1">
-
-      {/* 🔥 View Store (External Link) */}
-      <div
-        onClick={() =>
-          window.open(
-            STORE_URL,
-            "_blank"
-          )
-        }
-        className="block px-3 py-2 rounded-lg text-sm cursor-pointer
-        text-[var(--on-surface-variant)] hover:bg-[var(--surface-high)] hover:text-[var(--on-surface)]"
-      >
-        View Store
       </div>
 
-      {/* ✅ Store Customization (Internal Route) */}
-      <NavLink
-        to="/store-customization"
-        className={({ isActive }) =>
-          `block px-3 py-2 rounded-lg text-sm ${
-            isActive
-              ? "text-[var(--primary)] bg-[var(--primary)]/10 border-r-2 border-[var(--primary)]"
-              : "text-[var(--on-surface-variant)] hover:bg-[var(--surface-high)] hover:text-[var(--on-surface)]"
-          }`
-        }
-      >
-        Store Customization
-      </NavLink>
-
-    </div>
-  )}
-</div>
+      {/* Navigation */}
+      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-5 admin-sidebar-scroll">
+        {SECTIONS.map((section) => (
+          <div key={section.title}>
+            <p className="px-3 mb-1.5 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-[var(--sidebar-muted)]">
+              {section.title}
+            </p>
+            <div className="space-y-0.5">
+              {section.items.map((item) => {
+                const { name: label, path, end } = item;
+                const Icon = item.icon;
+                return (
+                <NavLink key={path} to={path} end={end} className={linkClass}>
+                  {({ isActive }) => (
+                    <>
+                      {isActive && <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r bg-[var(--primary)]" />}
+                      <Icon size={17} strokeWidth={isActive ? 2.2 : 1.8} className={isActive ? "text-[#fff]" : "text-[var(--sidebar-muted)] group-hover:text-[#fff]"} />
+                      <span>{label}</span>
+                    </>
+                  )}
+                </NavLink>
+                );
+              })}
+              {section.title === "Content" && (
+                <a
+                  href={STORE_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group flex items-center gap-3 px-3 py-2 rounded-lg text-[13.5px] font-medium text-[var(--sidebar-text)] hover:bg-white/[0.05] hover:text-[#fff] transition-colors"
+                >
+                  <ExternalLink size={17} strokeWidth={1.8} className="text-[var(--sidebar-muted)] group-hover:text-[#fff]" />
+                  <span>View Store</span>
+                </a>
+              )}
+            </div>
+          </div>
+        ))}
       </nav>
 
-      {/* LOGOUT BUTTON (EXACT SAME AS NEW PRODUCT) */}
-      <div className="pt-4 border-t border-white/10">
-        <button
-          onClick={() => {
-            localStorage.clear();
-            window.location.href = "/login";
-          }}
-          className="w-full bg-gradient-to-br 
-    from-[var(--primary)] to-[var(--primary-container)] 
-    text-black py-3 rounded-xl font-bold text-sm shadow-lg 
-    hover:brightness-110 transition"
-        >
-          Log Out
-        </button>
+      {/* User + logout */}
+      <div className="shrink-0 p-3 border-t border-white/[0.06]">
+        <div className="flex items-center gap-3 rounded-xl bg-[var(--sidebar-2)] p-2.5">
+          <span className="w-9 h-9 rounded-lg bg-[var(--primary)] flex items-center justify-center text-sm font-bold text-[#fff]">
+            {String(name).charAt(0).toUpperCase()}
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-[13px] font-semibold text-[#fff] truncate">{name}</p>
+            <p className="text-[11px] text-[var(--sidebar-muted)] truncate">{sub}</p>
+          </div>
+          <button
+            type="button"
+            title="Log out"
+            onClick={() => {
+              localStorage.clear();
+              window.location.href = "/login";
+            }}
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-[var(--sidebar-muted)] hover:bg-white/[0.1] hover:text-[#fff] transition"
+          >
+            <LogOut size={16} />
+          </button>
+        </div>
       </div>
     </aside>
   );

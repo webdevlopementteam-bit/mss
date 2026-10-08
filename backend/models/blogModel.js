@@ -30,6 +30,12 @@ const blogSchema = new mongoose.Schema(
       trim: true,
     },
 
+    metaKeywords: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
     image: {
       type: String,
       required: true,

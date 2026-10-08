@@ -69,7 +69,7 @@ export const Hero = () => {
                   alt={`Banner ${index + 1}`}
                   loading={index === 0 ? "eager" : "lazy"}
                   fetchpriority={index === 0 ? "high" : undefined}
-                  className="w-full aspect-[16/7] sm:aspect-[16/6] object-cover block"
+                  className="w-full aspect-[16/7] sm:aspect-[16/7] object-cover block"
                 />
                 <span className="hero-peek-veil absolute inset-0 bg-white/50 pointer-events-none" />
               </div>

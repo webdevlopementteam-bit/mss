@@ -15,12 +15,73 @@ import Policies from "../sections/Policies";
 import Instagrammedion from "../sections/Instagrammedion";
 import { useState, useEffect, useRef } from "react";
 import API from "../api/axios";
-import bannerVideo from "../assets/videobanner.mp4";
+import { useSiteContent, useBannerVideo, cmsMedia } from "../api/siteContent";
+
+const ABOUT_DEFAULTS = {
+  experienceBadge: "30 Years Of Experience",
+  eyebrow: "About Us",
+  heading: "OUR TRUSTED PARTNER IN HEALTHCARE EXCELLENCE",
+  highlight: "HEALTHCARE",
+  description:
+    "Medical & Surgical Solutions delivers trusted, high-quality medical equipment and products to healthcare professionals. Our innovative range ensures precision, reliability, and safety, empowering excellence in patient care across hospitals and institutions.",
+  features: ["Worldwide Clients", "Special Discounts", "Seasonal Offers", "International Supply", "Eco Friendly", "24/7 Customer Support"],
+  teamHeading: "Meet Our Expert Team",
+};
+
+// Icons for the feature points, matched by position (the admin edits text only).
+const FEATURE_ICONS = [
+  { icon: "fa-users" },
+  { icon: "fa-tags" },
+  { icon: "fa-gift" },
+  { icon: "fa-earth-asia" },
+  { icon: "fa-envira", brand: true },
+  { icon: "fa-headset" },
+];
+
+// Heading with the admin-chosen word shown in the brand red.
+const HighlightedHeading = ({ text, word }) => {
+  const i = word ? text.toUpperCase().indexOf(word.toUpperCase()) : -1;
+  if (i < 0) return text;
+  return (
+    <>
+      {text.slice(0, i)}
+      <span className="text-primaryColor">{text.slice(i, i + word.length)}</span>
+      {text.slice(i + word.length)}
+    </>
+  );
+};
 
 const About = () => {
   const [companies, setCompanies] = useState([]);
   const [loadingCompanies, setLoadingCompanies] = useState(true);
   const videoRef = useRef(null);
+  const { src: bannerVideo, poster: bannerPoster, loading: videoLoading } = useBannerVideo();
+
+  // Admin content (Store Customization → About & Team); anything left empty
+  // keeps the built-in text/images below.
+  const { data: cms } = useSiteContent("about");
+  const pick = (k) => (cms?.[k] ? cms[k] : ABOUT_DEFAULTS[k]);
+  const aboutText = {
+    experienceBadge: pick("experienceBadge"),
+    eyebrow: pick("eyebrow"),
+    heading: pick("heading"),
+    highlight: cms?.heading ? cms.highlight || "" : ABOUT_DEFAULTS.highlight,
+    description: pick("description"),
+    teamHeading: pick("teamHeading"),
+  };
+  const features = (cms?.features || []).filter(Boolean).length
+    ? cms.features.filter(Boolean)
+    : ABOUT_DEFAULTS.features;
+  const aboutImage1 = cms?.image1 ? cmsMedia(cms.image1) : about1;
+  const aboutImage2 = cms?.image2 ? cmsMedia(cms.image2) : about2;
+  const statList = (cms?.stats || []).filter((st) => st.number || st.title).length
+    ? cms.stats
+        .filter((st) => st.number || st.title)
+        .map((st, i) => ({ id: `cms-${i}`, number: st.number, sup: st.suffix, title: st.title, image: stats[i % stats.length].image }))
+    : stats;
+  const teamList = (cms?.team || []).filter((m) => m.name).length
+    ? cms.team.filter((m) => m.name).map((m, i) => ({ id: `cms-${i}`, name: m.name, position: m.position, image: m.image ? cmsMedia(m.image) : "/no-image.png" }))
+    : team;
   const [muted, setMuted] = useState(true);
 
   // Tracks whether we're on a mobile-width viewport so the team & company
@@ -166,20 +227,20 @@ const About = () => {
             <div className="rounded-full w-28 h-[70px] flex flex-col justify-center items-center bg-secondaryColor">
               <img src={experience} alt="experience" className="invert h-14" />
             </div>
-            <div className="text-[15px]">30 Years Of Experience</div>
+            <div className="text-[15px]">{aboutText.experienceBadge}</div>
           </div>
           <div>
             <img
-              src={about1}
-              alt="about1"
+              src={aboutImage1}
+              alt="About Medical & Surgical Solutions"
               className="h-[550px] object-cover w-full rounded-[100px]"
             />
           </div>
           <div className="flex flex-col items-center justify-center">
             <img src={bg} alt="background" className="h-40" />
             <img
-              src={about2}
-              alt="about2"
+              src={aboutImage2}
+              alt="Our work"
               className="h-[370px] rounded-[100px]"
             />
           </div>
@@ -192,32 +253,20 @@ const About = () => {
             <div className="rounded-full w-16 h-14 flex flex-col justify-center items-center bg-secondaryColor">
               <img src={experience} alt="experience" className="invert h-10" />
             </div>
-            <div className="text-sm font-medium">30 Years Of Experience</div>
+            <div className="text-sm font-medium">{aboutText.experienceBadge}</div>
           </div>
 
           <p className="font-semibold uppercase tracking-wider text-base md:text-lg text-primaryColor">
-            About Us
+            {aboutText.eyebrow}
           </p>
           <h3 className="text-2xl md:text-3xl font-bold mt-3">
-            OUR TRUSTED PARTNER IN{" "}
-            <span className="text-primaryColor">HEALTHCARE</span>{" "}
-            EXCELLENCE{" "}
+            <HighlightedHeading text={aboutText.heading} word={aboutText.highlight} />
           </h3>
-          <p className="mt-4 text-black/60 text-sm md:text-base">
-            Medical & Surgical Solutions delivers trusted, high-quality medical
-            equipment and products to healthcare professionals. Our innovative
-            range ensures precision, reliability, and safety, empowering
-            excellence in patient care across hospitals and institutions.
+          <p className="mt-4 text-black/60 text-sm md:text-base whitespace-pre-line">
+            {aboutText.description}
           </p>
           <div className="mt-5 grid grid-cols-2 gap-4 md:gap-5">
-            {[
-              { icon: "fa-users", label: "Worldwide Clients" },
-              { icon: "fa-tags", label: "Special Discounts" },
-              { icon: "fa-gift", label: "Seasonal Offers" },
-              { icon: "fa-earth-asia", label: "International Supply" },
-              { icon: "fa-envira", label: "Eco Friendly", brand: true },
-              { icon: "fa-headset", label: "24/7 Customer Support" },
-            ].map(({ icon, label, brand }) => (
+            {features.map((label, i) => ({ label, ...(FEATURE_ICONS[i] || { icon: "fa-circle-check" }) })).map(({ icon, label, brand }) => (
               <div key={label} className="flex gap-3 items-center">
                 <p className="py-1 px-2 rounded-full bg-secondaryColor flex-shrink-0">
                   <i
@@ -242,7 +291,7 @@ const About = () => {
 
       {/* Stats */}
       <div className="px-4 md:px-20 py-10 md:py-10 grid grid-cols-2 lg:grid-cols-4 bg-primaryColor gap-5 md:gap-7 justify-center items-center">
-        {stats.map((stat) => (
+        {statList.map((stat) => (
           <div key={stat.id}>
             <div className="flex items-center gap-2 md:gap-3">
               <div className="p-3 md:p-5 border-[2px] border-white flex flex-col justify-center items-center rounded-full bg-secondaryColor flex-shrink-0">
@@ -262,22 +311,9 @@ const About = () => {
         ))}
       </div>
 
-      {/* Testimonials */}
-      <Testimonial />
+      
 
-      {/* Video banner */}
-       <div className=" relative overflow-hidden flex justify-center items-center h-[150px] md:h-[500px]">
-      <video
-        ref={videoRef}
-        src={bannerVideo}
-        autoPlay
-        muted={muted}
-        loop
-        playsInline
-        className="absolute inset-0 w-full h-full object-cover"
-      />
-
-    </div>
+ 
 
       {/* Team */}
       <div className="bg-[#F5F7FA] px-4 sm:px-6 md:px-8 lg:px-side pt-10 sm:pt-12 md:pt-16 pb-12 sm:pb-16 md:pb-20 text-center">
@@ -287,13 +323,13 @@ const About = () => {
         </p>
 
         <h3 className="mt-2 sm:mt-3 text-xl sm:text-2xl md:text-3xl lg:text-4xl font-extrabold leading-tight">
-          Meet Our Expert <span className="text-primaryColor">Team</span>
+          <HighlightedHeading text={aboutText.teamHeading} word="Team" />
         </h3>
 
         {/* Team Slider */}
         <div className="mt-6 sm:mt-8 md:mt-10">
           <Slider key={isMobile ? "mobile" : "desktop"} {...testimonialsettings}>
-            {team.map((member) => (
+            {teamList.map((member) => (
               <div key={member.id} className="px-1.5 sm:px-2 md:px-3">
                 <div className="bg-white rounded-lg sm:rounded-xl p-2.5 sm:p-3 md:p-4 shadow-sm">
                   {/* Image */}
@@ -320,8 +356,10 @@ const About = () => {
         </div>
       </div>
 
-      {/* Policies */}
-      <Policies />
+      {/* Testimonials */}
+      <Testimonial />
+
+  
       {/* Instagram */}
       <Instagrammedion />
       {/* Trusted companies */}
@@ -348,7 +386,7 @@ const About = () => {
                     <img
                       src={`${import.meta.env.VITE_API_URL}/${company.image}`}
                       alt={company.name}
-                      className="max-h-12 md:max-h-14 max-w-full object-contain grayscale hover:grayscale-0 transition-all duration-500"
+                      className="max-h-12 md:max-h-14 max-w-full object-contain transition-all duration-500"
                     />
                   </div>
                 </div>

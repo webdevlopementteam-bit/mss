@@ -4,10 +4,13 @@ import { Link, useNavigate } from "react-router-dom";
 import API from "../api/axios";
 import { useShop } from "../context/ShopContext";
 import { useAuth } from "../context/AuthContext";
+import { useContactInfo } from "../api/siteContent";
 
 const IMG_URL = import.meta.env.VITE_IMAGE_BASE_URL;
 
 const Header = () => {
+  // Top-bar email/phone/socials from admin → Store Customization → Contact & Footer.
+  const contact = useContactInfo();
   const { cart, wishlist } = useShop();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -91,17 +94,17 @@ useEffect(() => {
               <div>
                 <i className="fa-regular fa-envelope text-primaryColor"></i>{" "}
                 <a
-                  href="mailto:care@medicalsurgical.org"
+                  href={`mailto:${contact.email}`}
                   className="font-medium"
                 >
-                  care@medicalsurgical.org
+                  {contact.email}
                 </a>
               </div>
 
               <div>
                 <i className="fa-solid fa-headset text-primaryColor"></i>{" "}
-                <a href="tel:9643344588" className="font-medium">
-                  +91 9643344588
+                <a href={contact.tel} className="font-medium">
+                  {contact.phone}
                 </a>
               </div>
               <div className="hidden md:flex items-center gap-2 ">
@@ -119,13 +122,13 @@ useEffect(() => {
               </p>
 
               <div className="flex gap-3">
-               <a href="https://www.facebook.com/people/Medical-and-Surgical-Solutions/61571157007880/"> <i className="fa-brands fa-facebook text-primaryColor hover:text-black transition-all duration-300 cursor-pointer"></i></a>
+               {contact.facebook && <a href={contact.facebook} target="_blank" rel="noopener noreferrer"> <i className="fa-brands fa-facebook text-primaryColor hover:text-black transition-all duration-300 cursor-pointer"></i></a>}
 
-                <a href="https://www.youtube.com/@MEDICALANDSURGICALSOLUTIONS"><i className="fa-brands fa-youtube text-primaryColor hover:text-black transition-all duration-300 cursor-pointer"></i></a>
+                {contact.youtube && <a href={contact.youtube} target="_blank" rel="noopener noreferrer"><i className="fa-brands fa-youtube text-primaryColor hover:text-black transition-all duration-300 cursor-pointer"></i></a>}
 
-                <a href="https://www.instagram.com/mssofficial2011/"><i className="fa-brands fa-instagram text-primaryColor hover:text-black transition-all duration-300 cursor-pointer"></i></a>
+                {contact.instagram && <a href={contact.instagram} target="_blank" rel="noopener noreferrer"><i className="fa-brands fa-instagram text-primaryColor hover:text-black transition-all duration-300 cursor-pointer"></i></a>}
 
-                <a href="https://www.linkedin.com/company/medical-surgical-solutions/"><i className="fa-brands fa-linkedin text-primaryColor hover:text-black transition-all duration-300 cursor-pointer"></i></a>
+                {contact.linkedin && <a href={contact.linkedin} target="_blank" rel="noopener noreferrer"><i className="fa-brands fa-linkedin text-primaryColor hover:text-black transition-all duration-300 cursor-pointer"></i></a>}
               </div>
             </div>
           </div>

@@ -136,6 +136,7 @@ export const createProduct = async (req, res) => {
       specifications,
       metaTitle,
       metaDescription,
+      metaKeywords,
       price,
       salePrice,
       gst,
@@ -217,6 +218,7 @@ export const createProduct = async (req, res) => {
       specifications: specifications ? JSON.parse(specifications) : [],
       metaTitle,
       metaDescription,
+      metaKeywords: metaKeywords || "",
       price: finalHasVariants ? 0 : price,
       salePrice: finalHasVariants ? 0 : salePrice,
       gst,
@@ -320,6 +322,14 @@ export const getAllProduct = async (req, res) => {
       if (brandIds.length > 0) {
         andConditions.push({ brand: { $in: brandIds } });
       }
+    }
+
+    // 🏠 HOME SECTION — "View all" links from home-page blocks (On Sale,
+    // Best Seller, …) open the shop filtered to products tagged with that
+    // section in the admin panel.
+    const HOME_SECTIONS = ["trending", "featured", "popular", "bestseller", "toprated", "onsale"];
+    if (HOME_SECTIONS.includes(req.query.section)) {
+      andConditions.push({ homeSections: req.query.section });
     }
 
     // 📢 STATUS (published/unpublished only here)
@@ -573,6 +583,7 @@ export const updateProduct = async (req, res) => {
       specifications,
       metaTitle,
       metaDescription,
+      metaKeywords,
       price,
       salePrice,
       gst,
@@ -644,6 +655,7 @@ export const updateProduct = async (req, res) => {
     if (specifications !== undefined) product.specifications = JSON.parse(specifications);
     if (metaTitle) product.metaTitle = metaTitle;
     if (metaDescription) product.metaDescription = metaDescription;
+    if (typeof metaKeywords !== "undefined") product.metaKeywords = metaKeywords;
 
     const finalHasVariants =
       hasVariants === true || hasVariants === "true"

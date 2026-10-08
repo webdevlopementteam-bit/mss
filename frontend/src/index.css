@@ -184,3 +184,59 @@
   color: #023350;
   margin-top: 0.25rem !important;
 }
+
+/* Policy text written in the admin rich-text editor (LegalLayout → .legal-cms) */
+.legal-cms > * + * {
+  margin-top: 0.75rem;
+}
+.legal-cms h1,
+.legal-cms h2 {
+  position: relative;
+  margin-top: 2rem;
+  padding-left: 0.875rem;
+  font-size: 1.0625rem;
+  line-height: 1.5;
+  font-weight: 700;
+  color: #023350;
+  scroll-margin-top: 1.5rem;
+}
+.legal-cms h1 {
+  font-size: 1.1875rem;
+}
+.legal-cms h1::before,
+.legal-cms h2::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.3em;
+  bottom: 0.3em;
+  width: 3px;
+  border-radius: 3px;
+  background: #b52327;
+}
+.legal-cms > h1:first-child,
+.legal-cms > h2:first-child {
+  margin-top: 0.5rem;
+}
+.legal-cms ul,
+.legal-cms ol {
+  padding-left: 1.5rem;
+}
+.legal-cms ul {
+  list-style: disc;
+}
+.legal-cms ol {
+  list-style: decimal;
+}
+.legal-cms li + li {
+  margin-top: 0.4rem;
+}
+.legal-cms blockquote {
+  border-left: 3px solid #e5e7eb;
+  padding-left: 1rem;
+  color: #6b7280;
+}
+.legal-cms a {
+  color: #b52327;
+  text-decoration: underline;
+}

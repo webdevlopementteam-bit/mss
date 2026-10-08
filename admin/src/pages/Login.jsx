@@ -1,6 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Sun, Moon } from "lucide-react";
+import { Sun, Moon, Mail, Lock } from "lucide-react";
+import logo from "../assets/logo.png";
+import { getTheme, toggleTheme as switchTheme } from "../utils/theme";
 import API from "../api/axios";
 import { useAuth } from "../context/AuthContext";
 import toast from "react-hot-toast";
@@ -9,7 +11,7 @@ const Login = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const [theme, setTheme] = useState("dark");
+  const [theme, setTheme] = useState(getTheme());
 
   const [form, setForm] = useState({
     identifier: "",
@@ -19,19 +21,7 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // load theme
-  useEffect(() => {
-    const saved = localStorage.getItem("theme") || "dark";
-    setTheme(saved);
-    document.documentElement.setAttribute("data-theme", saved);
-  }, []);
-
-  const toggleTheme = () => {
-    const newTheme = theme === "dark" ? "light" : "dark";
-    setTheme(newTheme);
-    localStorage.setItem("theme", newTheme);
-    document.documentElement.setAttribute("data-theme", newTheme);
-  };
+  const toggleTheme = () => setTheme(switchTheme());
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -56,58 +46,103 @@ const Login = () => {
     }
   };
 
+  const inputCls =
+    "w-full h-12 pl-11 pr-4 rounded-xl bg-[var(--surface-2)] border border-[var(--border-strong)] text-[var(--text)] focus:outline-none transition";
+
   return (
-    <div className="min-h-screen flex items-center justify-center relative px-4 bg-[var(--bg)]">
-      {/* Toggle */}
-      <div
-        onClick={toggleTheme}
-        className="absolute top-6 right-6 w-10 h-10 flex items-center justify-center rounded-full 
-    bg-[var(--card)] border border-[var(--border)] shadow-md cursor-pointer"
-      >
-        {theme === "dark" ? (
-          <Sun size={18} className="text-yellow-400" />
-        ) : (
-          <Moon size={18} className="text-gray-700" />
-        )}
+    <div className="min-h-screen grid lg:grid-cols-2 bg-[var(--bg)]">
+      {/* Brand panel */}
+      <div className="relative hidden lg:flex flex-col justify-between overflow-hidden bg-[var(--sidebar)] p-12">
+        <div className="pointer-events-none absolute -top-24 -right-24 w-96 h-96 rounded-full bg-[#338779]/30 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-32 -left-20 w-96 h-96 rounded-full bg-[#b52327]/25 blur-3xl" />
+        <div className="pointer-events-none absolute inset-0 opacity-[0.07] [background-image:radial-gradient(white_1px,transparent_1px)] [background-size:20px_20px]" />
+
+        <div className="relative flex items-center gap-3">
+          <span className="w-12 h-12 rounded-xl bg-[#fff] flex items-center justify-center">
+            <img src={logo} alt="MSS" className="w-9" />
+          </span>
+          <div>
+            <p className="text-lg font-bold text-[#fff]">MSS Admin</p>
+            <p className="text-xs text-[var(--sidebar-muted)]">Medical & Surgical Solutions</p>
+          </div>
+        </div>
+
+        <div className="relative">
+          <h1 className="text-4xl font-bold leading-tight text-[#fff]">
+            Manage your store
+            <br />
+            with confidence.
+          </h1>
+          <p className="mt-4 max-w-md text-[15px] leading-relaxed text-[var(--sidebar-text)]">
+            Products, orders, customers and website content — everything for Medical & Surgical Solutions in one place.
+          </p>
+        </div>
+
+        <p className="relative text-xs text-[var(--sidebar-muted)]">© {new Date().getFullYear()} Medical & Surgical Solutions</p>
       </div>
 
-      {/* Card */}
-      <div className="w-full max-w-md bg-[var(--card)] border border-[var(--border)] rounded-2xl p-8 shadow-xl">
-        <h2 className="text-2xl font-semibold text-center text-[var(--text)] mb-2">
-          Admin Login
-        </h2>
+      {/* Form */}
+      <div className="relative flex items-center justify-center px-6 py-12">
+        <button
+          type="button"
+          onClick={toggleTheme}
+          title="Toggle theme"
+          className="absolute top-6 right-6 w-10 h-10 flex items-center justify-center rounded-xl bg-[var(--surface)] border border-[var(--border)] text-[var(--text-2)] hover:text-[var(--text)] shadow-sm"
+        >
+          {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
+        </button>
 
-        <p className="text-sm text-[var(--muted)] text-center mb-6">
-          Welcome back! Please login to continue
-        </p>
+        <div className="w-full max-w-sm">
+          <div className="lg:hidden flex items-center gap-3 mb-8">
+            <span className="w-11 h-11 rounded-xl bg-[#fff] border border-[var(--border)] flex items-center justify-center">
+              <img src={logo} alt="MSS" className="w-8" />
+            </span>
+            <p className="text-lg font-bold text-[var(--text)]">MSS Admin</p>
+          </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <input
-            type="text"
-            name="identifier"
-            value={form.identifier}
-            onChange={handleChange}
-            placeholder="Email or Mobile Number"
-            className="w-full px-4 py-3 rounded-xl bg-transparent border border-[var(--border)] text-[var(--text)] placeholder-[var(--muted)] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-          />
+          <h2 className="text-2xl font-bold text-[var(--text)]">Welcome back</h2>
+          <p className="mt-1.5 text-sm text-[var(--text-3)]">Sign in to your admin account to continue.</p>
 
-          <input
-            type="password"
-            name="password"
-            value={form.password}
-            onChange={handleChange}
-            placeholder="Password"
-            className="w-full px-4 py-3 rounded-xl bg-transparent border border-[var(--border)] text-[var(--text)] placeholder-[var(--muted)] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-          />
+          <form onSubmit={handleSubmit} className="mt-8 space-y-4">
+            <div>
+              <label className="label">Email or mobile number</label>
+              <div className="relative mt-1.5">
+                <Mail size={17} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-3)]" />
+                <input
+                  type="text"
+                  name="identifier"
+                  value={form.identifier}
+                  onChange={handleChange}
+                  placeholder="you@example.com"
+                  className={inputCls}
+                />
+              </div>
+            </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-3 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-medium"
-          >
-            {loading ? "Logging in..." : "Login"}
-          </button>
-        </form>
+            <div>
+              <label className="label">Password</label>
+              <div className="relative mt-1.5">
+                <Lock size={17} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-3)]" />
+                <input
+                  type="password"
+                  name="password"
+                  value={form.password}
+                  onChange={handleChange}
+                  placeholder="••••••••"
+                  className={inputCls}
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full h-12 rounded-xl bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-[#fff] font-semibold shadow-[0_10px_25px_-10px_var(--primary)] transition disabled:opacity-60"
+            >
+              {loading ? "Signing in..." : "Sign in"}
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   );

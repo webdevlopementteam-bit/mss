@@ -2,7 +2,26 @@ import React, {
   useEffect,
   useState,
 } from "react";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
+import {
+  ArrowLeft,
+  Check,
+  ClipboardCheck,
+  CreditCard,
+  Download,
+  ExternalLink,
+  FileText,
+  Mail,
+  MapPin,
+  Package,
+  Phone,
+  Receipt,
+  RefreshCw,
+  Truck,
+  User,
+  XCircle,
+} from "lucide-react";
+import OrderStatusBadge from "../components/OrderStatusBadge";
 import API from "../api/axios";
 import toast from "react-hot-toast";
 import {
@@ -11,6 +30,9 @@ import {
   isFinalStatus,
   canAdminUpdate,
 } from "../utils/orderStatus";
+
+// Steps shown in the progress tracker (same order as the status flow).
+const FLOW = ["pending", "confirmed", "processing", "packed", "shipped", "out_for_delivery", "delivered"];
 
 const AdminOrderDetails = () => {
   const { id } = useParams();
@@ -98,390 +120,322 @@ const AdminOrderDetails = () => {
 
   if (!order) {
     return (
-      <div className="p-10">
-        Loading...
+      <div className="space-y-6">
+        <div className="h-24 rounded-xl bg-[var(--surface-3)] animate-pulse" />
+        <div className="grid lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 h-80 rounded-xl bg-[var(--surface-3)] animate-pulse" />
+          <div className="h-80 rounded-xl bg-[var(--surface-3)] animate-pulse" />
+        </div>
       </div>
     );
   }
 
+  const IMG = import.meta.env.VITE_IMAGE_BASE_URL;
+  const itemImage = (src) =>
+    !src ? "/no-image.png" : src.startsWith("http") || src.startsWith("data:") ? src : `${IMG}/${src.replace(/^\//, "")}`;
+  const inr = (n) => `₹${Number(n || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
+  const placedAt = new Date(order.createdAt);
+  const stepIndex = FLOW.indexOf(order.orderStatus);
+  const addr = order.shippingAddress || {};
+  const cust = order.customerInfo || {};
+
   return (
-    <div className="max-w-7xl mx-auto p-6">
-
-      {/* Heading */}
-
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-bold">
-          Order Details
-        </h1>
-
-        <span className="bg-gray-100 px-4 py-2 rounded-lg">
-          #{order._id}
-        </span>
-      </div>
-
-      {/* Customer + Address */}
-
-      <div className="grid md:grid-cols-2 gap-6">
-
-        <div className="bg-white p-6 rounded-xl shadow">
-          <h2 className="font-bold text-xl mb-4">
-            Customer Details
-          </h2>
-
-          <p>
-            <strong>Name:</strong>{" "}
-            {
-              order.customerInfo
-                ?.fullName
-            }
-          </p>
-
-          <p>
-            <strong>Email:</strong>{" "}
-            {
-              order.customerInfo
-                ?.email
-            }
-          </p>
-
-          <p>
-            <strong>Phone:</strong>{" "}
-            {
-              order.customerInfo
-                ?.phone
-            }
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <Link to="/orders" className="inline-flex items-center gap-1.5 text-[13px] font-medium text-[var(--text-3)] hover:text-[var(--text)] transition">
+            <ArrowLeft size={15} /> Back to orders
+          </Link>
+          <div className="mt-2 flex flex-wrap items-center gap-3">
+            <h1 className="text-[22px] font-bold text-[var(--text)]">Order #{order._id.slice(-8).toUpperCase()}</h1>
+            <OrderStatusBadge status={order.orderStatus} label={STATUS_LABELS[order.orderStatus]} />
+          </div>
+          <p className="mt-1 text-sm text-[var(--text-3)]">
+            Placed on {placedAt.toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })} at{" "}
+            {placedAt.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
+            <span className="mx-2">·</span>
+            <span className="font-mono text-xs">{order._id}</span>
           </p>
         </div>
 
-        <div className="bg-white p-6 rounded-xl shadow">
-          <h2 className="font-bold text-xl mb-4">
-            Shipping Address
-          </h2>
-
-          <p>
-            {
-              order
-                .shippingAddress
-                ?.address
-            }
-          </p>
-
-          <p>
-            {
-              order
-                .shippingAddress
-                ?.city
-            }
-            ,{" "}
-            {
-              order
-                .shippingAddress
-                ?.state
-            }
-          </p>
-
-          <p>
-            {
-              order
-                .shippingAddress
-                ?.pincode
-            }
-          </p>
-
-          {order
-            .shippingAddress
-            ?.landmark && (
-            <p>
-              Landmark:{" "}
-              {
-                order
-                  .shippingAddress
-                  ?.landmark
-              }
-            </p>
+        <div className="flex flex-wrap gap-2">
+          {order.prescription && (
+            <a
+              href={`${import.meta.env.VITE_IMAGE_BASE_URL}/${order.prescription}`}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-2 h-10 px-4 rounded-lg border border-[var(--border)] bg-[var(--surface)] text-sm font-medium text-[var(--text)] hover:bg-[var(--hover)] transition"
+            >
+              <FileText size={16} /> View Prescription
+            </a>
+          )}
+          {order.invoicePdf && (
+            <a
+              href={`${import.meta.env.VITE_IMAGE_BASE_URL}${order.invoicePdf}`}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-2 h-10 px-4 rounded-lg bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-sm font-semibold text-[#fff] transition"
+            >
+              <Download size={16} /> Download Invoice
+            </a>
           )}
         </div>
-
       </div>
 
-      {/* Prescription */}
-
-      <div className="bg-white p-6 rounded-xl shadow mt-6">
-        <h2 className="font-bold text-xl mb-4">
-          Prescription
-        </h2>
-
-        {order.prescription ? (
-          <a
-            href={`${import.meta.env.VITE_IMAGE_BASE_URL}/${order.prescription}`}
-            target="_blank"
-            rel="noreferrer"
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg inline-block"
-          >
-            View Prescription
-          </a>
+      {/* Progress tracker */}
+      <Card>
+        {order.orderStatus === "cancelled" ? (
+          <div className="flex items-center gap-3 text-rose-500">
+            <XCircle size={22} />
+            <p className="font-semibold">This order was cancelled.</p>
+          </div>
         ) : (
-          <p>
-            No Prescription Uploaded
-          </p>
+          <ol className="grid grid-cols-7 gap-2">
+            {FLOW.map((s, i) => {
+              const done = i <= stepIndex;
+              const current = i === stepIndex;
+              return (
+                <li key={s} className="relative flex flex-col items-center text-center">
+                  {i > 0 && (
+                    <span
+                      className={`absolute top-4 right-1/2 w-full h-0.5 ${i <= stepIndex ? "bg-[var(--primary)]" : "bg-[var(--border-strong)]"}`}
+                    />
+                  )}
+                  <span
+                    className={`relative z-10 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 transition ${
+                      done
+                        ? "bg-[var(--primary)] border-[var(--primary)] text-[#fff]"
+                        : "bg-[var(--surface)] border-[var(--border-strong)] text-[var(--text-3)]"
+                    } ${current ? "ring-4 ring-[var(--ring)]" : ""}`}
+                  >
+                    {done && !current ? <Check size={15} /> : i + 1}
+                  </span>
+                  <span className={`mt-2 text-[11.5px] leading-tight font-medium ${done ? "text-[var(--text)]" : "text-[var(--text-3)]"}`}>
+                    {STATUS_LABELS[s]}
+                  </span>
+                </li>
+              );
+            })}
+          </ol>
         )}
-      </div>
+      </Card>
 
-      {/* Invoice */}
+      <div className="grid lg:grid-cols-3 gap-6 items-start">
+        {/* LEFT */}
+        <div className="lg:col-span-2 space-y-6">
+          <Card title="Ordered Products" icon={Package} extra={`${order.orderItems?.length || 0} line items`}>
+            <div className="divide-y divide-[var(--border)] -my-2">
+              {order.orderItems?.map((item, index) => (
+                <div key={index} className="flex items-center gap-4 py-3.5">
+                  <img
+                    src={itemImage(item.image)}
+                    alt={item.name}
+                    onError={(e) => {
+                      e.currentTarget.src = "/no-image.png";
+                    }}
+                    className="w-16 h-16 shrink-0 rounded-lg object-contain bg-[var(--surface-2)] border border-[var(--border)]"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-[var(--text)] leading-snug">{item.name}</p>
+                    {item.variant?.name && (
+                      <p className="text-xs text-[var(--text-3)] mt-0.5">
+                        {item.variant.name}
+                        {item.variant.sku ? ` · SKU: ${item.variant.sku}` : ""}
+                      </p>
+                    )}
+                    <p className="text-xs text-[var(--text-3)] mt-0.5">
+                      {inr(item.price)} × {item.quantity}
+                    </p>
+                  </div>
+                  <p className="font-semibold text-[var(--text)] whitespace-nowrap">{inr(Number(item.price || 0) * Number(item.quantity || 0))}</p>
+                </div>
+              ))}
+            </div>
+          </Card>
 
-      <div className="bg-white p-6 rounded-xl shadow mt-6">
-        <h2 className="font-bold text-xl mb-4">
-          Invoice
-        </h2>
+          <Card title="Order Summary" icon={Receipt}>
+            <dl className="space-y-2.5 text-sm">
+              <Row label="Subtotal" value={inr(order.subtotal)} />
+              <Row label="Shipping" value={inr(order.shippingCharge)} />
+              <Row label="GST" value={inr(order.gst)} />
+              <div className="pt-3 mt-1 border-t border-dashed border-[var(--border-strong)] flex justify-between items-baseline">
+                <dt className="font-semibold text-[var(--text)]">Total</dt>
+                <dd className="text-xl font-bold text-[var(--text)]">{inr(order.totalAmount)}</dd>
+              </div>
+            </dl>
+          </Card>
+        </div>
 
-        {order.invoicePdf ? (
-          <a
-            href={`${import.meta.env.VITE_IMAGE_BASE_URL}${order.invoicePdf}`}
-            target="_blank"
-            rel="noreferrer"
-            className="bg-green-600 text-white px-4 py-2 rounded-lg inline-block"
-          >
-            Download Invoice
-          </a>
-        ) : (
-          <p>
-            Invoice Not Generated
-          </p>
-        )}
-      </div>
+        {/* RIGHT */}
+        <div className="space-y-6">
+          {/* Status management */}
+          <Card title="Order Status" icon={ClipboardCheck}>
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-sm text-[var(--text-3)]">Current status</span>
+              <OrderStatusBadge status={order.orderStatus} label={STATUS_LABELS[order.orderStatus] || order.orderStatus} />
+            </div>
 
-      {/* Products */}
-
-      <div className="bg-white p-6 rounded-xl shadow mt-6">
-        <h2 className="font-bold text-xl mb-4">
-          Ordered Products
-        </h2>
-
-        {order.orderItems?.map(
-          (item, index) => (
-            <div
-              key={index}
-              className="flex items-center gap-4 py-4 border-b"
-            >
-              <img
-                src={item.image}
-                alt={item.name}
-                className="w-20 h-20 object-cover rounded-lg"
-              />
-
-              <div>
-                <h3 className="font-semibold">
-                  {item.name}
-                </h3>
-
-                {item.variant?.name && (
-                  <p className="text-sm text-gray-500">
-                    {item.variant.name}
-                    {item.variant.sku ? ` · SKU: ${item.variant.sku}` : ""}
+            {locked ? (
+              // Cancelled / Delivered are final — nothing to update.
+              <div
+                className={`px-4 py-3 rounded-lg text-sm font-medium ${
+                  order.orderStatus === "cancelled" ? "bg-rose-500/10 text-rose-500" : "bg-emerald-500/10 text-emerald-600"
+                }`}
+              >
+                {order.orderStatus === "cancelled"
+                  ? "This order is Cancelled — it is a final status and cannot be updated."
+                  : "This order has been Delivered — it is a final status and cannot be updated."}
+              </div>
+            ) : awaitingCourier ? (
+              // Past "packed" — the DTDC shipment is booked and only the courier
+              // (webhook, or a manual sync) can advance the order further.
+              <div className="px-4 py-3 rounded-lg text-sm bg-blue-500/10 text-blue-500">
+                This order is now tracked by DTDC — status updates automatically as the courier scans the shipment. Use
+                &quot;Sync Tracking Now&quot; to check right now instead of waiting.
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {/* Only the single next valid status is ever selectable — the
+                    admin cannot skip stages or pick an arbitrary status. */}
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="text-[var(--text-3)]">Next step:</span>
+                  <span className="font-semibold text-[var(--text)]">{nextStatus ? STATUS_LABELS[nextStatus] : "—"}</span>
+                </div>
+                <button
+                  onClick={updateStatus}
+                  disabled={!nextStatus || updating}
+                  className="w-full h-11 rounded-lg bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-sm font-semibold text-[#fff] transition disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {updating ? "Updating..." : nextStatus ? `Mark as ${STATUS_LABELS[nextStatus]}` : "No further updates"}
+                </button>
+                {nextStatus === "packed" && (
+                  <p className="text-xs text-[var(--text-3)]">
+                    Marking this order as Packed will automatically book the DTDC shipment and move it to Shipped.
                   </p>
                 )}
+              </div>
+            )}
+          </Card>
 
-                <p>
-                  Quantity:{" "}
-                  {
-                    item.quantity
-                  }
-                </p>
+          <Card title="Customer" icon={User}>
+            <div className="flex items-center gap-3 mb-4">
+              <span className="w-10 h-10 rounded-full bg-[var(--primary-soft)] flex items-center justify-center font-bold text-[var(--primary)]">
+                {(cust.fullName || "?").charAt(0).toUpperCase()}
+              </span>
+              <p className="font-semibold text-[var(--text)]">{cust.fullName || "—"}</p>
+            </div>
+            <div className="space-y-2 text-sm">
+              <IconLine icon={Mail}>{cust.email || "—"}</IconLine>
+              <IconLine icon={Phone}>{cust.phone || "—"}</IconLine>
+            </div>
+          </Card>
 
-                <p>
-                  Price: ₹
-                  {item.price}
+          <Card title="Shipping Address" icon={MapPin}>
+            <div className="text-sm leading-relaxed text-[var(--text-2)]">
+              <p className="text-[var(--text)]">{addr.address}</p>
+              <p>
+                {addr.city}
+                {addr.city && addr.state ? ", " : ""}
+                {addr.state}
+              </p>
+              <p>{addr.pincode}</p>
+              {addr.landmark && <p className="mt-1 text-[var(--text-3)]">Landmark: {addr.landmark}</p>}
+            </div>
+          </Card>
+
+          <Card title="Payment" icon={CreditCard}>
+            <dl className="space-y-2.5 text-sm">
+              <div className="flex items-center justify-between">
+                <dt className="text-[var(--text-3)]">Status</dt>
+                <dd>
+                  <OrderStatusBadge type="payment" status={String(order.paymentStatus || "").toLowerCase()} label={order.paymentStatus || "—"} />
+                </dd>
+              </div>
+              <Row label="Method" value={<span className="uppercase">{order.paymentMethod || "—"}</span>} />
+            </dl>
+          </Card>
+
+          <Card title="Shipment" icon={Truck}>
+            {order.trackingId ? (
+              <div className="space-y-3 text-sm">
+                <Row label="Courier" value={order.courierPartner || "DTDC"} />
+                <Row label="AWB / Tracking No." value={<span className="font-mono">{order.trackingId}</span>} />
+                {order.trackingUrl && (
+                  <a
+                    href={order.trackingUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1.5 text-[13px] font-medium text-[var(--primary)] hover:underline"
+                  >
+                    Open DTDC tracking page <ExternalLink size={13} />
+                  </a>
+                )}
+                {order.trackingUrl && <p className="text-xs text-[var(--text-3)]">Enter the AWB above on the DTDC page to check status.</p>}
+                <button
+                  onClick={syncTracking}
+                  disabled={syncing}
+                  className="w-full h-10 inline-flex items-center justify-center gap-2 rounded-lg border border-[var(--border-strong)] bg-[var(--surface)] text-sm font-semibold text-[var(--text)] hover:bg-[var(--hover)] transition disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <RefreshCw size={15} className={syncing ? "animate-spin" : ""} />
+                  {syncing ? "Syncing..." : "Sync Tracking Now"}
+                </button>
+                <p className="text-xs text-[var(--text-3)]">
+                  Status updates automatically as DTDC scans the shipment — this button just checks right now instead of
+                  waiting.
                 </p>
               </div>
+            ) : (
+              <p className="text-sm text-[var(--text-3)]">
+                {nextStatus === "packed"
+                  ? "A DTDC shipment will be booked automatically when this order is marked as Packed."
+                  : "No shipment booked yet."}
+              </p>
+            )}
+          </Card>
+
+          <Card title="Documents" icon={FileText}>
+            <div className="space-y-2 text-sm">
+              <Row label="Prescription" value={order.prescription ? "Uploaded" : "Not uploaded"} />
+              <Row label="Invoice" value={order.invoicePdf ? "Generated" : "Not generated"} />
             </div>
-          )
-        )}
+          </Card>
+        </div>
       </div>
-
-      {/* Order Summary */}
-
-      <div className="bg-white p-6 rounded-xl shadow mt-6">
-        <h2 className="font-bold text-xl mb-4">
-          Order Summary
-        </h2>
-
-        <p>
-          <strong>
-            Payment Status:
-          </strong>{" "}
-          {
-            order.paymentStatus
-          }
-        </p>
-
-        <p>
-          <strong>
-            Payment Method:
-          </strong>{" "}
-          {
-            order.paymentMethod
-          }
-        </p>
-
-        <p>
-          <strong>
-            Subtotal:
-          </strong>{" "}
-          ₹{order.subtotal}
-        </p>
-
-        <p>
-          <strong>
-            Shipping:
-          </strong>{" "}
-          ₹
-          {
-            order.shippingCharge
-          }
-        </p>
-
-        <p>
-          <strong>GST:</strong>{" "}
-          ₹{order.gst}
-        </p>
-
-        <p className="text-lg font-bold mt-2">
-          Total: ₹
-          {
-            order.totalAmount
-          }
-        </p>
-      </div>
-
-      {/* Shipment / Tracking */}
-      <div className="bg-white p-6 rounded-xl shadow mt-6">
-        <h2 className="font-bold text-xl mb-4">
-          Shipment
-        </h2>
-
-        {order.trackingId ? (
-          <div className="space-y-2">
-            <p>
-              <strong>Courier:</strong> {order.courierPartner || "DTDC"}
-            </p>
-            <p>
-              <strong>AWB / Tracking No.:</strong>{" "}
-              <span className="font-mono">{order.trackingId}</span>
-            </p>
-            {order.trackingUrl && (
-              <p>
-                <a
-                  href={order.trackingUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-blue-600 underline"
-                >
-                  Open DTDC tracking page
-                </a>
-                <span className="text-gray-500">
-                  {" "}
-                  (enter the AWB above to check status)
-                </span>
-              </p>
-            )}
-
-            <button
-              onClick={syncTracking}
-              disabled={syncing}
-              className="mt-2 bg-blue-600 text-white px-4 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {syncing ? "Syncing..." : "Sync Tracking Now"}
-            </button>
-            <p className="text-xs text-gray-400">
-              Status updates automatically as DTDC scans the shipment — this
-              button just checks right now instead of waiting.
-            </p>
-          </div>
-        ) : (
-          <p className="text-gray-500">
-            {nextStatus === "packed"
-              ? "A DTDC shipment will be booked automatically when this order is marked as Packed."
-              : "No shipment booked yet."}
-          </p>
-        )}
-      </div>
-
-      {/* Status Management */}
-
-      <div className="bg-white p-6 rounded-xl shadow mt-6">
-        <h2 className="font-bold text-xl mb-4">
-          Order Status
-        </h2>
-
-        {locked ? (
-          // Cancelled / Delivered are final — no dropdown, nothing to update.
-          <div
-            className={`px-4 py-3 rounded-lg text-sm font-semibold ${
-              order.orderStatus === "cancelled"
-                ? "bg-red-50 text-red-700"
-                : "bg-green-50 text-green-700"
-            }`}
-          >
-            {order.orderStatus === "cancelled"
-              ? "This order is Cancelled — it is a final status and cannot be updated."
-              : "This order has been Delivered — it is a final status and cannot be updated."}
-          </div>
-        ) : awaitingCourier ? (
-          // Past "packed" — the DTDC shipment is booked and only the courier
-          // (webhook, or a manual sync above) can advance the order further.
-          <div className="px-4 py-3 rounded-lg text-sm font-semibold bg-blue-50 text-blue-700">
-            This order is now tracked by DTDC — status updates automatically
-            as the courier scans the shipment. Use "Sync Tracking Now" above
-            to check right now instead of waiting.
-          </div>
-        ) : (
-          <div className="flex gap-4 flex-wrap items-center">
-            {/* Only the single next valid status is ever selectable — the
-                admin cannot skip stages or pick an arbitrary status. */}
-            <select
-              value={nextStatus || ""}
-              disabled
-              className="border px-4 py-2 rounded-lg bg-gray-50 text-gray-700"
-            >
-              {nextStatus && (
-                <option value={nextStatus}>
-                  {STATUS_LABELS[nextStatus]}
-                </option>
-              )}
-            </select>
-
-            <button
-              onClick={updateStatus}
-              disabled={!nextStatus || updating}
-              className="bg-green-600 text-white px-5 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {updating
-                ? "Updating..."
-                : nextStatus
-                  ? `Mark as ${STATUS_LABELS[nextStatus]}`
-                  : "No further updates"}
-            </button>
-            {nextStatus === "packed" && (
-              <p className="text-xs text-gray-400 basis-full">
-                Marking this order as Packed will automatically book the DTDC
-                shipment and move it to Shipped.
-              </p>
-            )}
-          </div>
-        )}
-
-        <p className="mt-4">
-          Current Status:
-          <strong>
-            {" "}
-            {
-              STATUS_LABELS[order.orderStatus] || order.orderStatus
-            }
-          </strong>
-        </p>
-      </div>
-
     </div>
+  );
+};
+
+/* ---------- small presentational helpers ---------- */
+const Card = ({ title, icon: CardIcon, extra, children }) => (
+  <section className="rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-sm)]">
+    {title && (
+      <header className="flex items-center justify-between gap-3 px-5 py-3.5 border-b border-[var(--border)]">
+        <h2 className="flex items-center gap-2 text-[15px] font-semibold text-[var(--text)]">
+          {CardIcon && <CardIcon size={17} className="text-[var(--text-3)]" />}
+          {title}
+        </h2>
+        {extra && <span className="text-xs text-[var(--text-3)]">{extra}</span>}
+      </header>
+    )}
+    <div className="p-5">{children}</div>
+  </section>
+);
+
+const Row = ({ label, value }) => (
+  <div className="flex items-center justify-between gap-4">
+    <dt className="text-[var(--text-3)]">{label}</dt>
+    <dd className="font-medium text-[var(--text)] text-right">{value}</dd>
+  </div>
+);
+
+const IconLine = ({ icon, children }) => {
+  const LineIcon = icon;
+  return (
+  <p className="flex items-center gap-2.5 text-[var(--text-2)] break-all">
+    <LineIcon size={15} className="shrink-0 text-[var(--text-3)]" />
+    {children}
+  </p>
   );
 };
 

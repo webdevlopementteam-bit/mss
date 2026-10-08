@@ -23,6 +23,7 @@ const Blog = () => {
     description: "",
     metaTitle: "",
     metaDescription: "",
+    metaKeywords: "",
     image: null,
     imagePreview: "",
     isPublished: true,
@@ -73,6 +74,7 @@ const Blog = () => {
       formData.append("description", form.description);
       formData.append("metaTitle", form.metaTitle);
       formData.append("metaDescription", form.metaDescription);
+      formData.append("metaKeywords", form.metaKeywords || "");
       formData.append("isPublished", form.isPublished);
 
       if (form.image) {
@@ -162,6 +164,7 @@ const Blog = () => {
       description: blog.description,
       metaTitle: blog.metaTitle,
       metaDescription: blog.metaDescription,
+      metaKeywords: blog.metaKeywords || "",
       image: null,
       imagePreview: blog.image?.startsWith("http")
         ? blog.image
@@ -217,6 +220,7 @@ const Blog = () => {
                   description: "",
                   metaTitle: "",
                   metaDescription: "",
+                  metaKeywords: "",
                   image: null,
                   imagePreview: "",
                   isPublished: true,
@@ -485,6 +489,21 @@ const Blog = () => {
                     value={form.metaDescription}
                     onChange={(e) =>
                       setForm({ ...form, metaDescription: e.target.value })
+                    }
+                  />
+                </div>
+
+                {/* META KEYWORDS */}
+                <div>
+                  <label className="text-white/80 text-sm">
+                    Meta Keywords
+                  </label>
+                  <input
+                    placeholder="Comma separated, e.g. diabetes care, glucometer"
+                    className="w-full p-3 rounded-lg mt-2 bg-[#1a202b] border border-white/10 text-white"
+                    value={form.metaKeywords || ""}
+                    onChange={(e) =>
+                      setForm({ ...form, metaKeywords: e.target.value })
                     }
                   />
                 </div>

@@ -1,22 +1,22 @@
 import { useState } from "react";
-import { contactinfo } from "../data";
+import { useContactInfo } from "../api/siteContent";
 import Emailsubscription from "../sections/Emailsubscription";
 import { PageHeader } from "../components/ui/PageHeader";
-
-const info = contactinfo[0];
-const SUPPORT_EMAIL = info.email;
-
-const CARDS = [
-  { icon: "fa-phone", title: "Call Us", lines: [info.phone], href: `tel:${info.phone.replace(/\s/g, "")}`, cta: "Call now" },
-  { icon: "fa-envelope", title: "Email Us", lines: [info.email], href: `mailto:${info.email}`, cta: "Send email" },
-  { icon: "fa-location-dot", title: "Visit Us", lines: [info.address] },
-  { icon: "fa-clock", title: "Working Hours", lines: [info.time, info.availability] },
-];
 
 const inputCls =
   "w-full h-12 px-4 rounded-xl border border-gray-200 bg-[#FAFBFC] text-sm !text-gray-800 placeholder:text-gray-400 outline-none focus:border-primaryColor focus:bg-white focus:ring-4 focus:ring-primaryColor/10 transition";
 
 const Contact = () => {
+  // Details come from admin → Store Customization → Contact & Footer.
+  const info = useContactInfo();
+  const SUPPORT_EMAIL = info.email;
+  const CARDS = [
+    { icon: "fa-phone", title: "Call Us", lines: [info.phone], href: info.tel, cta: "Call now" },
+    { icon: "fa-envelope", title: "Email Us", lines: [info.email], href: `mailto:${info.email}`, cta: "Send email" },
+    { icon: "fa-location-dot", title: "Visit Us", lines: [info.address] },
+    { icon: "fa-clock", title: "Working Hours", lines: [info.hours, info.availability].filter(Boolean) },
+  ];
+
   const [form, setForm] = useState({ name: "", email: "", subject: "", message: "" });
   const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
 
@@ -106,11 +106,11 @@ const Contact = () => {
               </span>
               <div className="min-w-0">
                 <p className="font-bold text-sm !text-[#023350]">Find us on the map</p>
-                <p className="text-xs !text-gray-500 truncate">Patparganj Industrial Area, Delhi</p>
+                <p className="text-xs !text-gray-500 truncate">{info.address}</p>
               </div>
             </div>
             <iframe
-              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3501.6512294263116!2d77.30536750946962!3d28.64021332555896!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x390cfb3f3d95f0bb%3A0xd06142fa0b7860e5!2sMEDICAL%20%26%20SURGICAL%20SOLUTIONS!5e0!3m2!1sen!2sin!4v1770013271819!5m2!1sen!2sin"
+              src={info.mapEmbedUrl}
               loading="lazy"
               title="Google Map"
               className="w-full flex-1 min-h-[280px] border-0"

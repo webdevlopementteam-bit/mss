@@ -4,15 +4,15 @@ import Header from "../components/Header";
 
 export default function DashboardLayout() {
   return (
-    <div className="flex bg-[var(--bg)] min-h-screen">
+    <div className="min-h-screen bg-[var(--bg)]">
       <Sidebar />
 
-      <div className="flex-1 ml-64">
+      <div className="ml-64 min-w-0 flex flex-col min-h-screen">
         <Header />
 
-        <div className="p-6">
+        <main className="flex-1 p-6 lg:p-8 admin-main">
           <Outlet />
-        </div>
+        </main>
       </div>
     </div>
   );

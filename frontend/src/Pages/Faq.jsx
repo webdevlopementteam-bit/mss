@@ -1,19 +1,27 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import faqs from "../assets/faqs.png";
-import { faq, contactinfo } from "../data";
+import { faq as DEFAULT_FAQ } from "../data";
+import { useSiteContent, useContactInfo } from "../api/siteContent";
 import { PageHeader } from "../components/ui/PageHeader";
 
 const Faq = () => {
-  const [open, setOpen] = useState(faq[0]?.id ?? null);
+  // Admin FAQs (Store Customization → FAQ) replace the built-in list once added.
+  const { data: cms, loading } = useSiteContent("faq");
+  const faq = useMemo(() => {
+    const items = (cms?.items || []).filter((f) => f.question && f.answer);
+    return items.length ? items.map((f, i) => ({ id: `cms-${i}`, ...f })) : DEFAULT_FAQ;
+  }, [cms]);
+  const [openId, setOpen] = useState(undefined);
+  const open = openId === undefined ? faq[0]?.id : openId;
   const [query, setQuery] = useState("");
 
   const items = useMemo(() => {
     const q = query.trim().toLowerCase();
     return q ? faq.filter((f) => `${f.question} ${f.answer}`.toLowerCase().includes(q)) : faq;
-  }, [query]);
+  }, [query, faq]);
 
-  const info = contactinfo[0];
+  const info = useContactInfo();
 
   return (
     <div className="bg-[#F6F7F9] pb-14 md:pb-20">
@@ -33,13 +41,14 @@ const Faq = () => {
       <div className="px-4 md:px-6 lg:px-side pt-6 md:pt-10 grid lg:grid-cols-[1fr_340px] gap-6 lg:gap-8 items-start">
         {/* Accordion */}
         <div className="space-y-3">
-          {items.length === 0 && (
+          {loading && Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-[68px] rounded-2xl bg-white border border-gray-200/80 animate-pulse" />)}
+          {!loading && items.length === 0 && (
             <div className="bg-white rounded-2xl border border-gray-200/80 p-8 text-center">
               <p className="font-semibold !text-gray-700">No questions match "{query}".</p>
               <p className="mt-1 text-sm !text-gray-500">Try another word, or contact us directly.</p>
             </div>
           )}
-          {items.map((f, i) => {
+          {!loading && items.map((f, i) => {
             const isOpen = open === f.id;
             return (
               <div
@@ -94,7 +103,7 @@ const Faq = () => {
               Can't find the answer you're looking for? Our team is happy to help.
             </p>
             <div className="mt-4 space-y-2.5">
-              <a href={`tel:${info.phone.replace(/\s/g, "")}`} className="flex items-center gap-3 rounded-xl bg-[#F6F7F9] px-4 py-3 hover:bg-primaryColor/5 transition">
+              <a href={info.tel} className="flex items-center gap-3 rounded-xl bg-[#F6F7F9] px-4 py-3 hover:bg-primaryColor/5 transition">
                 <i className="fa-solid fa-phone text-sm !text-primaryColor"></i>
                 <span className="text-sm font-semibold !text-[#023350]">{info.phone}</span>
               </a>

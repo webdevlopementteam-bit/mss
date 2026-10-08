@@ -37,6 +37,7 @@ const productSchema = new mongoose.Schema({
 
   metaTitle: String,
   metaDescription: String,
+  metaKeywords: { type: String, default: "" },
 
   // images: {
   //   type: [String],

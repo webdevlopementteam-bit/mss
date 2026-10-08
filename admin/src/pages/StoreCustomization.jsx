@@ -4,18 +4,16 @@ import AboutCMS from '../CMSPages/AboutCMS';
 import FaqCMS from '../CMSPages/FaqCMS';
 import PolicyCMS from '../CMSPages/PolicyCMS';
 import SeoCMS from '../CMSPages/SeoCMS';
-import CheckoutCMS from '../CMSPages/CheckoutCMS';
 import FooterCMS from '../CMSPages/FooterCMS';
 
 const StoreCustomization = () => {
     const tabs = [
   { name: "Home", key: "home" },
-  { name: "About", key: "about" },
+  { name: "About & Team", key: "about" },
   { name: "FAQ", key: "faq" },
-  { name: "Footer", key: "footer" },
-  { name: "Privacy Policy", key: "privacy" },
+  { name: "Contact & Footer", key: "footer" },
+  { name: "Policies", key: "privacy" },
   { name: "SEO Settings", key: "seo" },
-  { name: "Checkout Form", key: "checkout" },
 ];
 
 const [activeTab, setActiveTab] = useState("home");
@@ -45,7 +43,6 @@ const [activeTab, setActiveTab] = useState("home");
   {activeTab === "footer" && <FooterCMS/>}
   {activeTab === "privacy" && <PolicyCMS/>}
   {activeTab === "seo" && <SeoCMS/>}
-  {activeTab === "checkout" && <CheckoutCMS/>}
 </div>
     </>
   )

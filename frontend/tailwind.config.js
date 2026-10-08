@@ -31,17 +31,17 @@ export default {
   },
   marquee: {
     '0%': { transform: 'translateX(0)' },
-    '100%': { transform: 'translateX(-100%)' },
+    '100%': { transform: 'translateX(-50%)' },
   },
   marqueeReverse: {
-    '0%': { transform: 'translateX(-100%)' },
+    '0%': { transform: 'translateX(-50%)' },
     '100%': { transform: 'translateX(0)' },
   },
 },
 animation: {
   ringing: 'ringing 1.2s ease-out infinite',
-  marquee: 'marquee 45s linear infinite',
-  'marquee-reverse': 'marqueeReverse 45s linear infinite',
+  marquee: 'marquee 60s linear infinite',
+  'marquee-reverse': 'marqueeReverse 60s linear infinite',
 },
     },
   },

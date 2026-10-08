@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import logo from "../assets/home/logo.png";
 import razorpay from "../assets/razorpay.png";
+import { useContactInfo } from "../api/siteContent";
 
 const FEATURES = [
   ["fa-shield-heart", "Genuine Products", "Sourced from authorised brands"],
@@ -27,20 +28,6 @@ const SUPPORT_LINKS = [
   ["Track Your Order", "https://www.dtdc.com/track-your-shipment/"],
   ["Dashboard", "/user-dashboard"],
   ["Recently Viewed", "/recently-viewed"],
-];
-
-const SOCIALS = [
-  ["fa-facebook-f", "Facebook", "https://www.facebook.com/people/Medical-and-Surgical-Solutions/61571157007880/"],
-  ["fa-youtube", "YouTube", "https://www.youtube.com/@MEDICALANDSURGICALSOLUTIONS"],
-  ["fa-instagram", "Instagram", "https://www.instagram.com/mssofficial2011/"],
-  ["fa-linkedin-in", "LinkedIn", "https://www.linkedin.com/company/medical-surgical-solutions/"],
-];
-
-const CONTACTS = [
-  ["fa-phone", "Call us", "+91 9643344588", "tel:9643344588"],
-  ["fa-envelope", "Email", "care@medicalsurgical.org", "mailto:care@medicalsurgical.org"],
-  ["fa-location-dot", "Visit", "402, Ground Floor, Near Bagga Link, Patparganj Industrial Area, Delhi-110092"],
-  ["fa-clock", "Hours", "Monday to Saturday · Available 24/7"],
 ];
 
 const ColumnTitle = ({ children }) => (
@@ -71,6 +58,21 @@ const FooterLink = ({ label, to }) => {
 };
 
 const Footer = () => {
+  // Contact details + socials from admin → Store Customization → Contact & Footer.
+  const info = useContactInfo();
+  const SOCIALS = [
+    ["fa-facebook-f", "Facebook", info.facebook],
+    ["fa-youtube", "YouTube", info.youtube],
+    ["fa-instagram", "Instagram", info.instagram],
+    ["fa-linkedin-in", "LinkedIn", info.linkedin],
+  ].filter(([, , href]) => href);
+  const CONTACTS = [
+    ["fa-phone", "Call us", info.phone, info.tel],
+    ["fa-envelope", "Email", info.email, `mailto:${info.email}`],
+    ["fa-location-dot", "Visit", info.address],
+    ["fa-clock", "Hours", [info.hours, info.availability].filter(Boolean).join(" · ")],
+  ];
+
   return (
     <footer className="relative bg-[#023350] overflow-hidden pb-20 lg:pb-0">
       {/* Decorative glows + top accent line */}
@@ -101,8 +103,7 @@ const Footer = () => {
               <img src={logo} alt="MSS logo" className="w-20" />
             </Link>
             <p className="mt-5 text-sm leading-7 !text-white/65 max-w-sm">
-              Medical & Surgical Solutions — a trusted partner for healthcare professionals,
-              hospitals and institutions, delivering genuine medical and surgical supplies across India.
+              {info.footerAbout}
             </p>
             <div className="mt-6 flex gap-2.5">
               {SOCIALS.map(([icon, label, href]) => (

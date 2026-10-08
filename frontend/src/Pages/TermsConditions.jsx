@@ -2,7 +2,7 @@ import { LegalLayout } from "../components/ui/LegalLayout";
 
 const TermsConditions = () => {
   return (
-    <LegalLayout title="Terms & Conditions" icon="fa-file-contract" subtitle="The terms that govern your use of our website and services.">
+    <LegalLayout cmsKey="terms" title="Terms & Conditions" icon="fa-file-contract" subtitle="The terms that govern your use of our website and services.">
         <h3 className="text-xl font-semibold">
           Medical Surgical Solutions Terms and Conditions
         </h3>

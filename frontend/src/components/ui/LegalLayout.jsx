@@ -1,21 +1,27 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { PageHeader } from "./PageHeader";
+import { useSiteContent } from "../../api/siteContent";
 
 /* Shared shell for the policy pages. The legal copy itself stays exactly as
  * written in each page; this only frames it. The "On this page" index is
  * built at runtime from the section headings already in that copy
  * (`p.text-lg.font-semibold`, skipping lead-in lines ending in ":" and the
- * underlined contact lines). */
-export const LegalLayout = ({ title, icon, subtitle, children }) => {
+ * underlined contact lines). When the admin has written this policy in
+ * Store Customization → Policies (`cmsKey`), that content is shown instead
+ * and its Heading 1/2 titles feed the index. */
+export const LegalLayout = ({ title, icon, subtitle, cmsKey, children }) => {
   const contentRef = useRef(null);
+  const { data: cms, loading } = useSiteContent(cmsKey);
+  const cmsHtml = String(cms?.content || "").replace(/<[^>]*>/g, "").trim() ? cms.content : "";
+  const pending = Boolean(cmsKey) && loading;
   const [toc, setToc] = useState([]);
   const [active, setActive] = useState(null);
 
   useEffect(() => {
     const root = contentRef.current;
     if (!root) return;
-    const heads = [...root.querySelectorAll("p.text-lg.font-semibold")].filter(
+    const heads = [...root.querySelectorAll("p.text-lg.font-semibold, .legal-cms h1, .legal-cms h2")].filter(
       (el) => !el.classList.contains("underline") && !el.textContent.trim().endsWith(":")
     );
     heads.forEach((el, i) => {
@@ -33,7 +39,7 @@ export const LegalLayout = ({ title, icon, subtitle, children }) => {
     );
     heads.forEach((el) => io.observe(el));
     return () => io.disconnect();
-  }, []);
+  }, [pending, cmsHtml]);
 
   const jump = (id) => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
 
@@ -81,7 +87,25 @@ export const LegalLayout = ({ title, icon, subtitle, children }) => {
         </aside>
 
         <article ref={contentRef} className="legal-content min-w-0 bg-white rounded-2xl border border-gray-200/80 p-5 md:p-10">
-          {children}
+          {pending ? (
+            <div className="space-y-3">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} className={`h-4 rounded bg-gray-100 animate-pulse ${i % 3 === 2 ? "w-2/3" : ""}`} />
+              ))}
+            </div>
+          ) : cmsHtml ? (
+            <>
+              {cms.title && <h3>{cms.title}</h3>}
+              {cms.updatedAt && (
+                <p className="!text-xs !text-gray-400 -mt-1 mb-2">
+                  Last updated {new Date(cms.updatedAt).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}
+                </p>
+              )}
+              <div className="legal-cms" dangerouslySetInnerHTML={{ __html: cmsHtml }} />
+            </>
+          ) : (
+            children
+          )}
         </article>
       </div>
     </div>

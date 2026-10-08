@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import API from "../api/axios";
-import { Plus, Trash2, Pencil, Search, Upload } from "lucide-react";
+import { Plus, Trash2, Pencil, Search, Upload, FileDown, Loader2 } from "lucide-react";
 import toast from "react-hot-toast";
 
 export default function Pincode() {
@@ -8,6 +8,7 @@ export default function Pincode() {
   const [filtered, setFiltered] = useState([]);
   const [selected, setSelected] = useState([]);
   const [search, setSearch] = useState("");
+  const [uploading, setUploading] = useState(false);
 
   const [page, setPage] = useState(1);
   const [totalPage, setTotalPage] = useState(1);
@@ -110,18 +111,39 @@ export default function Pincode() {
   // ================= BULK =================
   const handleBulkUpload = async (e) => {
     const file = e.target.files[0];
+    // Reset so picking the same file again still triggers onChange.
+    e.target.value = "";
     if (!file) return;
 
     const formData = new FormData();
     formData.append("file", file);
 
     try {
-      await API.post("/pincode/bulk", formData);
-      toast.success("Bulk upload success");
+      setUploading(true);
+      const res = await API.post("/pincode/bulk", formData);
+      const added = res.data?.totalUploaded;
+      toast.success(
+        typeof added === "number"
+          ? `CSV uploaded — ${added} new pincode${added === 1 ? "" : "s"} added`
+          : "Bulk upload success"
+      );
       fetchPincode(page, search);
-    } catch {
-      toast.error("Upload failed");
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Upload failed");
+    } finally {
+      setUploading(false);
     }
+  };
+
+  // Template with the two columns the bulk endpoint reads.
+  const downloadSampleCsv = () => {
+    const csv = "pincode,branchName\n110092,Delhi Patparganj\n400001,Mumbai GPO\n";
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "pincode-sample.csv";
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -150,14 +172,32 @@ export default function Pincode() {
                 toast.error("Delete failed");
               }
             }}
-            className="px-4 py-2 bg-red-600 rounded-lg text-white/80"
+            className="inline-flex items-center gap-2 h-10 px-4 rounded-lg border border-red-500/40 text-red-500 text-sm font-medium hover:bg-red-500/10 transition"
           >
-            Delete Selected
+            <Trash2 size={15} /> Delete Selected
           </button>
-          <label className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/80 cursor-pointer hover:bg-white">
-            <Upload size={16} /> Upload CSV
-            <input type="file" accept=".csv" hidden onChange={handleBulkUpload} />
-          </label>
+
+          {/* CSV import: sample template + upload */}
+          <div className="flex items-stretch h-10 rounded-lg border border-[var(--border-strong)] bg-[var(--surface)] overflow-hidden shadow-[var(--shadow-sm)]">
+            <button
+              type="button"
+              onClick={downloadSampleCsv}
+              title="Download a sample CSV (columns: pincode, branchName)"
+              className="inline-flex items-center gap-2 px-3.5 text-sm font-medium text-[var(--text-2)] hover:text-[var(--text)] hover:bg-[var(--hover)] transition"
+            >
+              <FileDown size={15} /> Sample
+            </button>
+            <span className="w-px bg-[var(--border-strong)]" />
+            <label
+              className={`inline-flex items-center gap-2 px-4 text-sm font-semibold text-[var(--text)] transition ${
+                uploading ? "opacity-60 cursor-wait" : "cursor-pointer hover:bg-[var(--hover)]"
+              }`}
+            >
+              {uploading ? <Loader2 size={15} className="animate-spin" /> : <Upload size={15} />}
+              {uploading ? "Uploading…" : "Upload CSV"}
+              <input type="file" accept=".csv,text/csv" hidden disabled={uploading} onChange={handleBulkUpload} />
+            </label>
+          </div>
 
           <button
             onClick={() => {
@@ -165,7 +205,7 @@ export default function Pincode() {
               setEditId(null);
               setForm({ pincode: "", branchName: "" });
             }}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-br from-[var(--primary)] to-[var(--primary-container)]"
+            className="inline-flex items-center gap-2 h-10 px-4 rounded-lg bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-sm font-semibold text-[#fff] transition"
           >
             <Plus size={16} /> Add Pincode
           </button>

@@ -2,7 +2,7 @@ import { LegalLayout } from "../components/ui/LegalLayout";
 
 const PrivacyPolicy = () => {
   return (
-    <LegalLayout title="Privacy Policy" icon="fa-user-shield" subtitle="How we collect, use and protect your information.">
+    <LegalLayout cmsKey="privacy" title="Privacy Policy" icon="fa-user-shield" subtitle="How we collect, use and protect your information.">
         <h3 className="text-xl font-semibold">
           Medical Surgical Solutions Privacy Policy
         </h3>

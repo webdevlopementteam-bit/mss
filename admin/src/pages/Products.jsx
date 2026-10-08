@@ -73,6 +73,7 @@ export default function Products() {
     packing: "",
     metaTitle: "",
     metaDescription: "",
+    metaKeywords: "",
     slug: "",
     deliveryCharge: "",
     company: "",
@@ -106,6 +107,7 @@ export default function Products() {
       packing: "",
       metaTitle: "",
       metaDescription: "",
+      metaKeywords: "",
       slug: "",
       company: "",
       deliveryCharge: "",
@@ -430,6 +432,7 @@ setSubcategories(sc.data.data || []);
       slug: product.slug || "",
       homeSections: product.homeSections || [],
       longDescription: product.longDescription || "",
+      metaKeywords: product.metaKeywords || "",
       specifications:
         product.specifications && product.specifications.length > 0
           ? product.specifications
@@ -1126,6 +1129,18 @@ setSubcategories(sc.data.data || []);
                       value={form.metaDescription || ""}
                       onChange={(e) =>
                         setForm({ ...form, metaDescription: e.target.value })
+                      }
+                    />
+                  </div>
+
+                  <div className="mb-3">
+                    <label className="label">Meta Keywords</label>
+                    <input
+                      className="input"
+                      placeholder="Comma separated, e.g. surgical gloves, latex gloves"
+                      value={form.metaKeywords || ""}
+                      onChange={(e) =>
+                        setForm({ ...form, metaKeywords: e.target.value })
                       }
                     />
                   </div>

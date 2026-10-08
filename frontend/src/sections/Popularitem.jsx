@@ -59,7 +59,7 @@ export const Popularitem = () => {
         eyebrow="Best Sellers"
         title="Popular Products"
         subtitle="Our most-loved picks, sorted by category."
-        viewAllTo="/shop"
+        viewAllTo="/shop?section=popular"
         viewAllLabel="All Products"
       />
 

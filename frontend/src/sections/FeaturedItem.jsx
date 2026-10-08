@@ -18,7 +18,7 @@ export const FeaturedItem = () => {
       eyebrow="Curated For You"
       title="Featured Products"
       subtitle="Hand-picked, quality-assured products trusted by healthcare professionals."
-      viewAllTo="/shop"
+      viewAllTo="/shop?section=featured"
       products={products}
       loading={loading}
     />

@@ -5,6 +5,17 @@ import { ProductCard, ProductCardSkeleton } from "../components/ui/ProductCard";
 
 const PAGE_SIZE = 12;
 
+// Home-page blocks whose "View all" links open the shop filtered by
+// ?section=... (products tagged in the admin panel's Home Sections field).
+const SECTION_LABELS = {
+  onsale: "On Sale",
+  bestseller: "Best Sellers",
+  toprated: "Top Rated",
+  trending: "Trending Now",
+  featured: "Featured Products",
+  popular: "Popular Products",
+};
+
 // Reads a comma-separated id list out of the URL (e.g. ?category=a,b) into
 // an array — the single source of truth for "which checkboxes are checked".
 const parseCsv = (value) => (value ? value.split(",").filter(Boolean) : []);
@@ -174,10 +185,11 @@ const Shop = () => {
   const minPrice = searchParams.get("minPrice") || "";
   const maxPrice = searchParams.get("maxPrice") || "";
   const search = searchParams.get("search") || "";
+  const section = SECTION_LABELS[searchParams.get("section")] ? searchParams.get("section") : "";
   const page = parseInt(searchParams.get("page") || "1", 10);
 
   const activeFilterCount =
-    selectedCategories.length + selectedBrands.length + (minPrice ? 1 : 0) + (maxPrice ? 1 : 0) + (search ? 1 : 0);
+    selectedCategories.length + selectedBrands.length + (minPrice ? 1 : 0) + (maxPrice ? 1 : 0) + (search ? 1 : 0) + (section ? 1 : 0);
 
   // Fetch the filter option lists once — a high limit since these endpoints
   // are paginated (default 10) and the sidebar needs the full set.
@@ -205,6 +217,7 @@ const Shop = () => {
     if (maxPrice) params.set("maxPrice", maxPrice);
     if (sort) params.set("sort", sort);
     if (search) params.set("search", search);
+    if (section) params.set("section", section);
 
     API.get(`/product?${params.toString()}`)
       .then((res) => {
@@ -221,7 +234,7 @@ const Shop = () => {
     return () => {
       cancelled = true;
     };
-  }, [selectedCategories, selectedBrands, minPrice, maxPrice, sort, search, page]);
+  }, [selectedCategories, selectedBrands, minPrice, maxPrice, sort, search, section, page]);
 
   // Every filter change resets back to page 1 and updates the URL (shareable
   // + back/forward navigable), except updatePage which intentionally keeps
@@ -359,6 +372,8 @@ const Shop = () => {
             <h1 className="text-2xl md:text-[34px] font-bold !text-white leading-tight">
               {search
                 ? `Results for "${search}"`
+                : section
+                ? SECTION_LABELS[section]
                 : selectedCategories.length === 1
                 ? categoryName(selectedCategories[0])
                 : "All Products"}
@@ -458,6 +473,9 @@ const Shop = () => {
                 label={`₹${minPrice || 0} – ₹${maxPrice || "∞"}`}
                 onRemove={() => updateFilters({ minPrice: "", maxPrice: "" })}
               />
+            )}
+            {section && (
+              <FilterChip label={SECTION_LABELS[section]} onRemove={() => updateFilters({ section: "" })} />
             )}
             {search && (
               <FilterChip label={`"${search}"`} onRemove={() => updateFilters({ search: "" })} />

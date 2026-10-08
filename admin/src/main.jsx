@@ -11,8 +11,6 @@ import "primeicons/primeicons.css";
 import "quill/dist/quill.snow.css";
 
 setTheme(getTheme());
-const savedTheme = localStorage.getItem("theme") || "dark";
-document.documentElement.setAttribute("data-theme", savedTheme);
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

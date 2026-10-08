@@ -42,6 +42,32 @@ const homeCmsSchema = new mongoose.Schema(
       },
     },
 
+    // Home-page video banner (uploaded from admin → /uploads/cms/videos/…)
+    videoBanner: {
+      url: {
+        type: String,
+        default: "",
+      },
+      poster: {
+        type: String,
+        default: "",
+      },
+    },
+
+    // Home-page "Our Gallery" images
+    gallery: [
+      {
+        image: {
+          type: String,
+          default: "",
+        },
+        caption: {
+          type: String,
+          default: "",
+        },
+      },
+    ],
+
     instagramPosts: [
       {
         image: {

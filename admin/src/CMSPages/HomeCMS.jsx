@@ -1,4 +1,5 @@
 import { Trash2 } from "lucide-react";
+import { MediaUpload, AddButton, RowControls, moveItem } from "./cmsShared";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
@@ -18,6 +19,10 @@ const HomeCMS = () => {
     },
 
     instagramPosts: [],
+
+    videoBanner: { url: "", poster: "" },
+
+    gallery: [],
   });
 
   const [loading, setLoading] = useState(true);
@@ -56,6 +61,13 @@ const HomeCMS = () => {
           },
 
         instagramPosts: cms?.instagramPosts || [],
+
+        videoBanner: {
+          url: cms?.videoBanner?.url || "",
+          poster: cms?.videoBanner?.poster || "",
+        },
+
+        gallery: cms?.gallery || [],
       });
     } catch (err) {
       console.error(err);
@@ -215,6 +227,10 @@ const HomeCMS = () => {
       instagramPosts: form.instagramPosts.filter(
         (p) => p.image && p.link
       ),
+
+      videoBanner: form.videoBanner,
+
+      gallery: form.gallery.filter((g) => g.image),
     };
 
     try {
@@ -511,6 +527,104 @@ const HomeCMS = () => {
               >
                 Remove Post
               </button>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ===========================
+          VIDEO BANNER
+      =========================== */}
+
+      <div className="bg-[var(--surface-container-high)] border border-white/10 rounded-2xl p-6">
+        <h2 className="text-lg text-white font-semibold">
+          Home Video Banner
+        </h2>
+        <p className="text-white/50 text-sm mt-1 mb-6">
+          MP4 or WEBM, up to 100 MB. Plays muted on loop on the home and About pages. Leave empty to keep the current video.
+        </p>
+
+        <div className="grid md:grid-cols-2 gap-6">
+          <div>
+            <p className="label mb-2">Video</p>
+            <MediaUpload
+              kind="video"
+              label="Upload Video"
+              className="h-56"
+              value={form.videoBanner.url}
+              onChange={(url) =>
+                setForm((f) => ({ ...f, videoBanner: { ...f.videoBanner, url } }))
+              }
+            />
+          </div>
+          <div>
+            <p className="label mb-2">Poster image (optional — shown while the video loads)</p>
+            <MediaUpload
+              label="Upload Poster"
+              className="h-56"
+              value={form.videoBanner.poster}
+              onChange={(poster) =>
+                setForm((f) => ({ ...f, videoBanner: { ...f.videoBanner, poster } }))
+              }
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* ===========================
+          GALLERY
+      =========================== */}
+
+      <div className="bg-[var(--surface-container-high)] border border-white/10 rounded-2xl p-6">
+        <div className="flex justify-between gap-4 mb-6">
+          <div>
+            <h2 className="text-lg text-white font-semibold">
+              Our Gallery
+            </h2>
+            <p className="text-white/50 text-sm mt-1">
+              Images for the home page gallery. While this list is empty the website keeps showing the current gallery.
+            </p>
+          </div>
+          <AddButton
+            onClick={() =>
+              setForm((f) => ({ ...f, gallery: [...f.gallery, { image: "", caption: "" }] }))
+            }
+          >
+            Add Image
+          </AddButton>
+        </div>
+
+        <div className="grid md:grid-cols-3 gap-5">
+          {form.gallery.map((item, index) => (
+            <div key={index} className="bg-[#121826] rounded-xl p-4 space-y-3">
+              <MediaUpload
+                className="h-44"
+                value={item.image}
+                onChange={(image) =>
+                  setForm((f) => ({
+                    ...f,
+                    gallery: f.gallery.map((g, i) => (i === index ? { ...g, image } : g)),
+                  }))
+                }
+              />
+              <input
+                type="text"
+                placeholder="Caption (optional, used as alt text)"
+                value={item.caption || ""}
+                onChange={(e) =>
+                  setForm((f) => ({
+                    ...f,
+                    gallery: f.gallery.map((g, i) => (i === index ? { ...g, caption: e.target.value } : g)),
+                  }))
+                }
+                className="w-full bg-[#0f131c] border border-white/10 rounded-lg p-3 text-white"
+              />
+              <RowControls
+                index={index}
+                count={form.gallery.length}
+                onMove={(from, to) => setForm((f) => ({ ...f, gallery: moveItem(f.gallery, from, to) }))}
+                onRemove={(i) => setForm((f) => ({ ...f, gallery: f.gallery.filter((_, x) => x !== i) }))}
+              />
             </div>
           ))}
         </div>

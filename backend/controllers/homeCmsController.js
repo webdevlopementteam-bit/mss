@@ -18,6 +18,8 @@ export const getHomeCMS = async (req, res) => {
           endDate: null,
         },
         instagramPosts: [],
+        videoBanner: { url: "", poster: "" },
+        gallery: [],
       });
     }
 
@@ -39,6 +41,8 @@ export const saveHomeCMS = async (req, res) => {
       salesBanners,
       weeklyDeal,
       instagramPosts,
+      videoBanner,
+      gallery,
     } = req.body;
 
     const cmsData = {
@@ -47,6 +51,11 @@ export const saveHomeCMS = async (req, res) => {
       weeklyDeal: weeklyDeal || {},
       instagramPosts: instagramPosts || [],
     };
+
+    // Optional sections — only touched when the admin sends them, so older
+    // admin builds that don't know about them can't wipe them out.
+    if (videoBanner !== undefined) cmsData.videoBanner = videoBanner || { url: "", poster: "" };
+    if (gallery !== undefined) cmsData.gallery = Array.isArray(gallery) ? gallery : [];
 
     let cms = await HomeCMS.findOne();
 

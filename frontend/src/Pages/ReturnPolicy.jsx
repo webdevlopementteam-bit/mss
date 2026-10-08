@@ -2,7 +2,7 @@ import { LegalLayout } from "../components/ui/LegalLayout";
 
 const ReturnPolicy = () => {
   return (
-    <LegalLayout title="Exchange & Return Policy" icon="fa-rotate-left" subtitle="Returns, replacements and cancellations, explained.">
+    <LegalLayout cmsKey="refund" title="Exchange & Return Policy" icon="fa-rotate-left" subtitle="Returns, replacements and cancellations, explained.">
         <h3 className="text-xl font-semibold">
           Medical Surgical Solutions Return, Replacement, and Cancellation Policy
         </h3>

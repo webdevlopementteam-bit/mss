@@ -10,12 +10,22 @@
   font-display: swap;
 }
 
+@font-face {
+  font-family: 'inter';
+  src: url('./fonts/Inter_18pt-SemiBold.ttf') format('truetype');
+  font-weight: 500 800;
+  font-style: normal;
+  font-display: swap;
+}
+
 *{
   margin:0;
   padding:0;
   font-family: 'inter',sans-serif;
-  color:#023350;
 }
+
+/* Text colour comes from the theme (styles/theme.css → body { color: var(--text) })
+   and inherits normally, so icons and button labels follow their parent. */
 
 /* Toolbar icons */
 .ql-toolbar .ql-stroke {

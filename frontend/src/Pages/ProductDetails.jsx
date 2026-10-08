@@ -250,7 +250,10 @@ const ProductDetails = () => {
     const rawDescription = product.metaDescription || product.description;
     const description = rawDescription ? rawDescription.slice(0, 160) : undefined;
 
-    setPageMeta({ title, description });
+    // Keywords: admin Meta Keywords, else the product's tags.
+    const keywords = product.metaKeywords || (Array.isArray(product.tags) ? product.tags.join(", ") : "");
+
+    setPageMeta({ title, description, keywords });
 
     return () => resetPageMeta();
   }, [product]);

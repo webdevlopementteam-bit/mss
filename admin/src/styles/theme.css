@@ -1,69 +1,302 @@
-html[data-theme="dark"] {
-  --bg: #020617;
-  --card: #0f172a;
-  --input: #020617;
-  --border: rgba(255, 255, 255, 0.08);
-  --text: #e2e8f0;
-  --muted: #94a3b8;
-}
-
+/* ==================================================================
+   MSS Admin — design tokens (light + dark)
+   ================================================================== */
 html[data-theme="light"] {
-  --bg: #f1f5f9;
-  --card: #ffffff;
-  --input: #f8fafc;
-  --border: rgba(0, 0, 0, 0.08);
-  --text: #0f172a;
-  --muted: #64748b;
-}
-
-html[data-theme="light"] {
-  --background: #f1f5f9;
+  --bg: #f3f5f9;
   --surface: #ffffff;
-  --surface-container-low: #f8fafc;
-  --surface-container-high: #e2e8f0;
-
-  --on-surface: #0f172a;
-  --on-surface-variant: #475569;
-
-  --primary: #2563eb;
-  --primary-container: #1d4ed8;
+  --surface-2: #f7f9fc;
+  --surface-3: #eef2f7;
+  --hover: #f1f4f9;
+  --border: #e4e8ef;
+  --border-strong: #cfd6e2;
+  --text: #0f1b2d;
+  --text-2: #4a5568;
+  --text-3: #8a94a6;
+  --primary: #b52327;
+  --primary-hover: #9b1d21;
+  --primary-soft: rgba(181, 35, 39, 0.08);
+  --ring: rgba(181, 35, 39, 0.18);
+  --shadow-sm: 0 1px 2px rgba(15, 27, 45, 0.04), 0 1px 3px rgba(15, 27, 45, 0.06);
+  --shadow-md: 0 10px 30px -12px rgba(15, 27, 45, 0.18);
+  --sidebar: #0b2239;
+  --sidebar-2: #12304d;
+  --sidebar-text: #c7d3e3;
+  --sidebar-muted: #7f93ad;
+  color-scheme: light;
 }
 
-:root {
-  --background: #0b0e15;
-  --surface: #0b0e15;
-  --surface-low: #0f131c;
-  --surface-high: #1a202b;
-  --surface-highest: #1f2633;
-
-  --primary: #a7c8ff;
-  --primary-container: #2e5386;
-
-  --on-surface: #dfe5f8;
-  --on-surface-variant: #a5abbc;
-
-  --error: #fa746f;
+html[data-theme="dark"] {
+  --bg: #0a101c;
+  --surface: #111a2b;
+  --surface-2: #0d1524;
+  --surface-3: #18233a;
+  --hover: #172238;
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.16);
+  --text: #e8eef7;
+  --text-2: #a9b5c9;
+  --text-3: #6f7c93;
+  --primary: #e5484d;
+  --primary-hover: #cf3a3f;
+  --primary-soft: rgba(229, 72, 77, 0.14);
+  --ring: rgba(229, 72, 77, 0.28);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 18px 40px -18px rgba(0, 0, 0, 0.7);
+  --sidebar: #081120;
+  --sidebar-2: #0f1c31;
+  --sidebar-text: #b9c6d8;
+  --sidebar-muted: #6c7d96;
+  color-scheme: dark;
 }
 
-body {
-  background: var(--background);
-  color: var(--on-surface);
-  font-family: "Inter", sans-serif;
+/* Legacy variable names used across existing pages → new tokens */
+html[data-theme] {
+  --background: var(--bg);
+  --surface-low: var(--surface-2);
+  --surface-high: var(--surface-3);
+  --surface-highest: var(--surface-3);
+  --surface-container-low: var(--surface-2);
+  --surface-container-high: var(--surface);
+  --on-surface: var(--text);
+  --on-surface-variant: var(--text-2);
+  --primary-container: var(--primary-hover);
+  --error: #ef4444;
+  --card: var(--surface);
+  --input: var(--surface-2);
+  --muted: var(--text-3);
 }
 
-.sidebar-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 12px;
-  border-radius: 10px;
-  font-size: 11px;
+html[data-theme] body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: "inter", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+html[data-theme] ::selection {
+  background: var(--primary-soft);
+}
+
+/* Form controls */
+html[data-theme] .input,
+html[data-theme] .input-sm {
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  color: var(--text);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+html[data-theme] .input:focus,
+html[data-theme] .input-sm:focus,
+html[data-theme] input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):focus,
+html[data-theme] select:focus,
+html[data-theme] textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--ring);
+}
+html[data-theme] .label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-2);
+}
+html[data-theme] ::placeholder {
+  color: var(--text-3);
+  opacity: 1;
+}
+html[data-theme] input[type="checkbox"],
+html[data-theme] input[type="radio"] {
+  accent-color: var(--primary);
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+html[data-theme] select option {
+  background: var(--surface);
+  color: var(--text);
+}
+html[data-theme] input[type="file"] {
+  color: var(--text-2);
+}
+html[data-theme] input[type="file"]::file-selector-button {
+  margin-right: 10px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface-2);
+  color: var(--text);
+  cursor: pointer;
+}
+
+/* Tables */
+html[data-theme] table thead {
+  background: var(--surface-2);
+}
+html[data-theme] table thead th {
+  font-size: 11.5px;
   font-weight: 600;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--on-surface-variant);
+  color: var(--text-3);
+}
+html[data-theme] table tbody tr {
+  border-color: var(--border);
 }
 
-.sidebar-item:hover {
-  background: var(--surface-high);
-  color: var(--on-surface);
+/* Scrollbars */
+html[data-theme] ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+html[data-theme] ::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 999px;
+}
+html[data-theme] ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Rich text editor (Tiptap) */
+html[data-theme] .ProseMirror,
+html[data-theme] .ProseMirror * {
+  color: var(--text);
+}
+html[data-theme] .ProseMirror p.is-editor-empty:first-child::before {
+  color: var(--text-3);
+}
+html[data-theme] .ProseMirror blockquote {
+  border-left-color: var(--border-strong);
+  color: var(--text-2);
+}
+
+/* Quill / PrimeReact editor */
+html[data-theme] .ql-toolbar {
+  background: var(--surface-2) !important;
+  border-color: var(--border) !important;
+}
+html[data-theme] .ql-container {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+}
+html[data-theme] .ql-editor,
+html[data-theme] .ql-editor :is(p, span, div, li, strong, em, u) {
+  color: var(--text) !important;
+  caret-color: var(--text) !important;
+}
+html[data-theme] .ql-editor.ql-blank::before {
+  color: var(--text-3) !important;
+}
+html[data-theme] .ql-toolbar .ql-stroke {
+  stroke: var(--text-2) !important;
+}
+html[data-theme] .ql-toolbar .ql-fill {
+  fill: var(--text-2) !important;
+}
+html[data-theme] .ql-toolbar :is(.ql-picker, .ql-picker-label) {
+  color: var(--text-2) !important;
+}
+
+/* ------------------------------------------------------------------
+   LEGACY CLASS BRIDGE
+   Pages were written dark-only with hard-coded colours (text-white,
+   bg-[#1a202b], border-white/10 ...). These rules re-point those classes to
+   the theme tokens so every page works in both themes without touching
+   page logic. New pages should use the tokens (var(--text) etc.) directly.
+   ------------------------------------------------------------------ */
+html[data-theme] .text-white,
+html[data-theme] .text-on-surface,
+html[data-theme] .hover\:text-white:hover,
+html[data-theme] .text-white\/90,
+html[data-theme] .text-white\/80 {
+  color: var(--text);
+}
+html[data-theme] .text-white\/70,
+html[data-theme] .text-white\/60,
+html[data-theme] .text-gray-300 {
+  color: var(--text-2);
+}
+html[data-theme] .text-white\/50,
+html[data-theme] .text-white\/40,
+html[data-theme] .text-white\/30,
+html[data-theme] .text-gray-400,
+html[data-theme] .text-gray-500 {
+  color: var(--text-3);
+}
+html[data-theme] .bg-\[\#0f131c\],
+html[data-theme] .bg-\[\#0f172a\],
+html[data-theme] .bg-\[\#111827\],
+html[data-theme] .bg-\[\#0b0e15\],
+html[data-theme] .bg-surface-container-high {
+  background-color: var(--surface);
+}
+html[data-theme] .bg-\[\#121826\],
+html[data-theme] .bg-\[\#1a202b\],
+html[data-theme] .bg-\[\#1e293b\],
+html[data-theme] .bg-\[\#2a2f3a\],
+html[data-theme] .bg-\[\#3a3f4a\],
+html[data-theme] .bg-\[\#1f2633\],
+html[data-theme] .bg-surface-container-highest {
+  background-color: var(--surface-2);
+}
+html[data-theme] .bg-white\/5,
+html[data-theme] .bg-white\/10,
+html[data-theme] .bg-white\/15,
+html[data-theme] .bg-white\/20 {
+  background-color: var(--surface-3);
+}
+html[data-theme] .hover\:bg-white\/5:hover,
+html[data-theme] .hover\:bg-white\/10:hover,
+html[data-theme] .hover\:bg-white\/15:hover,
+html[data-theme] .hover\:bg-white\/20:hover,
+html[data-theme] .hover\:bg-\[var\(--surface-high\)\]:hover {
+  background-color: var(--hover);
+}
+html[data-theme] .border-white\/5,
+html[data-theme] .border-white\/10,
+html[data-theme] .border-white\/20,
+html[data-theme] .border-\[var\(--border\)\] {
+  border-color: var(--border);
+}
+html[data-theme] .border-white\/30,
+html[data-theme] .border-white\/50,
+html[data-theme] .border-white\/60 {
+  border-color: var(--border-strong);
+}
+html[data-theme] .bg-surface-container-high {
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Solid coloured buttons/badges keep white text & icons in both themes. */
+html[data-theme] :is([class="bg-red-500"],[class^="bg-red-500 "],[class*=" bg-red-500 "],[class$=" bg-red-500"],[class="bg-red-600"],[class^="bg-red-600 "],[class*=" bg-red-600 "],[class$=" bg-red-600"],[class="bg-red-700"],[class^="bg-red-700 "],[class*=" bg-red-700 "],[class$=" bg-red-700"],[class="bg-red-800"],[class^="bg-red-800 "],[class*=" bg-red-800 "],[class$=" bg-red-800"],[class="bg-blue-500"],[class^="bg-blue-500 "],[class*=" bg-blue-500 "],[class$=" bg-blue-500"],[class="bg-blue-600"],[class^="bg-blue-600 "],[class*=" bg-blue-600 "],[class$=" bg-blue-600"],[class="bg-blue-700"],[class^="bg-blue-700 "],[class*=" bg-blue-700 "],[class$=" bg-blue-700"],[class="bg-blue-800"],[class^="bg-blue-800 "],[class*=" bg-blue-800 "],[class$=" bg-blue-800"],[class="bg-green-500"],[class^="bg-green-500 "],[class*=" bg-green-500 "],[class$=" bg-green-500"],[class="bg-green-600"],[class^="bg-green-600 "],[class*=" bg-green-600 "],[class$=" bg-green-600"],[class="bg-green-700"],[class^="bg-green-700 "],[class*=" bg-green-700 "],[class$=" bg-green-700"],[class="bg-green-800"],[class^="bg-green-800 "],[class*=" bg-green-800 "],[class$=" bg-green-800"],[class="bg-emerald-500"],[class^="bg-emerald-500 "],[class*=" bg-emerald-500 "],[class$=" bg-emerald-500"],[class="bg-emerald-600"],[class^="bg-emerald-600 "],[class*=" bg-emerald-600 "],[class$=" bg-emerald-600"],[class="bg-emerald-700"],[class^="bg-emerald-700 "],[class*=" bg-emerald-700 "],[class$=" bg-emerald-700"],[class="bg-emerald-800"],[class^="bg-emerald-800 "],[class*=" bg-emerald-800 "],[class$=" bg-emerald-800"],[class="bg-indigo-500"],[class^="bg-indigo-500 "],[class*=" bg-indigo-500 "],[class$=" bg-indigo-500"],[class="bg-indigo-600"],[class^="bg-indigo-600 "],[class*=" bg-indigo-600 "],[class$=" bg-indigo-600"],[class="bg-indigo-700"],[class^="bg-indigo-700 "],[class*=" bg-indigo-700 "],[class$=" bg-indigo-700"],[class="bg-indigo-800"],[class^="bg-indigo-800 "],[class*=" bg-indigo-800 "],[class$=" bg-indigo-800"],[class="bg-purple-500"],[class^="bg-purple-500 "],[class*=" bg-purple-500 "],[class$=" bg-purple-500"],[class="bg-purple-600"],[class^="bg-purple-600 "],[class*=" bg-purple-600 "],[class$=" bg-purple-600"],[class="bg-purple-700"],[class^="bg-purple-700 "],[class*=" bg-purple-700 "],[class$=" bg-purple-700"],[class="bg-purple-800"],[class^="bg-purple-800 "],[class*=" bg-purple-800 "],[class$=" bg-purple-800"],[class="bg-pink-500"],[class^="bg-pink-500 "],[class*=" bg-pink-500 "],[class$=" bg-pink-500"],[class="bg-pink-600"],[class^="bg-pink-600 "],[class*=" bg-pink-600 "],[class$=" bg-pink-600"],[class="bg-pink-700"],[class^="bg-pink-700 "],[class*=" bg-pink-700 "],[class$=" bg-pink-700"],[class="bg-pink-800"],[class^="bg-pink-800 "],[class*=" bg-pink-800 "],[class$=" bg-pink-800"],[class="bg-rose-500"],[class^="bg-rose-500 "],[class*=" bg-rose-500 "],[class$=" bg-rose-500"],[class="bg-rose-600"],[class^="bg-rose-600 "],[class*=" bg-rose-600 "],[class$=" bg-rose-600"],[class="bg-rose-700"],[class^="bg-rose-700 "],[class*=" bg-rose-700 "],[class$=" bg-rose-700"],[class="bg-rose-800"],[class^="bg-rose-800 "],[class*=" bg-rose-800 "],[class$=" bg-rose-800"],[class="bg-sky-500"],[class^="bg-sky-500 "],[class*=" bg-sky-500 "],[class$=" bg-sky-500"],[class="bg-sky-600"],[class^="bg-sky-600 "],[class*=" bg-sky-600 "],[class$=" bg-sky-600"],[class="bg-sky-700"],[class^="bg-sky-700 "],[class*=" bg-sky-700 "],[class$=" bg-sky-700"],[class="bg-sky-800"],[class^="bg-sky-800 "],[class*=" bg-sky-800 "],[class$=" bg-sky-800"],[class="bg-teal-500"],[class^="bg-teal-500 "],[class*=" bg-teal-500 "],[class$=" bg-teal-500"],[class="bg-teal-600"],[class^="bg-teal-600 "],[class*=" bg-teal-600 "],[class$=" bg-teal-600"],[class="bg-teal-700"],[class^="bg-teal-700 "],[class*=" bg-teal-700 "],[class$=" bg-teal-700"],[class="bg-teal-800"],[class^="bg-teal-800 "],[class*=" bg-teal-800 "],[class$=" bg-teal-800"],[class="bg-cyan-500"],[class^="bg-cyan-500 "],[class*=" bg-cyan-500 "],[class$=" bg-cyan-500"],[class="bg-cyan-600"],[class^="bg-cyan-600 "],[class*=" bg-cyan-600 "],[class$=" bg-cyan-600"],[class="bg-cyan-700"],[class^="bg-cyan-700 "],[class*=" bg-cyan-700 "],[class$=" bg-cyan-700"],[class="bg-cyan-800"],[class^="bg-cyan-800 "],[class*=" bg-cyan-800 "],[class$=" bg-cyan-800"],[class="bg-orange-500"],[class^="bg-orange-500 "],[class*=" bg-orange-500 "],[class$=" bg-orange-500"],[class="bg-orange-600"],[class^="bg-orange-600 "],[class*=" bg-orange-600 "],[class$=" bg-orange-600"],[class="bg-orange-700"],[class^="bg-orange-700 "],[class*=" bg-orange-700 "],[class$=" bg-orange-700"],[class="bg-orange-800"],[class^="bg-orange-800 "],[class*=" bg-orange-800 "],[class$=" bg-orange-800"],[class="bg-violet-500"],[class^="bg-violet-500 "],[class*=" bg-violet-500 "],[class$=" bg-violet-500"],[class="bg-violet-600"],[class^="bg-violet-600 "],[class*=" bg-violet-600 "],[class$=" bg-violet-600"],[class="bg-violet-700"],[class^="bg-violet-700 "],[class*=" bg-violet-700 "],[class$=" bg-violet-700"],[class="bg-violet-800"],[class^="bg-violet-800 "],[class*=" bg-violet-800 "],[class$=" bg-violet-800"],[class="bg-fuchsia-500"],[class^="bg-fuchsia-500 "],[class*=" bg-fuchsia-500 "],[class$=" bg-fuchsia-500"],[class="bg-fuchsia-600"],[class^="bg-fuchsia-600 "],[class*=" bg-fuchsia-600 "],[class$=" bg-fuchsia-600"],[class="bg-fuchsia-700"],[class^="bg-fuchsia-700 "],[class*=" bg-fuchsia-700 "],[class$=" bg-fuchsia-700"],[class="bg-fuchsia-800"],[class^="bg-fuchsia-800 "],[class*=" bg-fuchsia-800 "],[class$=" bg-fuchsia-800"],[class="bg-gray-600"],[class^="bg-gray-600 "],[class*=" bg-gray-600 "],[class$=" bg-gray-600"],[class="bg-gray-700"],[class^="bg-gray-700 "],[class*=" bg-gray-700 "],[class$=" bg-gray-700"],[class="bg-gray-800"],[class^="bg-gray-800 "],[class*=" bg-gray-800 "],[class$=" bg-gray-800"],[class^="bg-gradient-to"],[class*=" bg-gradient-to"],[class="from-[var(--primary)]"],[class^="from-[var(--primary)] "],[class*=" from-[var(--primary)] "],[class$=" from-[var(--primary)]"],[class="bg-[var(--primary)]"],[class^="bg-[var(--primary)] "],[class*=" bg-[var(--primary)] "],[class$=" bg-[var(--primary)]"],[class="bg-[var(--primary-container)]"],[class^="bg-[var(--primary-container)] "],[class*=" bg-[var(--primary-container)] "],[class$=" bg-[var(--primary-container)]"],[class^="from-blue-"],[class*=" from-blue-"],[class^="from-indigo-"],[class*=" from-indigo-"],[class^="from-red-"],[class*=" from-red-"],[class^="from-green-"],[class*=" from-green-"]):not([class*="bg-[var(--primary)]/"]),
+html[data-theme] :is([class="bg-red-500"],[class^="bg-red-500 "],[class*=" bg-red-500 "],[class$=" bg-red-500"],[class="bg-red-600"],[class^="bg-red-600 "],[class*=" bg-red-600 "],[class$=" bg-red-600"],[class="bg-red-700"],[class^="bg-red-700 "],[class*=" bg-red-700 "],[class$=" bg-red-700"],[class="bg-red-800"],[class^="bg-red-800 "],[class*=" bg-red-800 "],[class$=" bg-red-800"],[class="bg-blue-500"],[class^="bg-blue-500 "],[class*=" bg-blue-500 "],[class$=" bg-blue-500"],[class="bg-blue-600"],[class^="bg-blue-600 "],[class*=" bg-blue-600 "],[class$=" bg-blue-600"],[class="bg-blue-700"],[class^="bg-blue-700 "],[class*=" bg-blue-700 "],[class$=" bg-blue-700"],[class="bg-blue-800"],[class^="bg-blue-800 "],[class*=" bg-blue-800 "],[class$=" bg-blue-800"],[class="bg-green-500"],[class^="bg-green-500 "],[class*=" bg-green-500 "],[class$=" bg-green-500"],[class="bg-green-600"],[class^="bg-green-600 "],[class*=" bg-green-600 "],[class$=" bg-green-600"],[class="bg-green-700"],[class^="bg-green-700 "],[class*=" bg-green-700 "],[class$=" bg-green-700"],[class="bg-green-800"],[class^="bg-green-800 "],[class*=" bg-green-800 "],[class$=" bg-green-800"],[class="bg-emerald-500"],[class^="bg-emerald-500 "],[class*=" bg-emerald-500 "],[class$=" bg-emerald-500"],[class="bg-emerald-600"],[class^="bg-emerald-600 "],[class*=" bg-emerald-600 "],[class$=" bg-emerald-600"],[class="bg-emerald-700"],[class^="bg-emerald-700 "],[class*=" bg-emerald-700 "],[class$=" bg-emerald-700"],[class="bg-emerald-800"],[class^="bg-emerald-800 "],[class*=" bg-emerald-800 "],[class$=" bg-emerald-800"],[class="bg-indigo-500"],[class^="bg-indigo-500 "],[class*=" bg-indigo-500 "],[class$=" bg-indigo-500"],[class="bg-indigo-600"],[class^="bg-indigo-600 "],[class*=" bg-indigo-600 "],[class$=" bg-indigo-600"],[class="bg-indigo-700"],[class^="bg-indigo-700 "],[class*=" bg-indigo-700 "],[class$=" bg-indigo-700"],[class="bg-indigo-800"],[class^="bg-indigo-800 "],[class*=" bg-indigo-800 "],[class$=" bg-indigo-800"],[class="bg-purple-500"],[class^="bg-purple-500 "],[class*=" bg-purple-500 "],[class$=" bg-purple-500"],[class="bg-purple-600"],[class^="bg-purple-600 "],[class*=" bg-purple-600 "],[class$=" bg-purple-600"],[class="bg-purple-700"],[class^="bg-purple-700 "],[class*=" bg-purple-700 "],[class$=" bg-purple-700"],[class="bg-purple-800"],[class^="bg-purple-800 "],[class*=" bg-purple-800 "],[class$=" bg-purple-800"],[class="bg-pink-500"],[class^="bg-pink-500 "],[class*=" bg-pink-500 "],[class$=" bg-pink-500"],[class="bg-pink-600"],[class^="bg-pink-600 "],[class*=" bg-pink-600 "],[class$=" bg-pink-600"],[class="bg-pink-700"],[class^="bg-pink-700 "],[class*=" bg-pink-700 "],[class$=" bg-pink-700"],[class="bg-pink-800"],[class^="bg-pink-800 "],[class*=" bg-pink-800 "],[class$=" bg-pink-800"],[class="bg-rose-500"],[class^="bg-rose-500 "],[class*=" bg-rose-500 "],[class$=" bg-rose-500"],[class="bg-rose-600"],[class^="bg-rose-600 "],[class*=" bg-rose-600 "],[class$=" bg-rose-600"],[class="bg-rose-700"],[class^="bg-rose-700 "],[class*=" bg-rose-700 "],[class$=" bg-rose-700"],[class="bg-rose-800"],[class^="bg-rose-800 "],[class*=" bg-rose-800 "],[class$=" bg-rose-800"],[class="bg-sky-500"],[class^="bg-sky-500 "],[class*=" bg-sky-500 "],[class$=" bg-sky-500"],[class="bg-sky-600"],[class^="bg-sky-600 "],[class*=" bg-sky-600 "],[class$=" bg-sky-600"],[class="bg-sky-700"],[class^="bg-sky-700 "],[class*=" bg-sky-700 "],[class$=" bg-sky-700"],[class="bg-sky-800"],[class^="bg-sky-800 "],[class*=" bg-sky-800 "],[class$=" bg-sky-800"],[class="bg-teal-500"],[class^="bg-teal-500 "],[class*=" bg-teal-500 "],[class$=" bg-teal-500"],[class="bg-teal-600"],[class^="bg-teal-600 "],[class*=" bg-teal-600 "],[class$=" bg-teal-600"],[class="bg-teal-700"],[class^="bg-teal-700 "],[class*=" bg-teal-700 "],[class$=" bg-teal-700"],[class="bg-teal-800"],[class^="bg-teal-800 "],[class*=" bg-teal-800 "],[class$=" bg-teal-800"],[class="bg-cyan-500"],[class^="bg-cyan-500 "],[class*=" bg-cyan-500 "],[class$=" bg-cyan-500"],[class="bg-cyan-600"],[class^="bg-cyan-600 "],[class*=" bg-cyan-600 "],[class$=" bg-cyan-600"],[class="bg-cyan-700"],[class^="bg-cyan-700 "],[class*=" bg-cyan-700 "],[class$=" bg-cyan-700"],[class="bg-cyan-800"],[class^="bg-cyan-800 "],[class*=" bg-cyan-800 "],[class$=" bg-cyan-800"],[class="bg-orange-500"],[class^="bg-orange-500 "],[class*=" bg-orange-500 "],[class$=" bg-orange-500"],[class="bg-orange-600"],[class^="bg-orange-600 "],[class*=" bg-orange-600 "],[class$=" bg-orange-600"],[class="bg-orange-700"],[class^="bg-orange-700 "],[class*=" bg-orange-700 "],[class$=" bg-orange-700"],[class="bg-orange-800"],[class^="bg-orange-800 "],[class*=" bg-orange-800 "],[class$=" bg-orange-800"],[class="bg-violet-500"],[class^="bg-violet-500 "],[class*=" bg-violet-500 "],[class$=" bg-violet-500"],[class="bg-violet-600"],[class^="bg-violet-600 "],[class*=" bg-violet-600 "],[class$=" bg-violet-600"],[class="bg-violet-700"],[class^="bg-violet-700 "],[class*=" bg-violet-700 "],[class$=" bg-violet-700"],[class="bg-violet-800"],[class^="bg-violet-800 "],[class*=" bg-violet-800 "],[class$=" bg-violet-800"],[class="bg-fuchsia-500"],[class^="bg-fuchsia-500 "],[class*=" bg-fuchsia-500 "],[class$=" bg-fuchsia-500"],[class="bg-fuchsia-600"],[class^="bg-fuchsia-600 "],[class*=" bg-fuchsia-600 "],[class$=" bg-fuchsia-600"],[class="bg-fuchsia-700"],[class^="bg-fuchsia-700 "],[class*=" bg-fuchsia-700 "],[class$=" bg-fuchsia-700"],[class="bg-fuchsia-800"],[class^="bg-fuchsia-800 "],[class*=" bg-fuchsia-800 "],[class$=" bg-fuchsia-800"],[class="bg-gray-600"],[class^="bg-gray-600 "],[class*=" bg-gray-600 "],[class$=" bg-gray-600"],[class="bg-gray-700"],[class^="bg-gray-700 "],[class*=" bg-gray-700 "],[class$=" bg-gray-700"],[class="bg-gray-800"],[class^="bg-gray-800 "],[class*=" bg-gray-800 "],[class$=" bg-gray-800"],[class^="bg-gradient-to"],[class*=" bg-gradient-to"],[class="from-[var(--primary)]"],[class^="from-[var(--primary)] "],[class*=" from-[var(--primary)] "],[class$=" from-[var(--primary)]"],[class="bg-[var(--primary)]"],[class^="bg-[var(--primary)] "],[class*=" bg-[var(--primary)] "],[class$=" bg-[var(--primary)]"],[class="bg-[var(--primary-container)]"],[class^="bg-[var(--primary-container)] "],[class*=" bg-[var(--primary-container)] "],[class$=" bg-[var(--primary-container)]"],[class^="from-blue-"],[class*=" from-blue-"],[class^="from-indigo-"],[class*=" from-indigo-"],[class^="from-red-"],[class*=" from-red-"],[class^="from-green-"],[class*=" from-green-"]):not([class*="bg-[var(--primary)]/"]) :is(.text-white, [class*="text-white/"], svg) {
+  color: #fff;
+}
+html[data-theme="light"] .text-green-300, html[data-theme="light"] .text-green-400 { color: #15803d; }
+html[data-theme="light"] .text-emerald-300, html[data-theme="light"] .text-emerald-400 { color: #047857; }
+html[data-theme="light"] .text-blue-300, html[data-theme="light"] .text-blue-400 { color: #1d4ed8; }
+html[data-theme="light"] .text-yellow-300, html[data-theme="light"] .text-yellow-400 { color: #a16207; }
+html[data-theme="light"] .text-amber-300, html[data-theme="light"] .text-amber-400 { color: #b45309; }
+html[data-theme="light"] .text-red-300, html[data-theme="light"] .text-red-400 { color: #b91c1c; }
+html[data-theme="light"] .text-purple-300, html[data-theme="light"] .text-purple-400 { color: #7e22ce; }
+html[data-theme="light"] .text-orange-300, html[data-theme="light"] .text-orange-400 { color: #c2410c; }
+html[data-theme="light"] .text-sky-300, html[data-theme="light"] .text-sky-400 { color: #0369a1; }
+
+/* ------------------------------------------------------------------
+   Page shell. The header used to be position:fixed, so every page added
+   its own top padding/margin (p-6, mt-10, pt-20) to clear it. The layout
+   now provides spacing (main p-6/p-8), so neutralise those offsets.
+   ------------------------------------------------------------------ */
+html[data-theme] .admin-main > :first-child {
+  padding: 0 !important;
+  margin-top: 0 !important;
+}
+html[data-theme] .admin-main > :first-child > :first-child {
+  margin-top: 0 !important;
+}
+html[data-theme] .admin-main > :first-child > :first-child > h1,
+html[data-theme] .admin-main > :first-child > h1:first-child {
+  font-size: 1.375rem;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.01em;
 }

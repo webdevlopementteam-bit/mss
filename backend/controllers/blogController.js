@@ -8,7 +8,7 @@ const slugify = (text) =>
 // 🔹 CREATE
 export const createBlog = async (req, res) => {
   try {
-    const { name, description, metaTitle, metaDescription, isPublished } =
+    const { name, description, metaTitle, metaDescription, metaKeywords, isPublished } =
       req.body;
 
     if (
@@ -42,6 +42,7 @@ export const createBlog = async (req, res) => {
       description,
       metaTitle,
       metaDescription,
+      metaKeywords: metaKeywords || "",
       isPublished,
       image: req.file.path.replace(/\\/g, "/"),
     });
@@ -147,7 +148,7 @@ export const getBlogBySlug = async (req, res) => {
 // 🔹 UPDATE
 export const updateBlog = async (req, res) => {
   try {
-    const { name, description, metaTitle, metaDescription, isPublished } =
+    const { name, description, metaTitle, metaDescription, metaKeywords, isPublished } =
       req.body;
 
     const blog = await Blog.findById(req.params.id);
@@ -175,6 +176,7 @@ export const updateBlog = async (req, res) => {
     if (description) blog.description = description;
     if (metaTitle) blog.metaTitle = metaTitle;
     if (metaDescription) blog.metaDescription = metaDescription;
+    if (typeof metaKeywords !== "undefined") blog.metaKeywords = metaKeywords;
     if (typeof isPublished !== "undefined") blog.isPublished = isPublished;
 
     await blog.save();
