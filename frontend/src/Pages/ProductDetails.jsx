@@ -138,27 +138,66 @@ const ImageGallery = ({ images = [], title, discount }) => {
   );
 };
 
-// Splits the rich-text description so only the first two paragraphs are
-// shown up front. Headings/lists that sit before the 2nd paragraph stay in
-// the preview so it never starts or ends mid-thought.
-const PREVIEW_PARAGRAPHS = 2;
-const splitDescription = (html) => {
-  if (typeof DOMParser === "undefined") return { preview: html, hasMore: false };
-  const doc = new DOMParser().parseFromString(`<div>${html}</div>`, "text/html");
-  const nodes = Array.from(doc.body.firstChild.childNodes).filter(
-    (n) => n.nodeType === 1 || n.textContent.trim() !== ""
+// Rich-text from the admin editor often carries empty paragraphs and
+// stacked <br>s (pasted text), which showed up as big vertical gaps.
+const cleanDescriptionHtml = (html) =>
+  String(html || "")
+    .replace(/<p>(?:\s|&nbsp;|<br\s*\/?>)*<\/p>/gi, "")
+    .replace(/(?:<br\s*\/?>\s*){2,}/gi, "<br>")
+    .trim();
+
+const PREVIEW_LINES = 7;
+const DESC_LINE_REM = 1.6; // keep in sync with .product-desc line-height (index.css)
+
+/* Shows the first ~7 lines with a fade; "View more" appears only when the
+ * text is actually longer than that (measured, not guessed). */
+const ClampedDescription = ({ html }) => {
+  const ref = useRef(null);
+  const [expanded, setExpanded] = useState(false);
+  const [overflows, setOverflows] = useState(false);
+
+  useEffect(() => {
+    setExpanded(false);
+  }, [html]);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const measure = () => {
+      if (expanded) return;
+      setOverflows(el.scrollHeight > el.clientHeight + 4);
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [html, expanded]);
+
+  return (
+    <div>
+      <div className="relative">
+        <div
+          ref={ref}
+          className="prose-description product-desc !text-gray-600 overflow-hidden transition-[max-height] duration-300"
+          style={{ maxHeight: expanded ? "none" : `${PREVIEW_LINES * DESC_LINE_REM}rem` }}
+          dangerouslySetInnerHTML={{ __html: html }}
+        />
+        {!expanded && overflows && (
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-white to-transparent" />
+        )}
+      </div>
+      {(overflows || expanded) && (
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          className="mt-3 inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-primaryColor/30 text-sm font-semibold !text-primaryColor hover:bg-primaryColor/5 transition"
+        >
+          <span className="!text-inherit">{expanded ? "View less" : "View more"}</span>
+          <i className={`fa-solid ${expanded ? "fa-chevron-up" : "fa-chevron-down"} text-[10px] !text-inherit`}></i>
+        </button>
+      )}
+    </div>
   );
-  let paragraphs = 0;
-  let cut = nodes.length;
-  for (let i = 0; i < nodes.length; i++) {
-    if (nodes[i].nodeName === "P" && nodes[i].textContent.trim() !== "") paragraphs++;
-    if (paragraphs === PREVIEW_PARAGRAPHS) {
-      cut = i + 1;
-      break;
-    }
-  }
-  const toHtml = (n) => (n.nodeType === 1 ? n.outerHTML : n.textContent);
-  return { preview: nodes.slice(0, cut).map(toHtml).join(""), hasMore: cut < nodes.length };
 };
 
 // Shown at the end of every product's description.
@@ -203,7 +242,6 @@ const ProductDetails = () => {
   const [notFound, setNotFound] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [selectedValues, setSelectedValues] = useState({});
-  const [descExpanded, setDescExpanded] = useState(false);
   const [related, setRelated] = useState([]);
   const [relatedLoading, setRelatedLoading] = useState(true);
 
@@ -213,7 +251,6 @@ const ProductDetails = () => {
     setNotFound(false);
     setQuantity(1);
     setSelectedValues({});
-    setDescExpanded(false);
 
     getProductById(id)
       .then(({ data }) => {
@@ -369,10 +406,9 @@ const ProductDetails = () => {
   // Long-form rich text (Tiptap HTML) description; older products created
   // before this field existed fall back to the short description so the
   // Description card isn't blank just because it predates this feature.
-  const longDescriptionHtml = product.longDescription?.trim() || `<p>${product.description || ""}</p>`;
+  const longDescriptionHtml = cleanDescriptionHtml(product.longDescription?.trim() || `<p>${product.description || ""}</p>`);
   const hasDescription = longDescriptionHtml.replace(/<[^>]*>/g, "").trim().length > 0;
 
-  const { preview: descriptionPreview, hasMore: descriptionHasMore } = splitDescription(longDescriptionHtml);
   // Always true now: the Description card carries the product name and the
   // static MSS block even when the product itself has no description.
   const hasDetails = true;
@@ -687,28 +723,11 @@ const ProductDetails = () => {
                   <h2 className="text-lg md:text-xl font-bold !text-gray-900">Description</h2>
                 </div>
                 <div className="p-5 md:p-7">
-                  <h3 className="text-lg md:text-[22px] font-bold leading-snug !text-[#023350] mb-3">{product.title}</h3>
-                  {hasDescription && (
-                  <div
-                    className="prose-description !text-gray-600 leading-8"
-                    dangerouslySetInnerHTML={{
-                      __html: descExpanded ? longDescriptionHtml : descriptionPreview,
-                    }}
-                  />
-                  )}
-                  {hasDescription && descriptionHasMore && (
-                    <button
-                      type="button"
-                      onClick={() => setDescExpanded((v) => !v)}
-                      className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-primaryColor/30 text-sm font-semibold !text-primaryColor hover:bg-primaryColor/5 transition"
-                    >
-                      <span className="!text-inherit">{descExpanded ? "View less" : "View more"}</span>
-                      <i className={`fa-solid ${descExpanded ? "fa-chevron-up" : "fa-chevron-down"} text-[10px] !text-inherit`}></i>
-                    </button>
-                  )}
+                  <h3 className="text-lg md:text-[22px] font-bold leading-snug !text-[#023350] mb-2">{product.title}</h3>
+                  {hasDescription && <ClampedDescription html={longDescriptionHtml} />}
 
                   {/* Static brand block — same on every product page */}
-                  <div className="mt-6 rounded-xl border border-secondaryColor/20 bg-secondaryColor/[0.06] p-4 md:p-5">
+                  <div className="mt-5 rounded-xl border border-secondaryColor/20 bg-secondaryColor/[0.06] p-4 md:p-5">
                     <p className="flex items-start gap-2.5 font-bold leading-snug !text-[#023350]">
                       <i className="fa-solid fa-shield-heart mt-1 text-sm !text-secondaryColor"></i>
                       <span className="!text-inherit">{MSS_ABOUT_TITLE}</span>
