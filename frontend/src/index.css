@@ -240,3 +240,38 @@
   color: #b52327;
   text-decoration: underline;
 }
+
+/* Product page description (ProductDetails → ClampedDescription).
+   Tighter rhythm than the blog prose; line-height must match DESC_LINE_REM
+   in ProductDetails.jsx (preview height = PREVIEW_LINES × that). */
+.product-desc {
+  font-size: 15px;
+  line-height: 1.6rem;
+}
+.product-desc p {
+  margin: 0 0 0.25rem;
+}
+.product-desc :where(ul, ol) {
+  margin: 0 0 0.5rem;
+  padding-left: 1.25rem;
+}
+.product-desc li {
+  margin-bottom: 0.15rem;
+}
+.product-desc li > p {
+  margin: 0;
+}
+.product-desc :where(h1, h2, h3) {
+  margin: 0.75rem 0 0.25rem;
+  font-size: 1.0625rem;
+  line-height: 1.6rem;
+}
+.product-desc > :first-child {
+  margin-top: 0;
+}
+.product-desc > :last-child {
+  margin-bottom: 0;
+}
+.product-desc blockquote {
+  margin: 0 0 0.5rem;
+}
