@@ -73,8 +73,21 @@ html[data-theme] body {
   -webkit-font-smoothing: antialiased;
 }
 
-html[data-theme] ::selection {
-  background: var(--primary-soft);
+/* Text selection: clearly visible on both themes (the old 14% red tint
+   disappeared into the dark background). */
+html[data-theme="light"] ::selection {
+  background: #bfdbfe;
+  color: #0f1b2d;
+}
+html[data-theme="dark"] ::selection {
+  background: #3b82f6;
+  color: #ffffff;
+}
+
+/* Highlighted option inside native dropdowns */
+html[data-theme] select option:checked {
+  background: var(--primary);
+  color: #ffffff;
 }
 
 /* Form controls */

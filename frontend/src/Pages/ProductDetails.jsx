@@ -161,6 +161,11 @@ const splitDescription = (html) => {
   return { preview: nodes.slice(0, cut).map(toHtml).join(""), hasMore: cut < nodes.length };
 };
 
+// Shown at the end of every product's description.
+const MSS_ABOUT_TITLE = "MSS – Medical & Surgical Solutions | Trusted Online Medical Store in India.";
+const MSS_ABOUT_TEXT =
+  "MSS – Medical & Surgical Solutions is your trusted partner for high-quality healthcare products, surgical supplies, and medical essentials across India. We offer 100% genuine medical products at competitive prices, with convenient online ordering and fast, reliable delivery";
+
 const PageSkeleton = () => (
   <section className="px-4 md:px-6 lg:px-side py-8 md:py-12">
     <div className="h-4 w-64 bg-gray-100 rounded animate-pulse mb-8" />
@@ -368,7 +373,9 @@ const ProductDetails = () => {
   const hasDescription = longDescriptionHtml.replace(/<[^>]*>/g, "").trim().length > 0;
 
   const { preview: descriptionPreview, hasMore: descriptionHasMore } = splitDescription(longDescriptionHtml);
-  const hasDetails = hasDescription || hasSpecs;
+  // Always true now: the Description card carries the product name and the
+  // static MSS block even when the product itself has no description.
+  const hasDetails = true;
 
   const keyInfo = [
     product.brand?.name && ["fa-certificate", "Brand", product.brand.name],
@@ -666,18 +673,13 @@ const ProductDetails = () => {
           </div>
         </div>
 
-        {/* Specifications + Description — side by side (50/50) on desktop;
-            on mobile specs come first, description below. If only one has
-            content it spans the full width. */}
+        {/* Specifications on top, Description below (on every screen size).
+            The Description card is always shown: it opens with the product
+            name and closes with the static MSS brand block. */}
         {hasDetails && (
-          <div
-            ref={tabsRef}
-            className={`mt-12 md:mt-16 scroll-mt-6 grid gap-5 lg:gap-6 items-start ${
-              hasSpecs && hasDescription ? "lg:grid-cols-2" : ""
-            }`}
-          >
-            {hasDescription && (
-              <div className="order-2 lg:order-1 min-w-0 bg-white rounded-2xl border border-gray-200 overflow-hidden">
+          <div ref={tabsRef} className="mt-12 md:mt-16 scroll-mt-6 grid gap-5 lg:gap-6 items-start">
+            {(
+              <div className="order-2 min-w-0 bg-white rounded-2xl border border-gray-200 overflow-hidden">
                 <div className="flex items-center gap-3 px-5 md:px-7 py-4 border-b border-gray-100 bg-[#FAFBFC]">
                   <span className="w-9 h-9 rounded-xl bg-primaryColor/10 flex items-center justify-center shrink-0">
                     <i className="fa-solid fa-align-left text-sm !text-primaryColor"></i>
@@ -685,13 +687,16 @@ const ProductDetails = () => {
                   <h2 className="text-lg md:text-xl font-bold !text-gray-900">Description</h2>
                 </div>
                 <div className="p-5 md:p-7">
+                  <h3 className="text-lg md:text-[22px] font-bold leading-snug !text-[#023350] mb-3">{product.title}</h3>
+                  {hasDescription && (
                   <div
                     className="prose-description !text-gray-600 leading-8"
                     dangerouslySetInnerHTML={{
                       __html: descExpanded ? longDescriptionHtml : descriptionPreview,
                     }}
                   />
-                  {descriptionHasMore && (
+                  )}
+                  {hasDescription && descriptionHasMore && (
                     <button
                       type="button"
                       onClick={() => setDescExpanded((v) => !v)}
@@ -701,12 +706,21 @@ const ProductDetails = () => {
                       <i className={`fa-solid ${descExpanded ? "fa-chevron-up" : "fa-chevron-down"} text-[10px] !text-inherit`}></i>
                     </button>
                   )}
+
+                  {/* Static brand block — same on every product page */}
+                  <div className="mt-6 rounded-xl border border-secondaryColor/20 bg-secondaryColor/[0.06] p-4 md:p-5">
+                    <p className="flex items-start gap-2.5 font-bold leading-snug !text-[#023350]">
+                      <i className="fa-solid fa-shield-heart mt-1 text-sm !text-secondaryColor"></i>
+                      <span className="!text-inherit">{MSS_ABOUT_TITLE}</span>
+                    </p>
+                    <p className="mt-2 text-sm md:text-[15px] leading-7 !text-gray-600">{MSS_ABOUT_TEXT}</p>
+                  </div>
                 </div>
               </div>
             )}
 
             {hasSpecs && (
-              <div className="order-1 lg:order-2 min-w-0 bg-white rounded-2xl border border-gray-200 overflow-hidden">
+              <div className="order-1 min-w-0 bg-white rounded-2xl border border-gray-200 overflow-hidden">
                 <div className="flex items-center gap-3 px-5 md:px-7 py-4 border-b border-gray-100 bg-[#FAFBFC]">
                   <span className="w-9 h-9 rounded-xl bg-secondaryColor/10 flex items-center justify-center shrink-0">
                     <i className="fa-solid fa-clipboard-list text-sm !text-secondaryColor"></i>
