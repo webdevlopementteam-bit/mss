@@ -45,6 +45,7 @@ export default function Products() {
   const [selectedValues, setSelectedValues] = useState({});
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
+  const [selectedBrand, setSelectedBrand] = useState("");
   const [sort, setSort] = useState("");
   const [status, setStatus] = useState("");
   const [selectedProducts, setSelectedProducts] = useState([]);
@@ -140,6 +141,7 @@ export default function Products() {
 
     if (search.trim()) params.push(`search=${search}`);
     if (selectedCategory) params.push(`category=${selectedCategory}`);
+    if (selectedBrand) params.push(`brand=${selectedBrand}`);
     if (sort) params.push(`sort=${sort}`);
     if (status) params.push(`status=${status}`);
 
@@ -170,12 +172,12 @@ setSubcategories(sc.data.data || []);
     }, 300);
 
     return () => clearTimeout(delay);
-  }, [search, selectedCategory, sort, status, page]);
+  }, [search, selectedCategory, selectedBrand, sort, status, page]);
 
   useEffect(() => {
     setPage(1);
     setPageWindowStart(1);
-  }, [search, selectedCategory, sort, status]);
+  }, [search, selectedCategory, selectedBrand, sort, status]);
 
   useEffect(() => {
     if (pageWindowStart > totalPages) {
@@ -609,6 +611,24 @@ setSubcategories(sc.data.data || []);
           ))}
         </select>
 
+        {/* BRAND FILTER */}
+        <select
+          value={selectedBrand}
+          onChange={(e) => setSelectedBrand(e.target.value)}
+          className="px-4 py-2 rounded-lg bg-[#0f131c] border border-white/10 text-white min-w-[160px]"
+        >
+          <option value="" className="text-white">
+            All Brands
+          </option>
+          {[...brands]
+            .sort((a, b) => String(a.name).localeCompare(String(b.name)))
+            .map((b) => (
+              <option key={b._id} value={b._id} className="text-white">
+                {b.name}
+              </option>
+            ))}
+        </select>
+
         {/* PRICE SORT */}
         <select
           value={sort}
@@ -660,6 +680,7 @@ setSubcategories(sc.data.data || []);
           onClick={() => {
             setSearch("");
             setSelectedCategory("");
+            setSelectedBrand("");
             setSort("");
             setStatus("");
 
