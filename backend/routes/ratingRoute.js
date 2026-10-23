@@ -6,8 +6,14 @@ import {
   updateRating,
   deleteRating,
 } from "../controllers/ratingController.js";
+import { getProductReviews, upsertMyReview } from "../controllers/productReviewController.js";
+import { protect } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
+
+// STOREFRONT — product page reviews (declared before "/:id")
+router.get("/product/:productId", getProductReviews);
+router.post("/product/:productId", protect, upsertMyReview);
 
 // CREATE
 router.post("/", createRating);
