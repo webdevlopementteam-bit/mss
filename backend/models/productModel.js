@@ -35,6 +35,17 @@ const productSchema = new mongoose.Schema({
     default: []
   },
 
+  // Product-page FAQs, edited in the admin product form. The storefront
+  // renders them and generates FAQPage JSON-LD from the same list.
+  faqs: {
+    type: [{
+      _id: false,
+      question: { type: String, trim: true },
+      answer: { type: String, trim: true }
+    }],
+    default: []
+  },
+
   metaTitle: String,
   metaDescription: String,
   metaKeywords: { type: String, default: "" },

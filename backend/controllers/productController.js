@@ -126,6 +126,14 @@ const syncProductVariants = async (productId, rawVariants) => {
   return Variant.insertMany(docs);
 };
 
+// FAQs arrive as a JSON string (multipart form); keep only complete pairs.
+const parseFaqs = (raw) => {
+  const list = typeof raw === "string" ? JSON.parse(raw || "[]") : raw;
+  return (Array.isArray(list) ? list : [])
+    .map((f) => ({ question: String(f?.question || "").trim(), answer: String(f?.answer || "").trim() }))
+    .filter((f) => f.question && f.answer);
+};
+
 // 🔹 CREATE PRODUCT
 export const createProduct = async (req, res) => {
   try {
@@ -134,6 +142,7 @@ export const createProduct = async (req, res) => {
       description,
       longDescription,
       specifications,
+      faqs,
       metaTitle,
       metaDescription,
       metaKeywords,
@@ -216,6 +225,7 @@ export const createProduct = async (req, res) => {
       description,
       longDescription: longDescription || "",
       specifications: specifications ? JSON.parse(specifications) : [],
+      faqs: faqs ? parseFaqs(faqs) : [],
       metaTitle,
       metaDescription,
       metaKeywords: metaKeywords || "",
@@ -581,6 +591,7 @@ export const updateProduct = async (req, res) => {
       description,
       longDescription,
       specifications,
+      faqs,
       metaTitle,
       metaDescription,
       metaKeywords,
@@ -653,6 +664,7 @@ export const updateProduct = async (req, res) => {
     if (description) product.description = description;
     if (typeof longDescription !== "undefined") product.longDescription = longDescription;
     if (specifications !== undefined) product.specifications = JSON.parse(specifications);
+    if (faqs !== undefined) product.faqs = parseFaqs(faqs);
     if (metaTitle) product.metaTitle = metaTitle;
     if (metaDescription) product.metaDescription = metaDescription;
     if (typeof metaKeywords !== "undefined") product.metaKeywords = metaKeywords;

@@ -9,6 +9,7 @@ import { toast } from "react-toastify";
 import { setPageMeta, resetPageMeta } from "../utils/pageMeta";
 import { ProductRail } from "../components/ui/ProductRail";
 import { formatINR } from "../components/ui/productUtils";
+import { FaqAccordion } from "../components/ui/FaqAccordion";
 
 const IMG_URL = import.meta.env.VITE_IMAGE_BASE_URL;
 
@@ -625,6 +626,7 @@ const ProductDetails = () => {
   // before this field existed fall back to the short description so the
   // Description card isn't blank just because it predates this feature.
   const longDescriptionHtml = cleanDescriptionHtml(product.longDescription?.trim() || `<p>${product.description || ""}</p>`);
+  const productFaqs = (product.faqs || []).filter((f) => f.question?.trim() && f.answer?.trim());
   const hasDescription = longDescriptionHtml.replace(/<[^>]*>/g, "").trim().length > 0;
 
   const stockBadge = (() => {
@@ -1030,6 +1032,14 @@ const ProductDetails = () => {
             )}
           </div>
         </div>
+
+        {/* FAQs — admin-managed per product; FAQPage schema is generated from them */}
+        {productFaqs.length > 0 && (
+          <div className="mt-8">
+            <h2 className="text-lg md:text-[22px] font-bold leading-snug !text-[#023350] mb-4">Frequently Asked Questions</h2>
+            <FaqAccordion key={getProductId(product)} faqs={productFaqs} />
+          </div>
+        )}
 
         {/* MSS banner — same on every product page */}
         <div className="mt-8 relative overflow-hidden rounded-2xl border border-[#d9e6f5] bg-gradient-to-r from-[#EAF2FC] via-[#F4F8FD] to-[#EAF2FC] p-5 md:p-7 flex flex-col md:flex-row md:items-center gap-5 md:gap-8">

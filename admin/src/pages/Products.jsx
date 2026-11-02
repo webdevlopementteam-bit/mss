@@ -4,6 +4,7 @@ import { Plus, Pencil, Trash2, ChevronLeft, ChevronRight, ListTree } from "lucid
 import toast from "react-hot-toast";
 import RichTextEditor from "../components/RichTextEditor";
 import SpecTable from "../components/SpecTable";
+import FaqEditor from "../components/FaqEditor";
 const IMG_URL = import.meta.env.VITE_IMAGE_BASE_URL;
 const Toggle = ({ value, onChange }) => (
   <button
@@ -59,6 +60,7 @@ export default function Products() {
     description: "",
     longDescription: "",
     specifications: [["", ""]],
+    faqs: [],
     brand: "",
     category: [],
     subcategory: "",
@@ -93,6 +95,7 @@ export default function Products() {
       description: "",
       longDescription: "",
       specifications: [["", ""]],
+      faqs: [],
       brand: "",
       category: [],
       subcategory: "",
@@ -284,6 +287,7 @@ setSubcategories(sc.data.data || []);
             "hasVariants",
             "homeSections", // ✅ ADD THIS
             "specifications",
+            "faqs",
           ].includes(k)
         ) {
           return;
@@ -292,6 +296,7 @@ setSubcategories(sc.data.data || []);
 }
       });
       fd.append("homeSections", JSON.stringify(form.homeSections || []));
+      fd.append("faqs", JSON.stringify(form.faqs || []));
 
       // ================= NUMBERS FIX =================
       // ✅ FIX HASVARIANTS TYPE
@@ -439,6 +444,7 @@ setSubcategories(sc.data.data || []);
         product.specifications && product.specifications.length > 0
           ? product.specifications
           : [["", ""]],
+      faqs: product.faqs || [],
       existingImages: product.images || [],
       preview: product.images?.map((img) => `${IMG_URL}/${img}`) || [],
     });
@@ -1126,6 +1132,14 @@ setSubcategories(sc.data.data || []);
                     />
                   </div>
                 )}
+
+                {/* FAQS (product page + auto FAQPage schema) */}
+                <div className="col-span-2">
+                  <FaqEditor
+                    items={form.faqs}
+                    onChange={(faqs) => setForm((prev) => ({ ...prev, faqs }))}
+                  />
+                </div>
 
                 {/* SEO SECTION */}
                 <div className="col-span-2 mt-4 border-t border-white/10 pt-4">

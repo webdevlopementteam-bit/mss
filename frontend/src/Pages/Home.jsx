@@ -41,6 +41,7 @@ import ProductGrid from "../demo/ProductGrid";
 import CategoryPage from "../demo/CategoryPage";
 import BrandPage from "../demo/BrandPage";
 import { VideoBanner } from "../sections/VideoBanner";
+import { HomeFaq } from "../sections/HomeFaq";
 
 const Home = () => {
   const [selectedCategory, setSelectedCategory] = useState(categories[0].name);
@@ -98,7 +99,10 @@ const Home = () => {
       {/* slider */}
       <Hero />
 
-    
+      <h1 className="px-4 md:px-6 lg:px-side mt-8 md:mt-12 text-center text-[24px] md:text-[34px] font-bold !text-[#023350] leading-tight">
+        Buy Medical and Surgical Equipment Online
+      </h1>
+
       <Category />
 
      
@@ -349,6 +353,9 @@ const Home = () => {
             .slice(0, 3)}
         </div>
       </div> */}
+
+      {/* faqs */}
+      <HomeFaq />
 
       {/* email subscription section */}
       <Emailsubscription />
