@@ -14,4 +14,4 @@ Disallow: /order-success/
 Disallow: /user-dashboard
 Disallow: /recently-viewed
 
-Sitemap: https://medicalsurgicalsolutions.com/api/sitemap.xml
+Sitemap: https://www.medicalsurgicalsolutions.com/api/sitemap.xml

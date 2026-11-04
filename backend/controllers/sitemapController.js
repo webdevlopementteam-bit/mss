@@ -2,7 +2,9 @@ import Product from "../models/productModel.js";
 import Blog from "../models/blogModel.js";
 
 // Single place to change if the storefront ever moves domains.
-const SITE_URL = (process.env.SITE_URL || "https://medicalsurgicalsolutions.com").replace(/\/$/, "");
+const SITE_URL = (process.env.SITE_URL || "https://www.medicalsurgicalsolutions.com")
+  .replace(/^(https?:\/\/)medicalsurgicalsolutions\.com(?=\/|$)/i, "$1www.medicalsurgicalsolutions.com")
+  .replace(/\/$/, "");
 
 // Every public, indexable frontend route that isn't generated from the DB
 // (cart/checkout/login/dashboard/etc. are personalized — no SEO value, so
