@@ -1,21 +1,65 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { getAwards } from "../api/services";
 import { PageHeader } from "../components/ui/PageHeader";
 
 const IMG_URL = import.meta.env.VITE_IMAGE_BASE_URL;
+const PAGE_SIZE = 12;
+
+// 1 … 4 5 [6] 7 8 … 20 — always shows first/last page and two either side.
+const pageList = (page, total) => {
+  const pages = new Set([1, total, page - 2, page - 1, page, page + 1, page + 2]);
+  const sorted = [...pages].filter((p) => p >= 1 && p <= total).sort((a, b) => a - b);
+  const out = [];
+  sorted.forEach((p, i) => {
+    if (i > 0 && p - sorted[i - 1] > 1) out.push("…");
+    out.push(p);
+  });
+  return out;
+};
+
 const awardImage = (img) => (!img ? "/no-image.png" : img.startsWith("http") ? img : `${IMG_URL}/${img}`);
 
 const Award = () => {
   const [awards, setAwards] = useState([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(null);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
+  const gridRef = useRef(null);
+  const firstLoad = useRef(true);
 
   useEffect(() => {
-    getAwards()
-      .then((res) => setAwards(res.data.data || []))
+    let cancelled = false;
+    setLoading(true);
+    getAwards({ page, limit: PAGE_SIZE })
+      .then((res) => {
+        if (cancelled) return;
+        setAwards(res.data.data || []);
+        setTotalPages(Math.max(1, res.data.totalPages || 1));
+        setTotal(res.data.totalAward ?? (res.data.data || []).length);
+      })
       .catch((err) => console.log(err))
-      .finally(() => setLoading(false));
-  }, []);
+      .finally(() => !cancelled && setLoading(false));
+    return () => {
+      cancelled = true;
+    };
+  }, [page]);
+
+  // Bring the grid into view when the visitor changes page (not on first load).
+  useEffect(() => {
+    if (firstLoad.current) {
+      firstLoad.current = false;
+      return;
+    }
+    gridRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [page]);
+
+  const goTo = (p) => {
+    if (p < 1 || p > totalPages || p === page) return;
+    setOpen(null);
+    setPage(p);
+  };
 
   const step = useCallback(
     (d) => setOpen((i) => (i === null ? i : (i + d + awards.length) % awards.length)),
@@ -62,6 +106,7 @@ const Award = () => {
           </p>
         </div>
 
+        <div ref={gridRef} className="scroll-mt-6" />
         {loading ? (
           <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
             {Array.from({ length: 6 }).map((_, i) => (
@@ -100,6 +145,55 @@ const Award = () => {
                 </div>
               </button>
             ))}
+          </div>
+        )}
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="mt-10 flex flex-col items-center gap-3">
+            <div className="flex items-center gap-1.5 flex-wrap justify-center">
+              <button
+                type="button"
+                onClick={() => goTo(page - 1)}
+                disabled={page === 1 || loading}
+                className="h-10 px-3.5 inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white text-sm font-medium !text-gray-700 hover:border-primaryColor hover:!text-primaryColor transition disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <i className="fa-solid fa-chevron-left text-[10px] !text-inherit"></i>
+                <span className="!text-inherit hidden sm:inline">Previous</span>
+              </button>
+              {pageList(page, totalPages).map((p, i) =>
+                p === "…" ? (
+                  <span key={`gap-${i}`} className="w-8 text-center !text-gray-400">…</span>
+                ) : (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => goTo(p)}
+                    disabled={loading}
+                    aria-current={p === page ? "page" : undefined}
+                    className={`w-10 h-10 rounded-lg text-sm font-semibold transition ${
+                      p === page
+                        ? "bg-primaryColor !text-white shadow-[0_8px_18px_-8px_rgba(181,35,39,0.7)]"
+                        : "border border-gray-200 bg-white !text-gray-700 hover:border-primaryColor hover:!text-primaryColor"
+                    }`}
+                  >
+                    {p}
+                  </button>
+                )
+              )}
+              <button
+                type="button"
+                onClick={() => goTo(page + 1)}
+                disabled={page === totalPages || loading}
+                className="h-10 px-3.5 inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white text-sm font-medium !text-gray-700 hover:border-primaryColor hover:!text-primaryColor transition disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <span className="!text-inherit hidden sm:inline">Next</span>
+                <i className="fa-solid fa-chevron-right text-[10px] !text-inherit"></i>
+              </button>
+            </div>
+            <p className="text-xs !text-gray-500">
+              Showing {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, total)} of {total} awards
+            </p>
           </div>
         )}
       </div>

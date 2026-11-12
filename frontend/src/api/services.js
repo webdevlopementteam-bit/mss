@@ -5,7 +5,8 @@ export const getBlogs = () => API.get("/blog");
 export const getOneBlog = (slug) =>
   API.get(`/blog/slug/${slug}`);
 
-export const getAwards = () => API.get("/award");
+// params: { page, limit } — the API returns 10 per page when omitted.
+export const getAwards = (params) => API.get("/award", { params });
 
 // PRODUCTS
 export const getProducts = () => API.get("/products");
