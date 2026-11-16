@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "seed-admin": "node seedAdmin.js",
+    "regenerate-invoices": "node scripts/regenerateInvoices.js",
     "dev": "nodemon server.js"
   },
   "keywords": [],
