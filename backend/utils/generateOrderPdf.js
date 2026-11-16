@@ -86,8 +86,13 @@ const numberToWords = (num) => {
   return words.trim();
 };
 
+// 579.65 -> "Five hundred seventy nine and sixty five Paise Only"
 const amountInWords = (amount) => {
-  const words = numberToWords(Math.floor(amount));
+  const totalPaise = Math.round(Number(amount || 0) * 100);
+  const rupees = Math.floor(totalPaise / 100);
+  const paise = totalPaise % 100;
+  let words = numberToWords(rupees);
+  if (paise > 0) words += ` and ${numberToWords(paise)} Paise`;
   return `${words.charAt(0).toUpperCase()}${words.slice(1)} Only`;
 };
 
@@ -252,25 +257,36 @@ const generateOrderPdf = (order) => {
         price: money(item.price),
         amount: money(item.price * item.quantity),
         gst: product?.gst,
+        gstAmount: (Number(item.price) * Number(item.quantity) * (Number(product?.gst) || 0)) / 100,
       };
     });
 
     // Pre-compute row heights (title wraps) so the outer box can be drawn first.
-    const rowPadding = 14;
-    const rows = items.map((it) => {
-      const titleHeight = doc
-        .font("Inter")
-        .fontSize(9)
-        .heightOfString(it.title, { width: cols[3].width - 10, align: "center" });
-      const height = Math.max(titleHeight, 14) + rowPadding * 2;
-      return { ...it, height };
-    });
-
     const headerHeight = 26;
+    const contentHeights = items.map((it) =>
+      Math.max(
+        doc.font("Inter").fontSize(9).heightOfString(it.title, { width: cols[3].width - 10, align: "center" }),
+        14
+      )
+    );
+
+    // Space the table + summary box need below the rows (gap 25 + box 90).
+    const BELOW_TABLE = 115;
+    const available = doc.page.height - margin - y - headerHeight - BELOW_TABLE;
+    const contentTotal = contentHeights.reduce((s, h) => s + h, 0);
+
+    // Rows normally get 14pt padding. With several items, tighten it (down to
+    // 8pt) so the table and totals stay on page 1 under the header; only when
+    // even that cannot fit does the table move to a new page as before.
+    let rowPadding = 14;
+    while (rowPadding > 8 && contentTotal + rowPadding * 2 * items.length > available) rowPadding -= 1;
+    if (contentTotal + rowPadding * 2 * items.length > available) rowPadding = 14;
+
+    const rows = items.map((it, i) => ({ ...it, height: contentHeights[i] + rowPadding * 2 }));
     const tableHeight = headerHeight + rows.reduce((s, r) => s + r.height, 0);
 
     // Avoid overlapping the footer summary block on typical single-page orders.
-    if (y + tableHeight + 150 > doc.page.height - margin) {
+    if (y + tableHeight + BELOW_TABLE > doc.page.height - margin) {
       doc.addPage();
       y = margin;
     }
@@ -309,12 +325,12 @@ const generateOrderPdf = (order) => {
       doc.font("Inter-Bold").fontSize(9).fillColor(COLORS.text);
       doc.text(row.amount, cols[6].x + 5, textY, { width: cols[6].width - 10, align: cols[6].align });
 
-      if (row.gst != null) {
+      if (Number(row.gst) > 0) {
         doc
           .font("Inter")
           .fontSize(7)
           .fillColor(COLORS.muted)
-          .text(`(Inclusive of ${row.gst}% GST)`, cols[6].x + 5, doc.y + 1, {
+          .text(`(+ ${row.gst}% GST: ${money(row.gstAmount)})`, cols[6].x + 5, doc.y + 1, {
             width: cols[6].width - 10,
             align: cols[6].align,
           });
@@ -345,26 +361,37 @@ const generateOrderPdf = (order) => {
       .strokeColor(COLORS.border)
       .stroke();
 
-    const summaryCols = [
-      { label: "PAYMENT METHOD", value: paymentMethodLabel(order.paymentMethod) },
-      { label: "SHIPPING COST", value: money(order.shippingCharge) },
-      { label: "DISCOUNT", value: money(order.discountAmount) },
-      { label: "TOTAL AMOUNT", value: money(order.totalAmount), big: true },
-    ];
-    const summaryColWidth = contentWidth / summaryCols.length;
+    // Order totals as stored at checkout; GST falls back to the per-line sum
+    // for older orders saved before the gst field existed.
+    const itemsSubtotal = order.orderItems.reduce((s, it) => s + Number(it.price) * Number(it.quantity), 0);
+    const gstTotal = order.gst != null ? Number(order.gst) : rows.reduce((s, r) => s + r.gstAmount, 0);
+    const subtotal = order.subtotal != null ? Number(order.subtotal) : itemsSubtotal;
 
-    summaryCols.forEach((c, idx) => {
-      const x = margin + idx * summaryColWidth + 15;
+    // Subtotal + Shipping + GST − Discount = Total Amount
+    const summaryCols = [
+      { label: "PAYMENT METHOD", value: paymentMethodLabel(order.paymentMethod), w: 0.2 },
+      { label: "SUBTOTAL", value: money(subtotal), w: 0.15 },
+      { label: "SHIPPING COST", value: money(order.shippingCharge), w: 0.15 },
+      { label: "GST", value: money(gstTotal), w: 0.15 },
+      { label: "DISCOUNT", value: money(order.discountAmount), w: 0.15 },
+      { label: "TOTAL AMOUNT", value: money(order.totalAmount), big: true, w: 0.2 },
+    ];
+
+    let sx = margin;
+    summaryCols.forEach((c) => {
+      const colWidth = contentWidth * c.w;
+      const x = sx + 15;
       doc
         .font("Inter-Bold")
         .fontSize(8)
         .fillColor(COLORS.muted)
-        .text(c.label, x, y + 18, { width: summaryColWidth - 30 });
+        .text(c.label, x, y + 18, { width: colWidth - 20 });
       doc
         .font("Inter-Bold")
         .fontSize(c.big ? 16 : 11)
         .fillColor(COLORS.text)
-        .text(c.value, x, y + 32, { width: summaryColWidth - 30 });
+        .text(c.value, x, y + 32, { width: colWidth - 20 });
+      sx += colWidth;
     });
 
     doc
