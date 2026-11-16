@@ -376,6 +376,8 @@ const Shop = () => {
                 ? SECTION_LABELS[section]
                 : selectedCategories.length === 1
                 ? categoryName(selectedCategories[0])
+                : selectedBrands.length === 1
+                ? brandName(selectedBrands[0])
                 : "All Products"}
             </h1>
             {!loading && (

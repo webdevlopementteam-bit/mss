@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import API from "../api/axios";
 import { useViewportWidth } from "../hooks/useViewportWidth";
 
@@ -85,7 +86,12 @@ export const Popularbrands = () => {
         <Slider key={perView} {...settings}>
           {brands.map((brand) => (
             <div key={brand._id} className="px-1.5 sm:px-2.5">
-              <div className="group relative bg-white rounded-2xl md:rounded-[22px] py-4 sm:py-5 md:py-6 px-3 sm:px-4 flex flex-col items-center justify-center h-[150px] sm:h-[160px] md:h-[190px] border border-[#EFE6DF] shadow-[0_4px_16px_rgba(43,36,32,0.04)] hover:border-[#E3D2B5] hover:shadow-[0_16px_34px_rgba(43,36,32,0.1)] transition-all duration-400 ease-out hover:-translate-y-1.5 cursor-pointer">
+              {/* Opens the shop filtered to this brand only */}
+              <Link
+                to={`/shop?brand=${brand._id}`}
+                title={`Shop ${brand.name} products`}
+                className="group relative bg-white rounded-2xl md:rounded-[22px] py-4 sm:py-5 md:py-6 px-3 sm:px-4 flex flex-col items-center justify-center h-[150px] sm:h-[160px] md:h-[190px] border border-[#EFE6DF] shadow-[0_4px_16px_rgba(43,36,32,0.04)] hover:border-[#E3D2B5] hover:shadow-[0_16px_34px_rgba(43,36,32,0.1)] transition-all duration-400 ease-out hover:-translate-y-1.5 cursor-pointer"
+              >
                 <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 flex items-center justify-center">
                   <img
                     src={getImage(brand.image)}
@@ -99,7 +105,7 @@ export const Popularbrands = () => {
                 </p>
 
                 <span className="absolute left-1/2 -translate-x-1/2 bottom-0 w-0 group-hover:w-8 h-[2px] bg-[#B08A4E] transition-all duration-400 ease-out rounded-full"></span>
-              </div>
+              </Link>
             </div>
           ))}
         </Slider>
